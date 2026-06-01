@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="my">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ကျွန်ုပ်၏ ခရီးစဉ်များ - Innovix SmartRide</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow--1"></div>
+    <div class="bg-glow bg-glow--2"></div>
+    <nav class="nav-wrapper">
+      <div class="nav-inner">
+        <a href="/" class="logo">
+          <div class="logo-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+              <rect x="1" y="3" width="15" height="13" rx="2" />
+              <path d="M16 8h4l3 4v4h-7V8z" />
+              <circle cx="5.5" cy="18.5" r="2.5" />
+              <circle cx="18.5" cy="18.5" r="2.5" />
+            </svg>
+          </div>
+          <div>
+            <span class="logo-text">Innovix SmartRide</span>
+            <span class="logo-sub">Myanmar</span>
+          </div>
+        </a>
+        <div class="nav-links">
+          <a href="find-ride.html" class="nav-link">ကားစီးမည်</a>
+          <a href="offer-ride.html" class="nav-link">ကားမောင်းမည်</a>
+          <a href="dashboard.html" class="nav-link">Dashboard</a>
+          <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
+        </div>
+      </div>
+    </nav>
+    <div class="container" style="padding: 2rem;">
+      <div class="glass-card animate-fade-in-up">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <h2 style="font-family: var(--font-heading); color: var(--green-dark);">📋 ကျွန်ုပ်၏ ခရီးစဉ်များ</h2>
+          <div>
+            <button id="showPassengerBtn" class="btn-outline" style="margin-right: 0.5rem;">🚶 ခရီးသည်</button>
+            <button id="showDriverBtn" class="btn-outline">🚙 ယာဉ်မောင်း</button>
+          </div>
+        </div>
+        <div id="ridesList"></div>
+      </div>
+    </div>
+    <!-- Rating Modal -->
+    <div id="ratingModal" class="modal">
+      <div class="modal-content">
+        <h3 style="color: var(--green); margin-bottom: 1rem;">⭐ အဆင့်သတ်မှတ်ပါ</h3>
+        <p id="ratingDriverName"></p>
+        <div style="display: flex; gap: 0.5rem; justify-content: center; margin: 1rem 0;">
+          <button class="rating-star" data-rating="1">★</button>
+          <button class="rating-star" data-rating="2">★</button>
+          <button class="rating-star" data-rating="3">★</button>
+          <button class="rating-star" data-rating="4">★</button>
+          <button class="rating-star" data-rating="5">★</button>
+        </div>
+        <textarea id="ratingComment" class="input-field" placeholder="မှတ်ချက်..." rows="3"></textarea>
+        <div class="modal-actions">
+          <button onclick="submitRating()" class="btn-primary">အဆင့်သတ်မှတ်မည်</button>
+          <button onclick="closeRatingModal()" class="btn-outline">နောက်မှ</button>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      import { requireAuth, getCurrentUser, logout } from '../js/auth.js';
+      import { db } from '../js/database.js';
+      let currentView = 'passenger';
+      let currentRideForRating = null;
+      if (!requireAuth()) { /* redirect handled */ } else {
+      const user = getCurrentUser();
+      const userDrivers = db.getDrivers();
+      const userDriver = userDrivers.find(d => d.userId === user.id);
+      function loadPassengerRides() {
+        const bookings = db.getBookingsByPassenger(user.id);
+        const rides = db.getRides();
+        if (bookings.length === 0) {
+          document.getElementById('ridesList').innerHTML = `
+            <div style="text-align: center; padding: 3rem;">
+              <div style="font-size: 3rem; margin-bottom: 1rem;">🚗</div>
+              <h3 style="color: var(--green-dark);">ခရီးစဉ်များ မရှိသေးပါ</h3>
+              <p style="color: var(--gray);">သင်စီးခဲ့သော ခရီးစဉ်များ ဤနေရာတွင် ပြသမည်</p>
+              <a href="find-ride.html" class="btn-primary" style="margin-top: 1rem; display: inline-block;">ခရီးစဉ်ရှာမည်</a>
+            </div>
+          `;
+          return;
+        }
+        document.getElementById('ridesList').innerHTML = bookings.map(booking => {
+          const ride = rides.find(r => r.id === booking.rideId);
+          if (!ride) return '';
+          return `
+            <div class="glass-card" style="margin-bottom: 1rem; padding: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <span class="badge">${booking.status === 'confirmed' ? '✅ အတည်ပြုပြီး' : booking.status}</span>
+                    <span class="badge">📅 ${new Date(booking.bookingTime).toLocaleDateString()}</span>
+                  </div>
+                  <h4 style="color: var(--green-dark); margin-bottom: 0.25rem;">
+                    ${ride.startLocation} → ${ride.endLocation}
+                  </h4>
+                  <p style="color: var(--gray); font-size: 0.8rem;">
+                    🚙 ${ride.driverName || 'Driver'} | ${ride.carModel || 'Car'} (${ride.carPlate || 'Plate'})
+                  </p>
+                  <p style="color: var(--gray); font-size: 0.75rem;">
+                    📅 ${new Date(ride.departureTime).toLocaleString()}
+                  </p>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 0.7rem; color: var(--gray);">ပေးချေခဲ့သည်</div>
+                  <div style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; color: var(--green);">
+                    ${booking.totalPrice.toLocaleString()} ကျပ်
+                  </div>
+                  <div style="font-size: 0.7rem; color: var(--green);">
+                    ${(7500 - booking.totalPrice).toLocaleString()} ကျပ် သက်သာ
+                  </div>
+                  ${booking.status === 'confirmed' && new Date(ride.departureTime) < new Date() ? `
+                    <button onclick="showRatingModal('${ride.id}', '${ride.driverName}')" class="btn-outline" style="margin-top: 0.5rem; font-size: 0.7rem; padding: 0.3rem 0.8rem;">
+                      ⭐ အဆင့်သတ်မှတ်ရန်
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+      function loadDriverRides() {
+        if (!userDriver) {
+          document.getElementById('ridesList').innerHTML = `
+            <div style="text-align: center; padding: 3rem;">
+              <div style="font-size: 3rem; margin-bottom: 1rem;">🚙</div>
+              <h3 style="color: var(--green-dark);">ယာဉ်မောင်းအဖြစ် စာရင်းမသွင်းရသေးပါ</h3>
+              <p style="color: var(--gray);">ကားမောင်းရန် ယာဉ်မောင်းအဖြစ် ဦးစွာစာရင်းသွင်းပါ</p>
+              <a href="driver-register.html" class="btn-primary" style="margin-top: 1rem; display: inline-block;">ယာဉ်မောင်းစာရင်းသွင်းမည်</a>
+            </div>
+          `;
+          return;
+        }
+        const rides = db.getRidesByDriver(userDriver.id);
+        const bookings = db.getBookings();
+        if (rides.length === 0) {
+          document.getElementById('ridesList').innerHTML = `
+            <div style="text-align: center; padding: 3rem;">
+              <div style="font-size: 3rem; margin-bottom: 1rem;">🚗</div>
+              <h3 style="color: var(--green-dark);">သင်ကမ်းလှမ်းထားသော ခရီးစဉ်များ မရှိသေးပါ</h3>
+              <p style="color: var(--gray);">ခရီးစဉ်အသစ် ကမ်းလှမ်းရန် အထက်ပါပုံစံအတိုင်း ဖြည့်ပါ</p>
+            </div>
+          `;
+          return;
+        }
+        document.getElementById('ridesList').innerHTML = rides.map(ride => {
+          const rideBookings = bookings.filter(b => b.rideId === ride.id);
+          const totalEarnings = rideBookings.reduce((sum, b) => sum + b.totalPrice, 0);
+          return `
+            <div class="glass-card" style="margin-bottom: 1rem; padding: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
+                    <span class="badge">${ride.status === 'scheduled' ? '📅 စီစဉ်ထား' : ride.status}</span>
+                    <span class="badge">👥 ${ride.bookedSeats || 0}/${ride.availableSeats} နေရာ</span>
+                    <span class="badge">🚙 ${ride.carModel || 'Car'}</span>
+                  </div>
+                  <h4 style="color: var(--green-dark); margin-bottom: 0.25rem;">
+                    ${ride.startLocation} → ${ride.endLocation}
+                  </h4>
+                  <p style="color: var(--gray); font-size: 0.8rem;">
+                    📅 ${new Date(ride.departureTime).toLocaleString()}
+                  </p>
+                  ${rideBookings.length > 0 ? `
+                    <p style="color: var(--gray); font-size: 0.75rem; margin-top: 0.5rem;">
+                      👥 ခရီးသည် ${rideBookings.length} ဦး
+                    </p>
+                  ` : ''}
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 0.7rem; color: var(--gray);">ရရှိငွေ</div>
+                  <div style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; color: var(--green);">
+                    ${totalEarnings.toLocaleString()} ကျပ်
+                  </div>
+                  <div style="font-size: 0.7rem; color: var(--gray);">
+                    တစ်ဦးချင်း ${ride.pricePerSeat?.toLocaleString() || '2,500'} ကျပ်
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+      window.showRatingModal = function(rideId, driverName) {
+        currentRideForRating = rideId;
+        document.getElementById('ratingDriverName').innerHTML = `ကျေးဇူးပြု၍ ${driverName} အား အဆင့်သတ်မှတ်ပါ။`;
+        document.getElementById('ratingModal').style.display = 'flex';
+        // Setup rating stars
+        document.querySelectorAll('.rating-star').forEach(star => {
+          star.onclick = () => {
+            const rating = parseInt(star.dataset.rating);
+            document.querySelectorAll('.rating-star').forEach(s => {
+              if (parseInt(s.dataset.rating) <= rating) {
+                s.style.color = '#FFD700';
+              } else {
+                s.style.color = '#ccc';
+              }
+            });
+            window.selectedRating = rating;
+          };
+        });
+      };
+      window.submitRating = function() {
+        if (window.selectedRating) {
+          alert(`⭐ ကျေးဇူးတင်ပါသည်။ သင့်အဆင့်သတ်မှတ်ချက် ${window.selectedRating}/5 ကို လက်ခံရရှိပါပြီ။`);
+          closeRatingModal();
+          loadPassengerRides();
+        } else {
+          alert('ကျေးဇူးပြု၍ အဆင့်သတ်မှတ်ချက် ရွေးပါ');
+        }
+      };
+      window.closeRatingModal = function() {
+        document.getElementById('ratingModal').style.display = 'none';
+        currentRideForRating = null;
+        window.selectedRating = null;
+      };
+      document.getElementById('showPassengerBtn').addEventListener('click', () => {
+        currentView = 'passenger';
+        document.getElementById('showPassengerBtn').classList.add('btn-primary');
+        document.getElementById('showPassengerBtn').classList.remove('btn-outline');
+        document.getElementById('showDriverBtn').classList.add('btn-outline');
+        document.getElementById('showDriverBtn').classList.remove('btn-primary');
+        loadPassengerRides();
+      });
+      document.getElementById('showDriverBtn').addEventListener('click', () => {
+        currentView = 'driver';
+        document.getElementById('showDriverBtn').classList.add('btn-primary');
+        document.getElementById('showDriverBtn').classList.remove('btn-outline');
+        document.getElementById('showPassengerBtn').classList.add('btn-outline');
+        document.getElementById('showPassengerBtn').classList.remove('btn-primary');
+        loadDriverRides();
+      });
+      // Initial load
+      loadPassengerRides();
+      document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        logout();
+      });
+      } // end auth guard
+    </script>
+  </body>
+</html>

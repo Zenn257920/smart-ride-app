@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="my">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>အကောင့်ဖွင့်ရန် - Innovix SmartRide</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow--1"></div>
+    <div class="bg-glow bg-glow--2"></div>
+    <div class="container" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
+      <div class="glass-card animate-fade-in-up" style="max-width: 480px; width: 100%; padding: 2rem;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <a href="/" class="logo" style="display: inline-flex; text-decoration: none; margin-bottom: 1.5rem;">
+            <div class="logo-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+                <rect x="1" y="3" width="15" height="13" rx="2" />
+                <path d="M16 8h4l3 4v4h-7V8z" />
+                <circle cx="5.5" cy="18.5" r="2.5" />
+                <circle cx="18.5" cy="18.5" r="2.5" />
+              </svg>
+            </div>
+            <div>
+              <span class="logo-text">Innovix SmartRide</span>
+              <span class="logo-sub">Myanmar</span>
+            </div>
+          </a>
+          <h2 style="font-family: var(--font-heading); font-size: 1.75rem; font-weight: 700; color: var(--green-dark); margin-bottom: 0.5rem;">အကောင့်သစ်ဖွင့်ရန်</h2>
+          <p style="color: var(--gray); font-size: 0.85rem;">SmartRide အသင်းဝင်ရန် မှတ်ပုံတင်ပါ</p>
+        </div>
+        <form id="registerForm">
+          <div class="input-group">
+            <label class="input-label">အမည်</label>
+            <input type="text" id="name" class="input-field" placeholder="အောင်ကိုလတ်" required>
+          </div>
+          <div class="input-group">
+            <label class="input-label">အီးမေးလ်</label>
+            <input type="email" id="email" class="input-field" placeholder="you@example.com" required>
+          </div>
+          <div class="input-group">
+            <label class="input-label">ဖုန်းနံပါတ်</label>
+            <input type="tel" id="phone" class="input-field" placeholder="09xxxxxxxx" required>
+          </div>
+          <div class="input-group">
+            <label class="input-label">စကားဝှက်</label>
+            <input type="password" id="password" class="input-field" placeholder="••••••••" required>
+          </div>
+          <div class="input-group">
+            <label class="input-label">အတည်ပြုစကားဝှက်</label>
+            <input type="password" id="confirmPassword" class="input-field" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%; margin-bottom: 1rem;">အကောင့်ဖွင့်မည်</button>
+        </form>
+        <div style="text-align: center;">
+          <p style="color: var(--gray); font-size: 0.85rem;">
+            အကောင့်ရှိပြီးသားလား? 
+            <a href="/src/pages/login.html" style="color: var(--green); text-decoration: none; font-weight: 600;">အကောင့်ဝင်ရန်</a>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div id="errorModal" class="modal">
+      <div class="modal-content">
+        <h3 style="color: #dc2626; margin-bottom: 1rem;">⚠️ မှတ်ပုံတင်ရန် မအောင်မြင်ပါ</h3>
+        <p id="errorMessage"></p>
+        <div class="modal-actions">
+          <button onclick="closeModal()" class="btn-primary" style="width: 100%;">ပိတ်ရန်</button>
+        </div>
+      </div>
+    </div>
+    <div id="successModal" class="modal">
+      <div class="modal-content">
+        <h3 style="color: var(--green); margin-bottom: 1rem;">✅ အကောင့်ဖွင့်ခြင်း အောင်မြင်ပါသည်</h3>
+        <p>ကျေးဇူးတင်ပါသည်။ ယခုအကောင့်ဝင်နိုင်ပါပြီ။</p>
+        <div class="modal-actions">
+          <button onclick="redirectToLogin()" class="btn-primary" style="width: 100%;">အကောင့်ဝင်ရန်</button>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      import { register } from '../js/auth.js';
+      window.closeModal = function() {
+        document.getElementById('errorModal').style.display = 'none';
+        document.getElementById('successModal').style.display = 'none';
+      };
+      window.redirectToLogin = function() {
+        window.location.href = '/src/pages/login.html';
+      };
+      document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const phone = document.getElementById('phone').value;
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        if (password !== confirmPassword) {
+          document.getElementById('errorMessage').innerText = 'စကားဝှက်များ တူညီမှုမရှိပါ';
+          document.getElementById('errorModal').style.display = 'flex';
+          return;
+        }
+        const result = register(name, email, phone, password);
+        if (result.success) {
+          document.getElementById('successModal').style.display = 'flex';
+        } else {
+          document.getElementById('errorMessage').innerText = result.error;
+          document.getElementById('errorModal').style.display = 'flex';
+        }
+      });
+    </script>
+  </body>
+</html>

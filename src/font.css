@@ -1,0 +1,167 @@
+/* font.css - MiSans Font Family (Myanmar + Latin) */
+/* ============================================ */
+/* MiSans Myanmar - Burmese/Myanmar Script */
+/* ============================================ */
+/* Thin - 100 */
+@font-face {
+  font-family: 'MiSans Myanmar';
+  src: url('/fonts/MiSansMyanmar-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+/* ExtraLight - 200 */
+@font-face {
+  font-family: 'MiSans Myanmar';
+  src: url('/fonts/MiSansMyanmar-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+/* Light - 300 */
+@font-face {
+  font-family: 'MiSans Myanmar';
+  src: url('/fonts/MiSansMyanmar-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+/* Normal - 350 */
+@font-face {
+  font-family: 'MiSans Myanmar';
+  src: url('/fonts/MiSansMyanmar-Normal.woff2') format('woff2');
+  font-weight: 350;
+  font-style: normal;
+  font-display: swap;
+}
+/* Regular - 400 */
+@font-face {
+  font-family: 'MiSans Myanmar';
+  src: url('/fonts/MiSansMyanmar-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+/* Medium - 500 */
+@font-face {
+  font-family: 'MiSans Myanmar';
+  src: url('/fonts/MiSansMyanmar-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+/* Demibold - 600 */
+@font-face {
+  font-family: 'MiSans Myanmar';
+  src: url('/fonts/MiSansMyanmar-Demibold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+/* Semibold - 650 */
+@font-face {
+  font-family: 'MiSans Myanmar';
+  src: url('/fonts/MiSansMyanmar-Semibold.woff2') format('woff2');
+  font-weight: 650;
+  font-style: normal;
+  font-display: swap;
+}
+/* Bold - 700 */
+@font-face {
+  font-family: 'MiSans Myanmar';
+  src: url('/fonts/MiSansMyanmar-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+/* Heavy - 800 */
+@font-face {
+  font-family: 'MiSans Myanmar';
+  src: url('/fonts/MiSansMyanmar-Heavy.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+/* ============================================ */
+/* MiSans Latin - English/Latin Script */
+/* ============================================ */
+/* Thin - 100 */
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('/fonts/MiSansLatin-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+/* ExtraLight - 200 */
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('/fonts/MiSansLatin-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+/* Light - 300 */
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('/fonts/MiSansLatin-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+/* Normal - 350 */
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('/fonts/MiSansLatin-Normal.woff2') format('woff2');
+  font-weight: 350;
+  font-style: normal;
+  font-display: swap;
+}
+/* Regular - 400 */
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('/fonts/MiSansLatin-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+/* Medium - 500 */
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('/fonts/MiSansLatin-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+/* Demibold - 600 */
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('/fonts/MiSansLatin-Demibold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+/* Semibold - 650 */
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('/fonts/MiSansLatin-Semibold.woff2') format('woff2');
+  font-weight: 650;
+  font-style: normal;
+  font-display: swap;
+}
+/* Bold - 700 */
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('/fonts/MiSansLatin-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+/* Heavy - 800 */
+@font-face {
+  font-family: 'MiSans Latin';
+  src: url('/fonts/MiSansLatin-Heavy.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
