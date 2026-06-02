@@ -14,7 +14,14 @@
       <div class="nav-inner">
         <a href="/" class="logo">
           <div class="logo-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2"
+            >
               <rect x="1" y="3" width="15" height="13" rx="2" />
               <path d="M16 8h4l3 4v4h-7V8z" />
               <circle cx="5.5" cy="18.5" r="2.5" />
@@ -27,47 +34,117 @@
           </div>
         </a>
         <div class="nav-links">
+          <a href="driver-register.html" class="nav-link nav-cta"
+            >Driver Register</a
+          >
           <a href="find-ride.html" class="nav-link">ကားစီးမည်</a>
           <a href="offer-ride.html" class="nav-link">ကားမောင်းမည်</a>
           <a href="dashboard.html" class="nav-link">Dashboard</a>
           <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
         </div>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
       </div>
     </nav>
-    <div class="container" style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
-      <div class="glass-card animate-fade-in-up" style="max-width: 500px; width: 100%; padding: 2rem;">
-        <div style="text-align: center; margin-bottom: 1.5rem;">
-          <div style="font-size: 3rem; margin-bottom: 0.5rem;">🚙</div>
-          <h2 style="font-family: var(--font-heading); color: var(--green-dark);">ယာဉ်မောင်းစာရင်းသွင်းရန်</h2>
-          <p style="color: var(--gray); font-size: 0.85rem;">သင်၏ကားဖြင့် ဝင်ငွေရှာပါ</p>
+    <div
+      class="container"
+      style="
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+      "
+    >
+      <div
+        class="glass-card animate-fade-in-up"
+        style="max-width: 500px; width: 100%; padding: 2rem"
+      >
+        <div style="text-align: center; margin-bottom: 1.5rem">
+          <div style="font-size: 3rem; margin-bottom: 0.5rem">🚙</div>
+          <h2
+            style="font-family: var(--font-heading); color: var(--green-dark)"
+          >
+            ယာဉ်မောင်းစာရင်းသွင်းရန်
+          </h2>
+          <p style="color: var(--gray); font-size: 0.85rem">
+            သင်၏ကားဖြင့် ဝင်ငွေရှာပါ
+          </p>
         </div>
         <form id="driverRegisterForm">
           <div class="input-group">
             <label class="input-label">ကားမော်ဒယ်</label>
-            <input type="text" id="carModel" class="input-field" placeholder="e.g. Toyota Prius, Honda Fit" required>
+            <input
+              type="text"
+              id="carModel"
+              class="input-field"
+              placeholder="e.g. Toyota Prius, Honda Fit"
+              required
+            />
           </div>
           <div class="input-group">
             <label class="input-label">ကားနံပါတ်</label>
-            <input type="text" id="carPlate" class="input-field" placeholder="e.g. YGN-1234" required>
+            <input
+              type="text"
+              id="carPlate"
+              class="input-field"
+              placeholder="e.g. YGN-1234"
+              required
+            />
           </div>
           <div class="input-group">
             <label class="input-label">ယာဉ်မောင်းလိုင်စင်နံပါတ်</label>
-            <input type="text" id="licenseNumber" class="input-field" placeholder="e.g. D-123456" required>
+            <input
+              type="text"
+              id="licenseNumber"
+              class="input-field"
+              placeholder="e.g. D-123456"
+              required
+            />
           </div>
           <div class="input-group">
             <label class="input-label">ကားအရောင်</label>
-            <input type="text" id="carColor" class="input-field" placeholder="e.g. အဖြူ, အနက်ရောင်">
+            <input
+              type="text"
+              id="carColor"
+              class="input-field"
+              placeholder="e.g. အဖြူ, အနက်ရောင်"
+            />
           </div>
           <div class="input-group">
             <label class="input-label">ကားနှစ်</label>
-            <input type="number" id="carYear" class="input-field" placeholder="e.g. 2020" min="1990" max="2025">
+            <input
+              type="number"
+              id="carYear"
+              class="input-field"
+              placeholder="e.g. 2020"
+              min="1990"
+              max="2025"
+            />
           </div>
-          <button type="submit" class="btn-primary" style="width: 100%;">ယာဉ်မောင်းအဖြစ် စာရင်းသွင်းမည်</button>
+          <button type="submit" class="btn-primary" style="width: 100%">
+            ယာဉ်မောင်းအဖြစ် စာရင်းသွင်းမည်
+          </button>
         </form>
-        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--green-light); border-radius: 10px;">
-          <p style="font-size: 0.75rem; color: var(--green-dark); text-align: center;">
-            💡 ယာဉ်မောင်းအဖြစ် စာရင်းသွင်းပြီးပါက ခရီးစဉ်များ ကမ်းလှမ်းနိုင်ပါပြီ။
-            သင်၏ကားတွင် အများဆုံး ခရီးသည် ၃-၄ ဦး တင်ဆောင်နိုင်ပါသည်။
+        <div
+          style="
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: var(--green-light);
+            border-radius: 10px;
+          "
+        >
+          <p
+            style="
+              font-size: 0.75rem;
+              color: var(--green-dark);
+              text-align: center;
+            "
+          >
+            💡 ယာဉ်မောင်းအဖြစ် စာရင်းသွင်းပြီးပါက ခရီးစဉ်များ
+            ကမ်းလှမ်းနိုင်ပါပြီ။ သင်၏ကားတွင် အများဆုံး ခရီးသည် ၃-၄ ဦး
+            တင်ဆောင်နိုင်ပါသည်။
           </p>
         </div>
       </div>
@@ -75,53 +152,88 @@
     <!-- Success Modal -->
     <div id="successModal" class="modal">
       <div class="modal-content">
-        <h3 style="color: var(--green); margin-bottom: 1rem;">✅ စာရင်းသွင်းခြင်း အောင်မြင်ပါသည်</h3>
-        <p>သင်သည် ယာဉ်မောင်းအဖြစ် အတည်ပြုပြီးဖြစ်ပါသည်။ ယခုခရီးစဉ်များ စတင်ကမ်းလှမ်းနိုင်ပါပြီ။</p>
+        <h3 style="color: var(--green); margin-bottom: 1rem">
+          ✅ စာရင်းသွင်းခြင်း အောင်မြင်ပါသည်
+        </h3>
+        <p>
+          သင်သည် ယာဉ်မောင်းအဖြစ် အတည်ပြုပြီးဖြစ်ပါသည်။ ယခုခရီးစဉ်များ
+          စတင်ကမ်းလှမ်းနိုင်ပါပြီ။
+        </p>
         <div class="modal-actions">
-          <button onclick="redirectToOffer()" class="btn-primary" style="width: 100%;">ခရီးစဉ်ကမ်းလှမ်းမည်</button>
+          <button
+            onclick="redirectToOffer()"
+            class="btn-primary"
+            style="width: 100%"
+          >
+            ခရီးစဉ်ကမ်းလှမ်းမည်
+          </button>
         </div>
       </div>
     </div>
     <script type="module">
-      import { requireAuth, getCurrentUser, logout } from '../js/auth.js';
-      import { db } from '../js/database.js';
-      if (!requireAuth()) { /* redirect handled */ } else {
-      const user = getCurrentUser();
-      // Check if already a driver
-      const existingDriver = db.getDriverByUserId(user.id);
-      if (existingDriver) {
-        alert('သင်သည် ယာဉ်မောင်းအဖြစ် စာရင်းသွင်းပြီးဖြစ်ပါသည်။');
-        window.location.href = 'offer-ride.html';
-      }
-      document.getElementById('driverRegisterForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const carModel = document.getElementById('carModel').value;
-        const carPlate = document.getElementById('carPlate').value;
-        const licenseNumber = document.getElementById('licenseNumber').value;
-        const carColor = document.getElementById('carColor').value;
-        const carYear = document.getElementById('carYear').value;
-        const driverData = {
-          userId: user.id,
-          userName: user.name,
-          carModel: carModel,
-          carPlate: carPlate,
-          licenseNumber: licenseNumber,
-          carColor: carColor,
-          carYear: carYear
-        };
-        const newDriver = db.registerDriver(driverData);
-        if (newDriver) {
-          document.getElementById('successModal').style.display = 'flex';
+      import { requireAuth, getCurrentUser, logout } from "../js/auth.js";
+      import { db } from "../js/database.js";
+      if (!requireAuth()) {
+        /* redirect handled */
+      } else {
+        const user = getCurrentUser();
+        // Check if already a driver
+        const existingDriver = db.getDriverByUserId(user.id);
+        if (existingDriver) {
+          alert("သင်သည် ယာဉ်မောင်းအဖြစ် စာရင်းသွင်းပြီးဖြစ်ပါသည်။");
+          window.location.href = "offer-ride.html";
         }
-      });
-      window.redirectToOffer = function() {
-        window.location.href = 'offer-ride.html';
-      };
-      document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        logout();
-      });
+        document
+          .getElementById("driverRegisterForm")
+          .addEventListener("submit", (e) => {
+            e.preventDefault();
+            const carModel = document.getElementById("carModel").value;
+            const carPlate = document.getElementById("carPlate").value;
+            const licenseNumber =
+              document.getElementById("licenseNumber").value;
+            const carColor = document.getElementById("carColor").value;
+            const carYear = document.getElementById("carYear").value;
+            const driverData = {
+              userId: user.id,
+              userName: user.name,
+              carModel: carModel,
+              carPlate: carPlate,
+              licenseNumber: licenseNumber,
+              carColor: carColor,
+              carYear: carYear,
+            };
+            const newDriver = db.registerDriver(driverData);
+            if (newDriver) {
+              document.getElementById("successModal").style.display = "flex";
+            }
+          });
+        window.redirectToOffer = function () {
+          window.location.href = "offer-ride.html";
+        };
+        document.getElementById("logoutBtn")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          logout();
+        });
       } // end auth guard
+    </script>
+    <script>
+      // Mobile hamburger menu toggle
+      (function() {
+        const btn = document.getElementById('mobileMenuBtn');
+        const nav = document.querySelector('.nav-links');
+        if (btn && nav) {
+          btn.addEventListener('click', function() {
+            nav.classList.toggle('active');
+            btn.classList.toggle('active');
+          });
+          nav.querySelectorAll('a').forEach(function(link) {
+            link.addEventListener('click', function() {
+              nav.classList.remove('active');
+              btn.classList.remove('active');
+            });
+          });
+        }
+      })();
     </script>
   </body>
 </html>

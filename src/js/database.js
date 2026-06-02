@@ -1,264 +1,675 @@
-// Database Manager - Handles all localStorage operations
+// database.js - LocalStorage & Gemini AI Route Matcher Engine
+
 class DatabaseManager {
   constructor() {
     this.initDatabase();
+    // ⚠️ Gemini API Key — Replace with your valid key (starts with AIzaSy...)
+    this.apiKey = "AIzaSyAQ-Ab8RN6ICmmw0YVmfI0xeyC78lLvzCO";
   }
+
   initDatabase() {
-    if (!localStorage.getItem('smartride_users')) {
-      // Sample data for demo
+    if (!localStorage.getItem("smartride_users")) {
+      // 📝 Sample Users JSON Data — Passengers & Drivers in Yangon
       const sampleUsers = [
         {
-          id: this.generateId(),
+          id: "u-1",
           name: "Demo Passenger",
           email: "passenger@demo.com",
           password: "123456",
           phone: "09123456789",
           balance: 50000,
           userType: "passenger",
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         },
         {
-          id: this.generateId(),
-          name: "Demo Driver", 
+          id: "u-2",
+          name: "ဦးလှမောင်",
           email: "driver@demo.com",
           password: "123456",
           phone: "09987654321",
           balance: 150000,
           userType: "driver",
-          createdAt: new Date().toISOString()
-        }
+          carModel: "Toyota Probox",
+          carPlate: "YGN 3Q/1122",
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: "u-3",
+          name: "ကိုကျော်စွာ",
+          email: "kyawswa@smartride.mm",
+          password: "123456",
+          phone: "09456789123",
+          balance: 80000,
+          userType: "driver",
+          carModel: "Honda Shuttle",
+          carPlate: "YGN 2P/5566",
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: "u-4",
+          name: "ဒေါ်အေးအေး",
+          email: "ayeaye@smartride.mm",
+          password: "123456",
+          phone: "09321654987",
+          balance: 120000,
+          userType: "driver",
+          carModel: "Suzuki Ertiga",
+          carPlate: "YGN 5R/9988",
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: "u-5",
+          name: "မောင်ဇော်ဇော်",
+          email: "zawzaw@smartride.com",
+          password: "123456",
+          phone: "09789456123",
+          balance: 35000,
+          userType: "passenger",
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: "u-6",
+          name: "မမေဇင်",
+          email: "maysin@smartride.mm",
+          password: "123456",
+          phone: "09654321789",
+          balance: 42000,
+          userType: "passenger",
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: "u-7",
+          name: "ကိုသန့်ဇင်",
+          email: "thantzin@smartride.mm",
+          password: "123456",
+          phone: "09112233445",
+          balance: 60000,
+          userType: "passenger",
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: "u-8",
+          name: "ကိုမင်းမင်း",
+          email: "minmin@smartride.mm",
+          password: "123456",
+          phone: "09556677889",
+          balance: 95000,
+          userType: "driver",
+          carModel: "Toyota Aqua",
+          carPlate: "YGN 7T/3344",
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: "u-9",
+          name: "မခင်ခင်",
+          email: "khinkhin@smartride.mm",
+          password: "123456",
+          phone: "09887766554",
+          balance: 28000,
+          userType: "passenger",
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: "u-10",
+          name: "ဦးထွန်းထွန်း",
+          email: "htunhtun@smartride.mm",
+          password: "123456",
+          phone: "09334455667",
+          balance: 110000,
+          userType: "driver",
+          carModel: "Honda Fit",
+          carPlate: "YGN 1M/7788",
+          createdAt: new Date().toISOString(),
+        },
       ];
-      localStorage.setItem('smartride_users', JSON.stringify(sampleUsers));
-      localStorage.setItem('smartride_drivers', JSON.stringify([]));
-      localStorage.setItem('smartride_rides', JSON.stringify([]));
-      localStorage.setItem('smartride_bookings', JSON.stringify([]));
-      localStorage.setItem('smartride_transactions', JSON.stringify([]));
+
+      // Helper to create timestamps
+      const tomorrow = new Date(Date.now() + 86400000);
+      const setTime = (hours, minutes) => {
+        const d = new Date(tomorrow);
+        d.setHours(hours, minutes, 0, 0);
+        return d.toISOString();
+      };
+
+      // 🚗 Sample Rides — Covering major Yangon routes
+      const sampleRides = [
+        {
+          id: "ride-101",
+          driverId: "u-2",
+          driverName: "ဦးလှမောင်",
+          startLocation: "Thanlyin (သန်လျင်)",
+          endLocation: "Bahan (ဗဟန်း)",
+          departureTime: setTime(8, 30),
+          availableSeats: 4,
+          bookedSeats: 1,
+          price: 7500,
+          carModel: "Toyota Probox",
+          carPlate: "YGN 3Q/1122",
+          passengers: [
+            { id: "u-5", name: "မောင်ဇော်ဇော်", pickup: "Thanlyin Bridge" },
+          ],
+        },
+        {
+          id: "ride-102",
+          driverId: "u-3",
+          driverName: "ကိုကျော်စွာ",
+          startLocation: "Hledan (လှည်းတန်း)",
+          endLocation: "Sule (ဆူးလေ)",
+          departureTime: setTime(9, 0),
+          availableSeats: 3,
+          bookedSeats: 2,
+          price: 6000,
+          carModel: "Honda Shuttle",
+          carPlate: "YGN 2P/5566",
+          passengers: [
+            { id: "u-6", name: "မမေဇင်", pickup: "Hledan Center" },
+            { id: "u-7", name: "ကိုသန့်ဇင်", pickup: "Hledan Junction" },
+          ],
+        },
+        {
+          id: "ride-103",
+          driverId: "u-4",
+          driverName: "ဒေါ်အေးအေး",
+          startLocation: "Thanlyin Star City",
+          endLocation: "Hledan Centre",
+          departureTime: setTime(7, 45),
+          availableSeats: 4,
+          bookedSeats: 0,
+          price: 8000,
+          carModel: "Suzuki Ertiga",
+          carPlate: "YGN 5R/9988",
+          passengers: [],
+        },
+        {
+          id: "ride-104",
+          driverId: "u-8",
+          driverName: "ကိုမင်းမင်း",
+          startLocation: "North Dagon (မြောက်ဒဂုံ)",
+          endLocation: "Botahtaung (ဗိုလ်တထောင်)",
+          departureTime: setTime(8, 0),
+          availableSeats: 3,
+          bookedSeats: 1,
+          price: 7000,
+          carModel: "Toyota Aqua",
+          carPlate: "YGN 7T/3344",
+          passengers: [{ id: "u-9", name: "မခင်ခင်", pickup: "Dagon Center" }],
+        },
+        {
+          id: "ride-105",
+          driverId: "u-10",
+          driverName: "ဦးထွန်းထွန်း",
+          startLocation: "Insein (အင်းစိန်)",
+          endLocation: "Kamayut (ကမာရွတ်)",
+          departureTime: setTime(8, 15),
+          availableSeats: 4,
+          bookedSeats: 2,
+          price: 5500,
+          carModel: "Honda Fit",
+          carPlate: "YGN 1M/7788",
+          passengers: [
+            { id: "u-5", name: "မောင်ဇော်ဇော်", pickup: "Insein Road" },
+            { id: "u-6", name: "မမေဇင်", pickup: "Insein Station" },
+          ],
+        },
+        {
+          id: "ride-106",
+          driverId: "u-2",
+          driverName: "ဦးလှမောင်",
+          startLocation: "South Okkalapa (တောင်ဥက္ကလာပ)",
+          endLocation: "Sanchaung (စမ်းချောင်း)",
+          departureTime: setTime(9, 30),
+          availableSeats: 4,
+          bookedSeats: 1,
+          price: 6500,
+          carModel: "Toyota Probox",
+          carPlate: "YGN 3Q/1122",
+          passengers: [
+            { id: "u-7", name: "ကိုသန့်ဇင်", pickup: "South Okkalapa Market" },
+          ],
+        },
+        {
+          id: "ride-107",
+          driverId: "u-3",
+          driverName: "ကိုကျော်စွာ",
+          startLocation: "Mingalardon (မင်္ဂလာဒုံ)",
+          endLocation: "Downtown (ဗဟန်း/လမ်းမတော်)",
+          departureTime: setTime(7, 30),
+          availableSeats: 3,
+          bookedSeats: 0,
+          price: 9000,
+          carModel: "Honda Shuttle",
+          carPlate: "YGN 2P/5566",
+          passengers: [],
+        },
+        {
+          id: "ride-108",
+          driverId: "u-4",
+          driverName: "ဒေါ်အေးအေး",
+          startLocation: "Thaketa (သာကေတ)",
+          endLocation: "Tamwe (တာမွေ)",
+          departureTime: setTime(8, 45),
+          availableSeats: 4,
+          bookedSeats: 1,
+          price: 5000,
+          carModel: "Suzuki Ertiga",
+          carPlate: "YGN 5R/9988",
+          passengers: [
+            { id: "u-9", name: "မခင်ခင်", pickup: "Thaketa Station" },
+          ],
+        },
+        {
+          id: "ride-109",
+          driverId: "u-8",
+          driverName: "ကိုမင်းမင်း",
+          startLocation: "Dagon Myothit (ဒဂုံမြို့သစ်)",
+          endLocation: "Yankin (ရန်ကင်း)",
+          departureTime: setTime(8, 30),
+          availableSeats: 3,
+          bookedSeats: 2,
+          price: 6000,
+          carModel: "Toyota Aqua",
+          carPlate: "YGN 7T/3344",
+          passengers: [
+            { id: "u-5", name: "မောင်ဇော်ဇော်", pickup: "Dagon Seikkan" },
+            { id: "u-6", name: "မမေဇင်", pickup: "Dagon Bus Stop" },
+          ],
+        },
+        {
+          id: "ride-110",
+          driverId: "u-10",
+          driverName: "ဦးထွန်းထွန်း",
+          startLocation: "Shwepyithar (ရွှေပြည်သာ)",
+          endLocation: "Sule (ဆူးလေ)",
+          departureTime: setTime(7, 0),
+          availableSeats: 4,
+          bookedSeats: 1,
+          price: 10000,
+          carModel: "Honda Fit",
+          carPlate: "YGN 1M/7788",
+          passengers: [
+            { id: "u-7", name: "ကိုသန့်ဇင်", pickup: "Shwepyithar Junction" },
+          ],
+        },
+      ];
+
+      localStorage.setItem("smartride_users", JSON.stringify(sampleUsers));
+      localStorage.setItem("smartride_rides", JSON.stringify(sampleRides));
+      localStorage.setItem("smartride_bookings", JSON.stringify([]));
+      localStorage.setItem("smartride_transactions", JSON.stringify([]));
     }
   }
-  generateId() {
-    return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-  }
-  // User methods
+
   getUsers() {
-    return JSON.parse(localStorage.getItem('smartride_users')) || [];
+    return JSON.parse(localStorage.getItem("smartride_users")) || [];
   }
-  saveUsers(users) {
-    localStorage.setItem('smartride_users', JSON.stringify(users));
+  getRides() {
+    return JSON.parse(localStorage.getItem("smartride_rides")) || [];
   }
-  registerUser(userData) {
-    const users = this.getUsers();
-    const existingUser = users.find(u => u.email === userData.email);
-    if (existingUser) throw new Error('Email already exists');
-    const newUser = {
-      id: this.generateId(),
-      ...userData,
-      balance: 0,
-      userType: 'passenger',
-      createdAt: new Date().toISOString()
-    };
-    users.push(newUser);
-    this.saveUsers(users);
-    return newUser;
+  getBookings() {
+    return JSON.parse(localStorage.getItem("smartride_bookings")) || [];
   }
+  getTransactions() {
+    return JSON.parse(localStorage.getItem("smartride_transactions")) || [];
+  }
+
+  getCurrentUser() {
+    return JSON.parse(localStorage.getItem("smartride_currentUser"));
+  }
+
   loginUser(email, password) {
     const users = this.getUsers();
-    const user = users.find(u => u.email === email && u.password === password);
-    if (!user) throw new Error('Invalid credentials');
-    localStorage.setItem('smartride_currentUser', JSON.stringify(user));
+    const user = users.find(
+      (u) => u.email === email && u.password === password,
+    );
+    if (!user)
+      throw new Error("အီးမေးလ် သို့မဟုတ် ပတ်စ်ဝေါ့ဒ် မှားယွင်းနေပါသည်။");
+    localStorage.setItem("smartride_currentUser", JSON.stringify(user));
     return user;
   }
+
   logoutUser() {
-    localStorage.removeItem('smartride_currentUser');
+    localStorage.removeItem("smartride_currentUser");
   }
-  getCurrentUser() {
-    return JSON.parse(localStorage.getItem('smartride_currentUser'));
-  }
-  updateUser(updatedUser) {
-    const users = this.getUsers();
-    const index = users.findIndex(u => u.id === updatedUser.id);
-    if (index !== -1) {
-      users[index] = updatedUser;
-      this.saveUsers(users);
-      localStorage.setItem('smartride_currentUser', JSON.stringify(updatedUser));
-    }
-  }
-  // Driver methods
-  getDrivers() {
-    return JSON.parse(localStorage.getItem('smartride_drivers')) || [];
-  }
-  saveDrivers(drivers) {
-    localStorage.setItem('smartride_drivers', JSON.stringify(drivers));
-  }
-  registerDriver(driverData) {
-    const drivers = this.getDrivers();
-    const newDriver = {
-      id: this.generateId(),
-      ...driverData,
-      isVerified: true,
-      rating: 5.0,
-      totalRides: 0,
-      createdAt: new Date().toISOString()
-    };
-    drivers.push(newDriver);
-    this.saveDrivers(drivers);
-    // Update user type
-    const currentUser = this.getCurrentUser();
-    if (currentUser) {
-      currentUser.userType = 'driver';
-      currentUser.driverId = newDriver.id;
-      this.updateUser(currentUser);
-    }
-    return newDriver;
-  }
-  getDriverByUserId(userId) {
-    const drivers = this.getDrivers();
-    return drivers.find(d => d.userId === userId);
-  }
-  // Ride methods
-  getRides() {
-    return JSON.parse(localStorage.getItem('smartride_rides')) || [];
-  }
-  saveRides(rides) {
-    localStorage.setItem('smartride_rides', JSON.stringify(rides));
-  }
+
   offerRide(rideData) {
     const rides = this.getRides();
     const newRide = {
-      id: this.generateId(),
+      id: "ride-" + Math.random().toString(36).substr(2, 9),
       ...rideData,
-      status: 'scheduled',
       bookedSeats: 0,
       passengers: [],
-      createdAt: new Date().toISOString()
     };
     rides.push(newRide);
-    this.saveRides(rides);
+    localStorage.setItem("smartride_rides", JSON.stringify(rides));
     return newRide;
   }
-  getRidesByDriver(driverId) {
+
+  // 🤖 🧠 Gemini AI Engine: Compares User Inputs & Sample Data via JSON
+  async searchRidesWithGemini(startLocation, endLocation, departureTime) {
+    const availableRides = this.getRides();
+
+    const userInputJSON = {
+      passengerRequest: {
+        startLocation: startLocation,
+        endLocation: endLocation,
+        departureTime: departureTime,
+      },
+    };
+
+    const databaseJSON = {
+      availableDriverRides: availableRides,
+    };
+
+    const prompt = `
+You are the core AI Route Matching Engine for Innovix SmartRide carpooling app in Yangon, Myanmar.
+
+TASK:
+Compare the passenger request with the available driver rides database.
+Find rides where the start and end locations are geographically close or on the same route.
+For example: "သန်လျင်" matches "Thanlyin", "Thanlyin Star City"; "ဗဟန်း" matches "Bahan"; "ဆူးလေ" matches "Sule", "Downtown".
+Consider departure time proximity (within 2 hours is acceptable).
+
+INPUT DATA (JSON):
+1. Passenger Request: ${JSON.stringify(userInputJSON)}
+2. Available Driver Rides DB: ${JSON.stringify(databaseJSON)}
+
+OUTPUT FORMAT:
+Return ONLY a JSON array of matching rides. Each ride object MUST have these exact fields:
+- "id": the ride id from database
+- "driverId": the driver's user id
+- "driverName": driver name (Myanmar/English)
+- "startLocation": pickup area
+- "endLocation": destination area
+- "departureTime": ISO 8601 timestamp
+- "availableSeats": total seats
+- "bookedSeats": currently booked seats count
+- "price": original price in MMK
+- "carModel": vehicle model
+- "carPlate": license plate
+- "passengers": array of existing passenger objects [{id, name, pickup}]
+- "matchScore": integer 0-100 representing route match quality
+- "discountedPrice": price after carpool discount (split among passengers + new user)
+- "savings": amount saved vs original price
+
+Sort by matchScore descending. Return empty array [] if no matches found.
+Do NOT include any text outside the JSON array.
+    `;
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+            },
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          `API Error ${response.status}: ${errorData?.error?.message || response.statusText}`,
+        );
+      }
+
+      const data = await response.json();
+
+      if (!data.candidates || data.candidates.length === 0) {
+        throw new Error(
+          "Gemini API က အဖြေပြန်မပေးပါသဖြင့် Fallback ကို သုံးပါမည်။",
+        );
+      }
+
+      let rawText = data.candidates[0].content.parts[0].text.trim();
+
+      // Extract JSON array from response
+      const jsonStart = rawText.indexOf("[");
+      const jsonEnd = rawText.lastIndexOf("]") + 1;
+      if (jsonStart !== -1 && jsonEnd > jsonStart) {
+        rawText = rawText.substring(jsonStart, jsonEnd);
+      }
+
+      console.log("✅ Gemini AI Response:", rawText);
+      const results = JSON.parse(rawText);
+
+      // Ensure each result has the required fields with defaults
+      return results.map((ride) => ({
+        id: ride.id || "ride-unknown",
+        driverId: ride.driverId || "",
+        driverName: ride.driverName || "Unknown Driver",
+        startLocation: ride.startLocation || "",
+        endLocation: ride.endLocation || "",
+        departureTime: ride.departureTime || new Date().toISOString(),
+        availableSeats: ride.availableSeats || 4,
+        bookedSeats: ride.bookedSeats || 0,
+        price: ride.price || 7500,
+        carModel: ride.carModel || "Unknown",
+        carPlate: ride.carPlate || "N/A",
+        passengers: ride.passengers || [],
+        matchScore: ride.matchScore || 70,
+        discountedPrice:
+          ride.discountedPrice || Math.round((ride.price || 7500) * 0.5),
+        savings: ride.savings || Math.round((ride.price || 7500) * 0.5),
+      }));
+    } catch (error) {
+      console.warn(
+        "⚠️ Gemini Engine failed, using local backup matcher:",
+        error,
+      );
+
+      // 🛡️ Local Backup Matching — text-based location comparison
+      return this._fallbackMatch(
+        startLocation,
+        endLocation,
+        departureTime,
+        availableRides,
+      );
+    }
+  }
+
+  // 🛡️ Fallback local matching when Gemini API is unavailable
+  _fallbackMatch(startLocation, endLocation, departureTime, availableRides) {
+    const normalize = (str) =>
+      str
+        .toLowerCase()
+        .replace(/[\(\)]/g, "")
+        .trim();
+    const startNorm = normalize(startLocation);
+    const endNorm = normalize(endLocation);
+
+    // Yangon area aliases for smarter local matching
+    const areaAliases = {
+      thanlyin: ["သန်လျင်", "thanlyin", "star city", "thanlyin star city"],
+      bahan: ["ဗဟန်း", "bahan"],
+      sule: ["ဆူးလေ", "sule", "downtown"],
+      hledan: ["လှည်းတန်း", "hledan", "hledan centre", "hledan center"],
+      insein: ["အင်းစိန်", "insein"],
+      dagon: [
+        "ဒဂုံ",
+        "dagon",
+        "north dagon",
+        "မြောက်ဒဂုံ",
+        "dagon myothit",
+        "ဒဂုံမြို့သစ်",
+      ],
+      kamayut: ["ကမာရွတ်", "kamayut"],
+      sanchaung: ["စမ်းချောင်း", "sanchaung"],
+      tamwe: ["တာမွေ", "tamwe"],
+      yankin: ["ရန်ကင်း", "yankin"],
+      botahtaung: ["ဗိုလ်တထောင်", "botahtaung"],
+      thaketa: ["သာကေတ", "thaketa"],
+      mingalardon: ["မင်္ဂလာဒုံ", "mingalardon"],
+      shwepyithar: ["ရွှေပြည်သာ", "shwepyithar"],
+      okkalapa: ["ဥက္ကလာပ", "okkalapa", "south okkalapa", "တောင်ဥက္ကလာပ"],
+      latha: ["လမ်းမတော်", "latha", "lanmadaw"],
+    };
+
+    const findAreaKey = (text) => {
+      const t = normalize(text);
+      for (const [key, aliases] of Object.entries(areaAliases)) {
+        if (aliases.some((alias) => t.includes(alias) || alias.includes(t))) {
+          return key;
+        }
+      }
+      return null;
+    };
+
+    const startArea = findAreaKey(startLocation);
+    const endArea = findAreaKey(endLocation);
+
+    const scored = availableRides
+      .map((ride) => {
+        let score = 0;
+        const rideStartArea = findAreaKey(ride.startLocation);
+        const rideEndArea = findAreaKey(ride.endLocation);
+
+        // Start location matching
+        if (startArea && rideStartArea && startArea === rideStartArea) {
+          score += 45;
+        } else if (
+          normalize(ride.startLocation).includes(startNorm) ||
+          startNorm.includes(normalize(ride.startLocation))
+        ) {
+          score += 35;
+        }
+
+        // End location matching
+        if (endArea && rideEndArea && endArea === rideEndArea) {
+          score += 45;
+        } else if (
+          normalize(ride.endLocation).includes(endNorm) ||
+          endNorm.includes(normalize(ride.endLocation))
+        ) {
+          score += 35;
+        }
+
+        // Time proximity bonus
+        if (departureTime) {
+          const userTime = new Date(departureTime).getTime();
+          const rideTime = new Date(ride.departureTime).getTime();
+          const diffMin = Math.abs(userTime - rideTime) / (1000 * 60);
+          if (diffMin <= 30) score += 10;
+          else if (diffMin <= 60) score += 5;
+        }
+
+        return { ...ride, matchScore: Math.min(score, 98) };
+      })
+      .filter((r) => r.matchScore > 20)
+      .sort((a, b) => b.matchScore - a.matchScore);
+
+    return scored.map((r) => {
+      const totalPassengers = (r.bookedSeats || 0) + 1 + 1; // existing + new + driver
+      const discountedPrice = Math.round(r.price / totalPassengers);
+      return {
+        ...r,
+        discountedPrice,
+        savings: r.price - discountedPrice,
+      };
+    });
+  }
+
+  bookRide(rideId, passengerId, totalPrice) {
     const rides = this.getRides();
-    return rides.filter(r => r.driverId === driverId);
-  }
-  getRidesByPassenger(passengerId) {
-    const bookings = this.getBookingsByPassenger(passengerId);
-    const rides = this.getRides();
-    return bookings.map(booking => rides.find(r => r.id === booking.rideId)).filter(r => r);
-  }
-  // Booking methods
-  getBookings() {
-    return JSON.parse(localStorage.getItem('smartride_bookings')) || [];
-  }
-  saveBookings(bookings) {
-    localStorage.setItem('smartride_bookings', JSON.stringify(bookings));
-  }
-  createBooking(rideId, passengerId, seats, totalPrice) {
+    const rideIndex = rides.findIndex((r) => r.id === rideId);
+    if (rideIndex === -1) return false;
+
+    const users = this.getUsers();
+    const passengerIndex = users.findIndex((u) => u.id === passengerId);
+    if (passengerIndex === -1) return false;
+
+    if (users[passengerIndex].balance < totalPrice) {
+      throw new Error(
+        "လက်ကျန်ငွေ မလုံလောက်ပါသဖြင့် ကျေးဇူးပြု၍ Wallet တွင် ငွေ အရင်ဖြည့်ပေးပါ။",
+      );
+    }
+
+    rides[rideIndex].bookedSeats = (rides[rideIndex].bookedSeats || 0) + 1;
+
+    // Add passenger to ride's passenger list
+    if (!rides[rideIndex].passengers) rides[rideIndex].passengers = [];
+    rides[rideIndex].passengers.push({
+      id: users[passengerIndex].id,
+      name: users[passengerIndex].name,
+      pickup: "Requested via app",
+    });
+
+    users[passengerIndex].balance -= totalPrice;
+
     const bookings = this.getBookings();
     const newBooking = {
-      id: this.generateId(),
+      id: "book-" + Math.random().toString(36).substr(2, 9),
       rideId,
       passengerId,
-      seats,
       totalPrice,
-      status: 'confirmed',
-      bookingTime: new Date().toISOString()
+      status: "confirmed",
+      bookingTime: new Date().toISOString(),
     };
     bookings.push(newBooking);
-    this.saveBookings(bookings);
-    // Update ride booked seats
-    const rides = this.getRides();
-    const ride = rides.find(r => r.id === rideId);
-    if (ride) {
-      ride.bookedSeats = (ride.bookedSeats || 0) + seats;
-      this.saveRides(rides);
-    }
-    // Deduct from wallet
-    this.updateBalance(passengerId, -totalPrice, `Ride booking: ${rideId}`);
-    return newBooking;
-  }
-  getBookingsByPassenger(passengerId) {
-    const bookings = this.getBookings();
-    return bookings.filter(b => b.passengerId === passengerId);
-  }
-  // Transaction methods
-  getTransactions() {
-    return JSON.parse(localStorage.getItem('smartride_transactions')) || [];
-  }
-  saveTransactions(transactions) {
-    localStorage.setItem('smartride_transactions', JSON.stringify(transactions));
-  }
-  updateBalance(userId, amount, description) {
-    const users = this.getUsers();
-    const userIndex = users.findIndex(u => u.id === userId);
-    if (userIndex === -1) throw new Error('User not found');
-    users[userIndex].balance += amount;
-    this.saveUsers(users);
-    // Record transaction
+
     const transactions = this.getTransactions();
     transactions.push({
-      id: this.generateId(),
-      userId: userId,
-      amount: amount,
-      type: amount > 0 ? 'credit' : 'debit',
-      description: description,
-      balance: users[userIndex].balance,
-      createdAt: new Date().toISOString()
+      id: "tx-" + Math.random().toString(36).substr(2, 9),
+      userId: passengerId,
+      amount: -totalPrice,
+      type: "debit",
+      description: `ခရီးစဉ်လမ်းကြောင်းတူစီးနင်းခကျသင့်ငွေ`,
+      createdAt: new Date().toISOString(),
     });
-    this.saveTransactions(transactions);
-    // Update current user if needed
-    const currentUser = this.getCurrentUser();
-    if (currentUser && currentUser.id === userId) {
-      currentUser.balance = users[userIndex].balance;
-      localStorage.setItem('smartride_currentUser', JSON.stringify(currentUser));
-    }
-    return users[userIndex].balance;
+
+    localStorage.setItem("smartride_rides", JSON.stringify(rides));
+    localStorage.setItem("smartride_users", JSON.stringify(users));
+    localStorage.setItem("smartride_bookings", JSON.stringify(bookings));
+    localStorage.setItem(
+      "smartride_transactions",
+      JSON.stringify(transactions),
+    );
+    localStorage.setItem(
+      "smartride_currentUser",
+      JSON.stringify(users[passengerIndex]),
+    );
+    return true;
+  }
+
+  updateBalance(userId, amount, description) {
+    const users = this.getUsers();
+    const index = users.findIndex((u) => u.id === userId);
+    if (index === -1) return 0;
+
+    users[index].balance = (users[index].balance || 0) + amount;
+
+    const transactions = this.getTransactions();
+    transactions.push({
+      id: "tx-" + Math.random().toString(36).substr(2, 9),
+      userId,
+      amount,
+      type: amount > 0 ? "credit" : "debit",
+      description,
+      createdAt: new Date().toISOString(),
+    });
+
+    localStorage.setItem("smartride_users", JSON.stringify(users));
+    localStorage.setItem(
+      "smartride_transactions",
+      JSON.stringify(transactions),
+    );
+    localStorage.setItem("smartride_currentUser", JSON.stringify(users[index]));
+    return users[index].balance;
+  }
+
+  getBookingsByPassenger(passengerId) {
+    return this.getBookings().filter((b) => b.passengerId === passengerId);
   }
   getTransactionsByUser(userId) {
-    const transactions = this.getTransactions();
-    return transactions.filter(t => t.userId === userId).reverse();
+    return this.getTransactions().filter((t) => t.userId === userId);
   }
-  // AI Matching Algorithm
-  findMatchingRides(startLocation, endLocation, departureTime) {
-    const rides = this.getRides();
-    const currentUser = this.getCurrentUser();
-    const currentDriverId = currentUser?.driverId;
-    // Filter available rides
-    const availableRides = rides.filter(ride => {
-      return ride.status === 'scheduled' && 
-             ride.bookedSeats < 4 &&
-             ride.driverId !== currentDriverId;
-    });
-    // Score each ride for matching
-    const scoredRides = availableRides.map(ride => {
-      let score = 0;
-      // Simple location matching (case insensitive)
-      if (ride.startLocation?.toLowerCase().includes(startLocation.toLowerCase())) score += 40;
-      if (ride.endLocation?.toLowerCase().includes(endLocation.toLowerCase())) score += 40;
-      // Time match (within 1 hour)
-      if (ride.departureTime) {
-        const rideHour = new Date(ride.departureTime).getHours();
-        const requestHour = new Date(departureTime).getHours();
-        if (Math.abs(rideHour - requestHour) <= 1) score += 20;
-      }
-      return { ride, score };
-    });
-    // Sort by score and return top matches
-    scoredRides.sort((a, b) => b.score - a.score);
-    // Calculate dynamic pricing
-    return scoredRides.slice(0, 3).map(match => {
-      const basePrice = 7500;
-      const currentPassengers = match.ride.bookedSeats || 0;
-      const totalPassengers = currentPassengers + 1;
-      const discountedPrice = Math.floor(basePrice / (totalPassengers + 1));
-      return {
-        ...match.ride,
-        matchScore: match.score,
-        originalPrice: basePrice,
-        discountedPrice: discountedPrice,
-        savings: basePrice - discountedPrice,
-        totalPassengers: totalPassengers
-      };
-    }).filter(m => m.matchScore > 0);
+  getRidesByDriver(driverId) {
+    return this.getRides().filter((r) => r.driverId === driverId);
   }
 }
-// Export singleton instance
+
 export const db = new DatabaseManager();

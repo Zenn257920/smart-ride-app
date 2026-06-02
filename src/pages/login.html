@@ -81,5 +81,24 @@
         }
       });
     </script>
+    <script>
+      // Mobile hamburger menu toggle
+      (function() {
+        const btn = document.getElementById('mobileMenuBtn');
+        const nav = document.querySelector('.nav-links');
+        if (btn && nav) {
+          btn.addEventListener('click', function() {
+            nav.classList.toggle('active');
+            btn.classList.toggle('active');
+          });
+          nav.querySelectorAll('a').forEach(function(link) {
+            link.addEventListener('click', function() {
+              nav.classList.remove('active');
+              btn.classList.remove('active');
+            });
+          });
+        }
+      })();
+    </script>
   </body>
 </html>

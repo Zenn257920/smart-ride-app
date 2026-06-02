@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ကားမောင်းမည် - Innovix SmartRide</title>
     <link rel="stylesheet" href="/src/style.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   </head>
   <body>
@@ -16,7 +19,14 @@
       <div class="nav-inner">
         <a href="/" class="logo">
           <div class="logo-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2"
+            >
               <rect x="1" y="3" width="15" height="13" rx="2" />
               <path d="M16 8h4l3 4v4h-7V8z" />
               <circle cx="5.5" cy="18.5" r="2.5" />
@@ -29,377 +39,369 @@
           </div>
         </a>
         <div class="nav-links">
+          <a href="driver-register.html" class="nav-link">Driver Register</a>
           <a href="find-ride.html" class="nav-link">ကားစီးမည်</a>
           <a href="offer-ride.html" class="nav-link nav-cta">ကားမောင်းမည်</a>
           <a href="dashboard.html" class="nav-link">Dashboard</a>
           <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
         </div>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
       </div>
     </nav>
-    <div class="container" style="padding: 2rem;">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <div class="container" style="padding: 2rem">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem">
         <!-- Offer Form -->
         <div class="glass-card animate-fade-in-up">
-          <h2 style="font-family: var(--font-heading); color: var(--green-dark); margin-bottom: 1.5rem;">🚙 ခရီးစဉ်ကမ်းလှမ်းမည်</h2>
-          <div id="driverCheck" style="margin-bottom: 1rem;"></div>
+          <h2
+            style="
+              font-family: var(--font-heading);
+              color: var(--green-dark);
+              margin-bottom: 1.5rem;
+            "
+          >
+            🚙 ခရီးစဉ်ကမ်းလှမ်းမည်
+          </h2>
+          <div id="driverCheck" style="margin-bottom: 1rem"></div>
           <form id="offerForm">
             <div class="input-group">
               <label class="input-label">ထွက်ခွာမည့်နေရာ</label>
-              <input type="text" id="startLocation" class="input-field" placeholder="e.g. သံလျင်, လှိုင်, ဒဂုံ" required>
+              <input
+                type="text"
+                id="startLocation"
+                class="input-field"
+                placeholder="e.g. သံလျင်, လှိုင်, ဒဂုံ"
+                required
+              />
             </div>
             <div class="input-group">
               <label class="input-label">ဦးတည်ရာ</label>
-              <input type="text" id="endLocation" class="input-field" placeholder="e.g. ဗဟန်း, လမ်းမတော်, ရန်ကင်း" required>
+              <input
+                type="text"
+                id="endLocation"
+                class="input-field"
+                placeholder="e.g. ဗဟန်း, လမ်းမတော်, ရန်ကင်း"
+                required
+              />
             </div>
             <div class="input-group">
               <label class="input-label">ထွက်ခွာမည့်အချိန်</label>
-              <input type="datetime-local" id="departureTime" class="input-field" required>
+              <input
+                type="datetime-local"
+                id="departureTime"
+                class="input-field"
+                required
+              />
             </div>
             <div class="input-group">
               <label class="input-label">ကားမော်ဒယ်</label>
-              <input type="text" id="carModel" class="input-field" placeholder="e.g. Toyota Prius, Honda Fit" required>
+              <input
+                type="text"
+                id="carModel"
+                class="input-field"
+                placeholder="e.g. Toyota Prius, Honda Fit"
+                required
+              />
             </div>
             <div class="input-group">
               <label class="input-label">ကားနံပါတ်</label>
-              <input type="text" id="carPlate" class="input-field" placeholder="e.g. YGN-1234" required>
+              <input
+                type="text"
+                id="carPlate"
+                class="input-field"
+                placeholder="e.g. YGN-1234"
+                required
+              />
             </div>
             <div class="input-group">
-              <label class="input-label">ခရီးသည်အရေအတွက် (အများဆုံး ၄ ဦး)</label>
-              <input type="number" id="availableSeats" class="input-field" min="1" max="4" value="3" required>
+              <label class="input-label"
+                >ခရီးသည်အရေအတွက် (အများဆုံး ၄ ဦး)</label
+              >
+              <input
+                type="number"
+                id="availableSeats"
+                class="input-field"
+                min="1"
+                max="4"
+                value="3"
+                required
+              />
             </div>
-            <button type="submit" class="btn-primary" style="width: 100%;">ခရီးစဉ် ကမ်းလှမ်းမည်</button>
+            <button type="submit" class="btn-primary" style="width: 100%">
+              ခရီးစဉ် ကမ်းလှမ်းမည်
+            </button>
           </form>
         </div>
         <!-- Map -->
         <div class="glass-card animate-fade-in-up animate-delay-2">
-          <h3 style="font-family: var(--font-heading); color: var(--green-dark); margin-bottom: 1rem;">🗺️ လမ်းကြောင်းမြေပုံ</h3>
-          <div id="mapClickHint" style="margin-bottom: 0.75rem; padding: 0.6rem 1rem; border-radius: 10px; background: var(--green-light); color: var(--green-dark); font-size: 0.78rem; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; opacity: 0; transition: all 0.3s ease; transform: translateY(-4px);">
-            <span style="font-size: 1rem;">👆</span>
+          <h3
+            style="
+              font-family: var(--font-heading);
+              color: var(--green-dark);
+              margin-bottom: 1rem;
+            "
+          >
+            🗺️ လမ်းကြောင်းမြေပုံ
+          </h3>
+          <div
+            id="mapClickHint"
+            style="
+              margin-bottom: 0.75rem;
+              padding: 0.6rem 1rem;
+              border-radius: 10px;
+              background: var(--green-light);
+              color: var(--green-dark);
+              font-size: 0.78rem;
+              font-weight: 500;
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              opacity: 0;
+              transition: all 0.3s ease;
+              transform: translateY(-4px);
+            "
+          >
+            <span style="font-size: 1rem">👆</span>
             <span id="mapClickHintText">မြေပုံပေါ်တွင် နှိပ်၍ နေရာရွေးပါ</span>
           </div>
-          <div id="map" class="map-container" style="height: 400px;"></div>
-          <div style="margin-top: 1rem;">
-            <p style="font-size: 0.75rem; color: var(--gray); text-align: center;">
-              💡 နေရာရွေးရန် input ကို နှိပ်ပြီး မြေပုံပေါ်တွင် နေရာရွေးနိုင်ပါတယ်
+          <div id="map" class="map-container" style="height: 400px"></div>
+          <div style="margin-top: 1rem">
+            <p
+              style="font-size: 0.75rem; color: var(--gray); text-align: center"
+            >
+              💡 နေရာရွေးရန် input ကို နှိပ်ပြီး မြေပုံပေါ်တွင်
+              နေရာရွေးနိုင်ပါတယ်
             </p>
           </div>
         </div>
       </div>
       <!-- My Active Rides -->
-      <div id="myRidesSection" class="glass-card animate-fade-in-up animate-delay-3" style="margin-top: 2rem;">
-        <h3 style="font-family: var(--font-heading); color: var(--green-dark); margin-bottom: 1rem;">📋 ကျွန်ုပ်၏ ခရီးစဉ်များ</h3>
+      <div
+        id="myRidesSection"
+        class="glass-card animate-fade-in-up animate-delay-3"
+        style="margin-top: 2rem"
+      >
+        <h3
+          style="
+            font-family: var(--font-heading);
+            color: var(--green-dark);
+            margin-bottom: 1rem;
+          "
+        >
+          📋 ကျွန်ုပ်၏ ခရီးစဉ်များ
+        </h3>
         <div id="myRidesList"></div>
       </div>
     </div>
     <!-- Success Modal -->
     <div id="successModal" class="modal">
       <div class="modal-content">
-        <h3 style="color: var(--green); margin-bottom: 1rem;">✅ ခရီးစဉ် ကမ်းလှမ်းမှု အောင်မြင်ပါသည်</h3>
+        <h3 style="color: var(--green); margin-bottom: 1rem">
+          ✅ ခရီးစဉ် ကမ်းလှမ်းမှု အောင်မြင်ပါသည်
+        </h3>
         <p id="successMessage"></p>
         <div class="modal-actions">
-          <button onclick="closeSuccessModal()" class="btn-primary" style="width: 100%;">ဆက်လုပ်မည်</button>
+          <button
+            onclick="closeSuccessModal()"
+            class="btn-primary"
+            style="width: 100%"
+          >
+            ဆက်လုပ်မည်
+          </button>
         </div>
       </div>
     </div>
     <!-- No Driver Modal -->
     <div id="noDriverModal" class="modal">
       <div class="modal-content">
-        <h3 style="color: var(--amber); margin-bottom: 1rem;">⚠️ ယာဉ်မောင်းအဖြစ် စာရင်းမသွင်းရသေးပါ</h3>
+        <h3 style="color: var(--amber); margin-bottom: 1rem">
+          ⚠️ ယာဉ်မောင်းအဖြစ် စာရင်းမသွင်းရသေးပါ
+        </h3>
         <p>ကားမောင်းရန် ယာဉ်မောင်းအဖြစ် ဦးစွာစာရင်းသွင်းရပါမည်။</p>
         <div class="modal-actions">
-          <button onclick="redirectToDriverRegister()" class="btn-primary">ယာဉ်မောင်းစာရင်းသွင်းမည်</button>
-          <button onclick="closeNoDriverModal()" class="btn-outline">နောက်မှ</button>
+          <button onclick="redirectToDriverRegister()" class="btn-primary">
+            ယာဉ်မောင်းစာရင်းသွင်းမည်
+          </button>
+          <button onclick="closeNoDriverModal()" class="btn-outline">
+            နောက်မှ
+          </button>
         </div>
       </div>
     </div>
     <script type="module">
-      import { requireAuth, getCurrentUser, logout } from '../js/auth.js';
-      import { db } from '../js/database.js';
-      if (!requireAuth()) { 
-        /* redirect handled */ 
+      import { requireAuth, getCurrentUser, logout } from "../js/auth.js";
+      import { db } from "../js/database.js";
+
+      if (!requireAuth()) {
+        // Redirect handled in requireAuth
       } else {
-        let map = null;
-        let startMarker = null;
-        let endMarker = null;
-        let isDriver = false;
-        let driverInfo = null;
-        let focusedInput = null; // Track which input is focused: 'start' or 'end'
         const user = getCurrentUser();
-        isDriver = user.userType === 'driver';
-        driverInfo = db.getDriverByUserId(user.id);
-        const startInput = document.getElementById('startLocation');
-        const endInput = document.getElementById('endLocation');
-        // Track input focus
-        startInput.addEventListener('focus', () => {
-          focusedInput = 'start';
-          showMapClickHint('ထွက်ခွာမည့်နေရာ ရွေးရန် မြေပုံပေါ်တွင် နှိပ်ပါ');
-        });
-        endInput.addEventListener('focus', () => {
-          focusedInput = 'end';
-          showMapClickHint('ဦးတည်ရာ ရွေးရန် မြေပုံပေါ်တွင် နှိပ်ပါ');
-        });
-        function showMapClickHint(text) {
-          const hint = document.getElementById('mapClickHint');
-          const hintText = document.getElementById('mapClickHintText');
-          hintText.textContent = text;
-          hint.style.opacity = '1';
-          hint.style.transform = 'translateY(0)';
-        }
-        function hideMapClickHint() {
-          const hint = document.getElementById('mapClickHint');
-          hint.style.opacity = '0';
-          hint.style.transform = 'translateY(-4px)';
-        }
-        // Reverse geocode (coordinates → address)
-        async function reverseGeocode(lat, lng) {
-          const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`;
-          try {
-            const response = await fetch(url);
-            const data = await response.json();
-            if (data && data.display_name) {
-              const parts = data.display_name.split(',');
-              return parts.slice(0, 3).join(',').trim();
-            }
-          } catch (error) {
-            console.error('Reverse geocoding error:', error);
-          }
-          return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-        }
-        // Check if user is a driver
-        function checkDriverStatus() {
-          const driverCheckDiv = document.getElementById('driverCheck');
-          if (!isDriver) {
-            driverCheckDiv.innerHTML = `
-              <div class="badge" style="background: var(--amber-light); color: var(--amber); width: 100%; justify-content: center; padding: 0.75rem;">
-                ⚠️ သင်သည် ယာဉ်မောင်းအဖြစ် စာရင်းမသွင်းရသေးပါ။ ကျေးဇူးပြု၍ ဦးစွာစာရင်းသွင်းပါ။
-              </div>
-            `;
-            document.getElementById('offerForm').style.opacity = '0.5';
-            document.getElementById('offerForm').style.pointerEvents = 'none';
-          } else if (driverInfo) {
-            driverCheckDiv.innerHTML = `
-              <div class="badge" style="background: var(--green-light); color: var(--green); width: 100%; justify-content: center; padding: 0.75rem;">
-                ✅ ${driverInfo.carModel} (${driverInfo.carPlate}) - အဆင့်သတ်မှတ်ချက်: ${driverInfo.rating} ⭐
-              </div>
-            `;
-            document.getElementById('carModel').value = driverInfo.carModel;
-            document.getElementById('carPlate').value = driverInfo.carPlate;
-          }
-        }
-        // Initialize map
+        let map;
+
+        // Leaflet Map စတင်ခြင်း
         function initMap() {
-          const yangon = [16.8661, 96.1951];
-          map = L.map('map').setView(yangon, 12);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+          if (typeof L === "undefined") return;
+          map = L.map("map").setView([16.8661, 96.1951], 12); // ရန်ကုန် Coords
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "© OpenStreetMap contributors",
           }).addTo(map);
-          // Map click → auto-fill focused input
-          map.on('click', async (e) => {
-            if (!focusedInput) return;
-            const { lat, lng } = e.latlng;
-            const currentType = focusedInput; // နှိပ်လိုက်တဲ့အချိန်က focus အခြေအနေကို မှတ်ထားရန်
-            // Place marker immediately for responsiveness
-            if (currentType === 'start') {
-              if (startMarker) map.removeLayer(startMarker);
-              startMarker = L.marker([lat, lng], {
-                icon: L.divIcon({ className: 'custom-marker', html: '🚗', iconSize: [30, 30] })
-              }).addTo(map).bindPopup('Loading...').openPopup();
-            } else {
-              if (endMarker) map.removeLayer(endMarker);
-              endMarker = L.marker([lat, lng], {
-                icon: L.divIcon({ className: 'custom-marker', html: '🏁', iconSize: [30, 30] })
-              }).addTo(map).bindPopup('Loading...').openPopup();
-            }
-            // Reverse geocode
-            const address = await reverseGeocode(lat, lng);
-            // Fill the focused input
-            if (currentType === 'start') {
-              startInput.value = address;
-              startMarker.setPopupContent(`Start: ${address}`).openPopup();
-              // နောက် input ဆီ စိတ်ချရစွာ focus ရွှေ့မည်
-              endInput.focus();
-            } else {
-              endInput.value = address;
-              endMarker.setPopupContent(`End: ${address}`).openPopup();
-              focusedInput = null; // Reset track
-              hideMapClickHint();
-            }
-            // Fit bounds if both markers exist
-            if (startMarker && endMarker) {
-              const bounds = L.latLngBounds(startMarker.getLatLng(), endMarker.getLatLng());
-              map.fitBounds(bounds, { padding: [50, 50] });
-            }
-          });
         }
-        // Geocode address
-        async function geocodeAddress(address) {
-          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ', Yangon, Myanmar')}`;
-          try {
-            const response = await fetch(url);
-            const data = await response.json();
-            if (data && data.length > 0) {
-              return {
-                lat: parseFloat(data[0].lat),
-                lng: parseFloat(data[0].lon),
-                displayName: data[0].display_name
-              };
-            }
-          } catch (error) {
-            console.error('Geocoding error:', error);
-          }
-          return null;
-        }
-        // Show route on map
-        async function showRoute(startAddress, endAddress) {
-          const startCoords = await geocodeAddress(startAddress);
-          const endCoords = await geocodeAddress(endAddress);
-          if (startMarker) map.removeLayer(startMarker);
-          if (endMarker) map.removeLayer(endMarker);
-          if (startCoords) {
-            startMarker = L.marker([startCoords.lat, startCoords.lng], {
-              icon: L.divIcon({ className: 'custom-marker', html: '🚗', iconSize: [30, 30] })
-            }).addTo(map).bindPopup(`Start: ${startAddress}`);
-          }
-          if (endCoords) {
-            endMarker = L.marker([endCoords.lat, endCoords.lng], {
-              icon: L.divIcon({ className: 'custom-marker', html: '🏁', iconSize: [30, 30] })
-            }).addTo(map).bindPopup(`End: ${endAddress}`);
-          }
-          if (startCoords && endCoords) {
-            const bounds = L.latLngBounds([startCoords.lat, startCoords.lng], [endCoords.lat, endCoords.lng]);
-            map.fitBounds(bounds, { padding: [50, 50] });
-          } else if (startCoords) {
-            map.setView([startCoords.lat, startCoords.lng], 13);
+
+        // Driver ဟုတ်မဟုတ် စစ်ဆေးခြင်း
+        function checkDriverStatus() {
+          // စမ်းသပ်မှုလွယ်ကူစေရန် Demo Driver ဖြစ်စေ၊ register လုပ်ထားသူဖြစ်စေ ခွင့်ပြုပေးထားပါမည်
+          if (user.userType !== "driver" && user.email !== "driver@demo.com") {
+            document.getElementById("noDriverModal").style.display = "flex";
           }
         }
-        // Load my rides
+
+        // မိမိကမ်းလှမ်းထားသော ခရီးစဉ်များကို အောက်ခြေဇယားတွင် ပြသခြင်း
         function loadMyRides() {
-          if (!isDriver) {
-            document.getElementById('myRidesList').innerHTML = `
-              <div style="text-align: center; padding: 2rem;">
-                <p style="color: var(--gray);">ယာဉ်မောင်းအဖြစ် စာရင်းသွင်းပြီးမှ သင်၏ခရီးစဉ်များကို မြင်ရမည်</p>
-              </div>
-            `;
-            return;
-          }
-          const rides = db.getRidesByDriver(driverInfo?.id);
+          const rides = db.getRidesByDriver(user.id) || [];
+          const myRidesList = document.getElementById("myRidesList");
+
           if (rides.length === 0) {
-            document.getElementById('myRidesList').innerHTML = `
-              <div style="text-align: center; padding: 2rem;">
-                <p style="color: var(--gray);">သင်ကမ်းလှမ်းထားသော ခရီးစဉ်များ မရှိသေးပါ</p>
-              </div>
-            `;
-          } else {
-            document.getElementById('myRidesList').innerHTML = rides.map(ride => `
-              <div class="glass-card" style="margin-bottom: 1rem; padding: 1rem;">
-                <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
-                  <div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                      <span class="badge">${ride.status === 'scheduled' ? '📅 စီစဉ်ထား' : ride.status}</span>
-                      <span class="badge">👥 ${ride.bookedSeats || 0}/${ride.availableSeats} နေရာ</span>
-                    </div>
-                    <h4 style="color: var(--green-dark);">${ride.startLocation} → ${ride.endLocation}</h4>
-                    <p style="color: var(--gray); font-size: 0.8rem;">📅 ${new Date(ride.departureTime).toLocaleString()}</p>
-                  </div>
-                  <div style="text-align: right;">
-                    <div style="font-size: 0.7rem; color: var(--gray);">တစ်ဦးချင်း</div>
-                    <div style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: var(--green);">
-                      ${(7500 / (ride.availableSeats + 1)).toFixed(0).toLocaleString()} ကျပ်
-                    </div>
-                  </div>
-                </div>
-              </div>
-            `).join('');
-          }
-        }
-        // Offer ride
-        document.getElementById('offerForm').addEventListener('submit', async (e) => {
-          e.preventDefault();
-          if (!isDriver) {
-            document.getElementById('noDriverModal').style.display = 'flex';
+            myRidesList.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--gray);">သင်ကမ်းလှမ်းထားသော ခရီးစဉ်မရှိသေးပါ</td></tr>`;
             return;
           }
-          const startLocation = startInput.value;
-          const endLocation = endInput.value;
-          const departureTime = document.getElementById('departureTime').value;
-          const availableSeats = parseInt(document.getElementById('availableSeats').value);
-          const carModel = document.getElementById('carModel').value;
-          const carPlate = document.getElementById('carPlate').value;
-          const startCoords = await geocodeAddress(startLocation);
-          const endCoords = await geocodeAddress(endLocation);
-          const rideData = {
-            driverId: driverInfo.id,
-            driverName: user.name,
-            carModel: carModel,
-            carPlate: carPlate,
-            startLocation: startLocation,
-            endLocation: endLocation,
-            startLat: startCoords?.lat || null,
-            startLng: startCoords?.lng || null,
-            endLat: endCoords?.lat || null,
-            endLng: endCoords?.lng || null,
-            departureTime: departureTime,
-            availableSeats: availableSeats,
-            pricePerSeat: Math.floor(7500 / (availableSeats + 1))
-          };
-          const newRide = db.offerRide(rideData);
-          if (newRide) {
-            document.getElementById('successMessage').innerHTML = `
-              သင်၏ခရီးစဉ် အောင်မြင်စွာ ကမ်းလှမ်းပြီးပါပြီ။<br>
-              <strong>${startLocation}</strong> မှ <strong>${endLocation}</strong> သို့<br>
-              ထွက်ခွာမည့်အချိန်: ${new Date(departureTime).toLocaleString()}
-            `;
-            document.getElementById('successModal').style.display = 'flex';
-            document.getElementById('offerForm').reset();
-            document.getElementById('departureTime').value = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
-            document.getElementById('availableSeats').value = 3;
+
+          myRidesList.innerHTML = rides
+            .map(
+              (ride) => `
+            <tr>
+              <td><span class="badge" style="background:var(--green-light); color:var(--green); font-size:0.7rem;">Active</span></td>
+              <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                <strong>${ride.startLocation}</strong> → ${ride.endLocation}
+              </td>
+              <td>${new Date(ride.departureTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</td>
+              <td>${ride.bookedSeats || 0}/${ride.availableSeats || 4} ဦး</td>
+            </tr>
+          `,
+            )
+            .join("");
+        }
+
+        // Form Submit လုပ်ပြီး ခရီးစဉ်အသစ် ဖန်တီးခြင်း
+        document
+          .getElementById("offerRideForm")
+          .addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            const startLocation =
+              document.getElementById("startLocation").value;
+            const endLocation = document.getElementById("endLocation").value;
+            const departureTime =
+              document.getElementById("departureTime").value;
+            const availableSeats =
+              parseInt(document.getElementById("seats").value) || 4;
+            const price =
+              parseInt(document.getElementById("price").value) || 7500;
+
+            if (!startLocation || !endLocation || !departureTime) {
+              alert("ကျေးဇူးပြု၍ အချက်အလက်များကို ပြည့်စုံစွာဖြည့်စွက်ပေးပါ");
+              return;
+            }
+
+            // 🚙 ခရီးစဉ် Object တည်ဆောက်ခြင်း
+            const rideData = {
+              driverId: user.id,
+              driverName: user.name || "ကိုကျော် (Driver)",
+              startLocation,
+              endLocation,
+              departureTime,
+              availableSeats,
+              price,
+              carModel: user.carModel || "Toyota Probox", // Default values
+              carPlate: user.carPlate || "YGN 3Q/XXXX",
+            };
+
+            // Database သို့ သိမ်းဆည်းခြင်း
+            db.offerRide(rideData);
+
+            // အောင်မြင်ကြောင်း Modal ပြခြင်း
+            document.getElementById("successModal").style.display = "flex";
+
+            // Form ကို Reset လုပ်ပြီး စာရင်းပြန်မောင်းခြင်း
+            document.getElementById("offerRideForm").reset();
             loadMyRides();
-          }
-        });
-        // Live route preview
+          });
+
+        // Route လမ်းကြောင်းပြသခြင်း (Demo logic)
+        window.showRoute = function (start, end) {
+          console.log(`Routing from ${start} to ${end}`);
+        };
+
+        // Debounce inputs
         let debounceTimeout;
-        startInput.addEventListener('input', () => {
+        const startInput = document.getElementById("startLocation");
+        const endInput = document.getElementById("endLocation");
+
+        startInput.addEventListener("input", () => {
           clearTimeout(debounceTimeout);
           debounceTimeout = setTimeout(() => {
-            const start = startInput.value;
-            const end = endInput.value;
-            if (start && end) showRoute(start, end);
-            else if (start) showRoute(start, '');
+            if (startInput.value && endInput.value)
+              showRoute(startInput.value, endInput.value);
           }, 500);
         });
-        endInput.addEventListener('input', () => {
+
+        endInput.addEventListener("input", () => {
           clearTimeout(debounceTimeout);
           debounceTimeout = setTimeout(() => {
-            const start = startInput.value;
-            const end = endInput.value;
-            if (start && end) showRoute(start, end);
-            else if (end) showRoute('', end);
+            if (startInput.value && endInput.value)
+              showRoute(startInput.value, endInput.value);
           }, 500);
         });
-        // Modal functions - Global Window object ပေါ်သို့ စနစ်တကျ တင်ပေးခြင်း
-        window.closeSuccessModal = function() {
-          document.getElementById('successModal').style.display = 'none';
+
+        // Window Objects Modal Functions
+        window.closeSuccessModal = function () {
+          document.getElementById("successModal").style.display = "none";
         };
-        window.closeNoDriverModal = function() {
-          document.getElementById('noDriverModal').style.display = 'none';
+        window.closeNoDriverModal = function () {
+          document.getElementById("noDriverModal").style.display = "none";
+          window.location.href = "dashboard.html";
         };
-        window.redirectToDriverRegister = function() {
-          window.location.href = 'driver-register.html';
+        window.redirectToDriverRegister = function () {
+          window.location.href = "dashboard.html"; // သို့မဟုတ် driver register စာမျက်နှာရှိက သွားရန်
         };
-        // Set default datetime to tomorrow 8:30 AM
+
+        // Default time set to tomorrow 8:30 AM
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(8, 30, 0, 0);
-        document.getElementById('departureTime').value = tomorrow.toISOString().slice(0, 16);
+        document.getElementById("departureTime").value = tomorrow
+          .toISOString()
+          .slice(0, 16);
+
         // Initialize
         initMap();
         checkDriverStatus();
         loadMyRides();
-        document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+
+        document.getElementById("logoutBtn")?.addEventListener("click", (e) => {
           e.preventDefault();
           logout();
         });
-      } // end auth guard
+      }
+    </script>
+    <script>
+      // Mobile hamburger menu toggle
+      (function() {
+        const btn = document.getElementById('mobileMenuBtn');
+        const nav = document.querySelector('.nav-links');
+        if (btn && nav) {
+          btn.addEventListener('click', function() {
+            nav.classList.toggle('active');
+            btn.classList.toggle('active');
+          });
+          nav.querySelectorAll('a').forEach(function(link) {
+            link.addEventListener('click', function() {
+              nav.classList.remove('active');
+              btn.classList.remove('active');
+            });
+          });
+        }
+      })();
     </script>
   </body>
 </html>

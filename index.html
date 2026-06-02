@@ -16,7 +16,14 @@
       <div class="nav-inner">
         <a href="/" class="logo">
           <div class="logo-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2"
+            >
               <rect x="1" y="3" width="15" height="13" rx="2" />
               <path d="M16 8h4l3 4v4h-7V8z" />
               <circle cx="5.5" cy="18.5" r="2.5" />
@@ -28,77 +35,264 @@
             <span class="logo-sub">Myanmar</span>
           </div>
         </a>
+
         <div class="nav-links">
           <a href="/src/pages/find-ride.html" class="nav-link">ကားစီးမည်</a>
           <a href="/src/pages/offer-ride.html" class="nav-link">ကားမောင်းမည်</a>
           <a href="/src/pages/dashboard.html" class="nav-link">Dashboard</a>
-          <a href="/src/pages/login.html" class="nav-link nav-cta">အကောင့်ဝင်ရန်</a>
+          <a href="/src/pages/login.html" class="nav-link nav-cta"
+            >အကောင့်ဝင်ရန်</a
+          >
         </div>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
       </div>
     </nav>
     <!-- Hero Section -->
-    <div class="hero-section" style="padding: 4rem 5%; max-width: 1280px; margin: 0 auto;">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;">
+    <div
+      class="hero-section"
+      style="padding: 4rem 5%; max-width: 1280px; margin: 0 auto"
+    >
+      <div
+        style="
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 4rem;
+          align-items: center;
+        "
+      >
         <div class="animate-fade-in-up">
-          <div class="badge" style="margin-bottom: 1.5rem;">
+          <div class="badge" style="margin-bottom: 1.5rem">
             <span class="pulse-dot"></span>
             AI-Powered Carpooling · ရန်ကုန်မြို့
           </div>
-          <h1 style="font-family: var(--font-heading); font-size: 3rem; font-weight: 800; line-height: 1.2; color: var(--green-dark); margin-bottom: 1rem;">
+          <h1
+            style="
+              font-family: var(--font-heading);
+              font-size: 3rem;
+              font-weight: 800;
+              line-height: 1.2;
+              color: var(--green-dark);
+              margin-bottom: 1rem;
+            "
+          >
             တက္ကစီခ<br />
-            <span style="color: var(--green);">၃ ပုံ ၁ ပုံ</span>နဲ့<br />
+            <span style="color: var(--green)">၃ ပုံ ၁ ပုံ</span>နဲ့<br />
             သက်သောင့်သက်သာ<br />
             ခရီးဆက်ပါ
           </h1>
-          <p style="font-size: 1rem; line-height: 1.8; color: var(--gray); margin-bottom: 2rem; max-width: 440px;">
-            AI Algorithm ကနေ လမ်းကြောင်းတူ ခရီးသည်များကို အလိုအလျောက် ချိတ်ဆက်ပေးတဲ့ Smart Carpooling
+          <p
+            style="
+              font-size: 1rem;
+              line-height: 1.8;
+              color: var(--gray);
+              margin-bottom: 2rem;
+              max-width: 440px;
+            "
+          >
+            AI Algorithm ကနေ လမ်းကြောင်းတူ ခရီးသည်များကို အလိုအလျောက်
+            ချိတ်ဆက်ပေးတဲ့ Smart Carpooling
           </p>
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <a href="/src/pages/find-ride.html" class="btn-primary">ယခုပဲ စီးနင်းမည်</a>
-            <a href="/src/pages/offer-ride.html" class="btn-secondary">ယာဉ်မောင်းအဖြစ် ဆောင်ရွက်မည်</a>
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap">
+            <a href="/src/pages/find-ride.html" class="btn-primary"
+              >ယခုပဲ စီးနင်းမည်</a
+            >
+            <a href="/src/pages/offer-ride.html" class="btn-secondary"
+              >ယာဉ်မောင်းအဖြစ် ဆောင်ရွက်မည်</a
+            >
           </div>
         </div>
-        <div class="animate-fade-in-up animate-delay-2" style="position: relative;">
-          <div class="glass-card" style="padding: 1.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-              <h3 style="font-size: 0.9rem; font-weight: 700; color: var(--green-dark);">ယနေ့ မနက် ၈:၃၀</h3>
-              <span class="badge" style="font-size: 0.7rem;">● Live</span>
+        <div
+          class="animate-fade-in-up animate-delay-2"
+          style="position: relative"
+        >
+          <div class="glass-card" style="padding: 1.5rem">
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1rem;
+              "
+            >
+              <h3
+                style="
+                  font-size: 0.9rem;
+                  font-weight: 700;
+                  color: var(--green-dark);
+                "
+              >
+                ယနေ့ မနက် ၈:၃၀
+              </h3>
+              <span class="badge" style="font-size: 0.7rem">● Live</span>
             </div>
-            <div style="display: flex; gap: 12px; margin-bottom: 1rem;">
-              <div style="display: flex; flex-direction: column; align-items: center;">
-                <div style="width: 10px; height: 10px; background: var(--green); border-radius: 50%;"></div>
-                <div style="flex: 1; width: 2px; background: var(--green-light); margin: 4px 0; min-height: 30px;"></div>
-                <div style="width: 10px; height: 10px; background: var(--amber); border-radius: 50%;"></div>
+            <div style="display: flex; gap: 12px; margin-bottom: 1rem">
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                "
+              >
+                <div
+                  style="
+                    width: 10px;
+                    height: 10px;
+                    background: var(--green);
+                    border-radius: 50%;
+                  "
+                ></div>
+                <div
+                  style="
+                    flex: 1;
+                    width: 2px;
+                    background: var(--green-light);
+                    margin: 4px 0;
+                    min-height: 30px;
+                  "
+                ></div>
+                <div
+                  style="
+                    width: 10px;
+                    height: 10px;
+                    background: var(--amber);
+                    border-radius: 50%;
+                  "
+                ></div>
               </div>
-              <div style="flex: 1;">
-                <div style="margin-bottom: 1rem;">
-                  <div style="font-size: 0.85rem; font-weight: 600;">သံလျင်</div>
-                  <small style="color: var(--gray);">နေအိမ် မှ</small>
+              <div style="flex: 1">
+                <div style="margin-bottom: 1rem">
+                  <div style="font-size: 0.85rem; font-weight: 600">သံလျင်</div>
+                  <small style="color: var(--gray)">နေအိမ် မှ</small>
                 </div>
                 <div>
-                  <div style="font-size: 0.85rem; font-weight: 600;">ဗဟန်းမြို့နယ်</div>
-                  <small style="color: var(--gray);">ရုံးခန်း သို့ · ၂၅ မိနစ်</small>
+                  <div style="font-size: 0.85rem; font-weight: 600">
+                    ဗဟန်းမြို့နယ်
+                  </div>
+                  <small style="color: var(--gray)"
+                    >ရုံးခန်း သို့ · ၂၅ မိနစ်</small
+                  >
                 </div>
               </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;">
-              <span style="font-size: 0.78rem; color: var(--gray);">ခရီးသည်:</span>
-              <div style="width: 32px; height: 32px; background: var(--green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700;">ကက</div>
-              <div style="width: 32px; height: 32px; background: var(--amber-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700;">မမ</div>
-              <div style="width: 32px; height: 32px; background: #e6f1fb; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700;">သသ</div>
-            </div>
-            <div style="background: var(--green-light); border-radius: 12px; padding: 0.8rem 1rem; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <div style="font-size: 0.75rem; color: var(--green-dark); font-weight: 600;">တစ်ဦးချင်းစီ ပေးရမည့်ငွေ</div>
-                <div style="font-size: 0.7rem; color: var(--gray);">တက္ကစီ ပုံမှန်ခ: 7,500 ကျပ်</div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 1rem;
+              "
+            >
+              <span style="font-size: 0.78rem; color: var(--gray)"
+                >ခရီးသည်:</span
+              >
+              <div
+                style="
+                  width: 32px;
+                  height: 32px;
+                  background: var(--green-light);
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 0.7rem;
+                  font-weight: 700;
+                "
+              >
+                ကက
               </div>
-              <div style="text-align: right;">
-                <span style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; color: var(--green);">2,500 ကျပ်</span>
-                <div style="font-size: 0.7rem; color: var(--gray); text-decoration: line-through;">67% သက်သာ</div>
+              <div
+                style="
+                  width: 32px;
+                  height: 32px;
+                  background: var(--amber-light);
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 0.7rem;
+                  font-weight: 700;
+                "
+              >
+                မမ
+              </div>
+              <div
+                style="
+                  width: 32px;
+                  height: 32px;
+                  background: #e6f1fb;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 0.7rem;
+                  font-weight: 700;
+                "
+              >
+                သသ
+              </div>
+            </div>
+            <div
+              style="
+                background: var(--green-light);
+                border-radius: 12px;
+                padding: 0.8rem 1rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <div>
+                <div
+                  style="
+                    font-size: 0.75rem;
+                    color: var(--green-dark);
+                    font-weight: 600;
+                  "
+                >
+                  တစ်ဦးချင်းစီ ပေးရမည့်ငွေ
+                </div>
+                <div style="font-size: 0.7rem; color: var(--gray)">
+                  တက္ကစီ ပုံမှန်ခ: 7,500 ကျပ်
+                </div>
+              </div>
+              <div style="text-align: right">
+                <span
+                  style="
+                    font-family: var(--font-heading);
+                    font-size: 1.5rem;
+                    font-weight: 800;
+                    color: var(--green);
+                  "
+                  >2,500 ကျပ်</span
+                >
+                <div
+                  style="
+                    font-size: 0.7rem;
+                    color: var(--gray);
+                    text-decoration: line-through;
+                  "
+                >
+                  67% သက်သာ
+                </div>
               </div>
             </div>
           </div>
-          <div class="floating-tag" style="position: absolute; top: -15px; right: 20px; background: #fff; border: 1px solid var(--green-light); border-radius: 12px; padding: 0.5rem 0.8rem; font-size: 0.7rem; font-weight: 600;">
+          <div
+            class="floating-tag"
+            style="
+              position: absolute;
+              top: -15px;
+              right: 20px;
+              background: #fff;
+              border: 1px solid var(--green-light);
+              border-radius: 12px;
+              padding: 0.5rem 0.8rem;
+              font-size: 0.7rem;
+              font-weight: 600;
+            "
+          >
             🤖 AI Matching · Real-time
           </div>
         </div>
@@ -129,14 +323,19 @@
     <div class="section">
       <div class="section-tag">▸ အလုပ်လုပ်ပုံ</div>
       <h2 class="section-title">အဆင့် ၄ ဆင့်သာ</h2>
-      <p class="section-sub">App ဖွင့်ပြီး မိနစ်အနည်းငယ်အတွင်း AI က အကောင်းဆုံး ကားနှင့် ချိတ်ဆက်ပေးသည်</p>
+      <p class="section-sub">
+        App ဖွင့်ပြီး မိနစ်အနည်းငယ်အတွင်း AI က အကောင်းဆုံး ကားနှင့်
+        ချိတ်ဆက်ပေးသည်
+      </p>
       <div class="steps-grid">
         <div class="step-card animate-fade-in-up animate-delay-1">
           <div class="step-num">01</div>
           <div class="step-icon">
             <svg viewBox="0 0 24 24">
-              <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-              <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
           <h4>ပိ့်ဆောင်ရန် နေရာ ရွေးပါ</h4>
@@ -146,8 +345,8 @@
           <div class="step-num">02</div>
           <div class="step-icon">
             <svg viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
             </svg>
           </div>
           <h4>ထွက်မည့် အချိန် သတ်မှတ်ပါ</h4>
@@ -157,10 +356,10 @@
           <div class="step-num">03</div>
           <div class="step-icon">
             <svg viewBox="0 0 24 24">
-              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-              <path d="M16 3.13a4 4 0 010 7.75"/>
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 00-3-3.87" />
+              <path d="M16 3.13a4 4 0 010 7.75" />
             </svg>
           </div>
           <h4>AI က ချိတ်ဆက်ပေးသည်</h4>
@@ -170,7 +369,7 @@
           <div class="step-num">04</div>
           <div class="step-icon">
             <svg viewBox="0 0 24 24">
-              <polyline points="20 6 9 17 4 12"/>
+              <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
           <h4>ကားစီး၍ ဈေးပေးပါ</h4>
@@ -178,22 +377,98 @@
         </div>
       </div>
     </div>
+    <div class="pricing-section" id="pricing">
+      <div class="pricing-inner">
+        <div class="section-tag" style="text-align: center">
+          ▸ ဈေးနှုန်းနှိုင်းယှဉ်
+        </div>
+        <h2 class="section-title" style="text-align: center">
+          ဘာကြောင့် SmartRide ကို ရွေးသနည်း
+        </h2>
+        <p class="section-sub" style="text-align: center; margin: 0 auto 0">
+          ဘတ်စ်ကားထက် ကောင်းပြီး တက္ကစီထက် ဈေးသာသော ကြားလမ်းဖြေရှင်းချက်
+        </p>
+        <div class="pricing-compare">
+          <div class="price-card disabled">
+            <div class="price-icon">🚌</div>
+            <h3>ဘတ်စ်ကား</h3>
+            <div class="price-amount" style="color: var(--muted)">500</div>
+            <div class="price-unit">ကျပ် / တစ်ကြိမ်</div>
+            <div class="price-desc">
+              ဈေးသက်သာသော်လည်း တိုးဝှေ့စီးရ၍ သက်သောင့်သက်သာမရှိ၊
+              မှတ်တိုင်နှင့်ကွာဝေးသည်
+            </div>
+          </div>
+          <div class="price-card featured">
+            <div class="popular-badge">⭐ SmartRide — အကောင်းဆုံး</div>
+            <div class="price-icon">🚗</div>
+            <h3>SmartRide Carpool (၃ ဦး)</h3>
+            <div class="price-amount">2,500</div>
+            <div class="price-unit">ကျပ် / တစ်ဦး / တစ်ကြိမ်</div>
+            <div class="price-desc">
+              AC ကား၊ Door-to-Door ဝန်ဆောင်မှု<br />တက္ကစီနှင့် ယှဉ်လျှင်
+              <strong>67% သက်သာ</strong><br />ဘတ်စ်ကားထက် သက်သောင့်သက်သာ
+            </div>
+          </div>
+          <div class="price-card">
+            <div class="price-icon">🚕</div>
+            <h3>ပုံမှန် တက္ကစီ (တစ်ဦး)</h3>
+            <div class="price-amount">7,500</div>
+            <div class="price-unit">ကျပ် / တစ်ကြိမ်</div>
+            <div class="price-desc">
+              သီးသန့်ဝန်ဆောင်မှု၊ သက်သောင့်သက်သာ သော်လည်း နေ့တိုင်းစီးရန်
+              ဈေးကြီးလွန်း
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Footer -->
     <footer>
       <div class="footer-inner">
         <div>
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0.8rem;">
-            <div style="width: 28px; height: 28px; background: var(--green); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 0.8rem;
+            "
+          >
+            <div
+              style="
+                width: 28px;
+                height: 28px;
+                background: var(--green);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#fff"
+                stroke-width="2"
+              >
                 <rect x="1" y="3" width="15" height="13" rx="2" />
                 <path d="M16 8h4l3 4v4h-7V8z" />
                 <circle cx="5.5" cy="18.5" r="2.5" />
                 <circle cx="18.5" cy="18.5" r="2.5" />
               </svg>
             </div>
-            <span style="color: #fff; font-weight: 700; font-size: 1rem;">Innovix SmartRide Myanmar</span>
+            <span style="color: #fff; font-weight: 700; font-size: 1rem"
+              >Innovix SmartRide Myanmar</span
+            >
           </div>
-          <p style="font-size: 0.82rem; line-height: 1.7; max-width: 220px;">AI-Powered Carpooling Platform — ရန်ကုန်မြို့ပေါ်ရှိ အမှတ် ၁ လမ်းကြုံမျှစီးဝန်ဆောင်မှု</p>
+          <p style="font-size: 0.82rem; line-height: 1.7; max-width: 220px">
+            AI-Powered Carpooling Platform — ရန်ကုန်မြို့ပေါ်ရှိ အမှတ် ၁
+            လမ်းကြုံမျှစီးဝန်ဆောင်မှု
+          </p>
         </div>
         <div>
           <h5>ဝန်ဆောင်မှု</h5>

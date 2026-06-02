@@ -14,7 +14,14 @@
       <div class="nav-inner">
         <a href="/" class="logo">
           <div class="logo-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2"
+            >
               <rect x="1" y="3" width="15" height="13" rx="2" />
               <path d="M16 8h4l3 4v4h-7V8z" />
               <circle cx="5.5" cy="18.5" r="2.5" />
@@ -32,84 +39,212 @@
           <a href="dashboard.html" class="nav-link nav-cta">Dashboard</a>
           <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
         </div>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
       </div>
     </nav>
-    <div class="container" style="padding: 2rem;">
-      <div id="userInfo" class="glass-card animate-fade-in-up" style="margin-bottom: 2rem; padding: 1.5rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div class="container" style="padding: 2rem">
+      <div
+        id="userInfo"
+        class="glass-card animate-fade-in-up"
+        style="margin-bottom: 2rem; padding: 1.5rem"
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+          "
+        >
           <div>
-            <h2 id="userName" style="font-family: var(--font-heading); color: var(--green-dark); margin-bottom: 0.5rem;">Loading...</h2>
-            <p id="userEmail" style="color: var(--gray);"></p>
+            <h2
+              id="userName"
+              style="
+                font-family: var(--font-heading);
+                color: var(--green-dark);
+                margin-bottom: 0.5rem;
+              "
+            >
+              Loading...
+            </h2>
+            <p id="userEmail" style="color: var(--gray)"></p>
           </div>
-          <div style="text-align: right;">
-            <div style="font-size: 0.75rem; color: var(--gray);">လက်ကျန်ငွေ</div>
-            <div style="font-family: var(--font-heading); font-size: 2rem; font-weight: 800; color: var(--green);" id="userBalance">0</div>
-            <div style="font-size: 0.7rem; color: var(--gray);">ကျပ်</div>
+          <div style="text-align: right">
+            <div style="font-size: 0.75rem; color: var(--gray)">လက်ကျန်ငွေ</div>
+            <div
+              style="
+                font-family: var(--font-heading);
+                font-size: 2rem;
+                font-weight: 800;
+                color: var(--green);
+              "
+              id="userBalance"
+            >
+              0
+            </div>
+            <div style="font-size: 0.7rem; color: var(--gray)">ကျပ်</div>
           </div>
         </div>
       </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <a href="find-ride.html" class="glass-card" style="text-decoration: none; text-align: center; padding: 2rem;">
-          <div style="font-size: 3rem; margin-bottom: 1rem;">🚗</div>
-          <h3 style="color: var(--green-dark); margin-bottom: 0.5rem;">ကားစီးမည်</h3>
-          <p style="color: var(--gray); font-size: 0.85rem;">လမ်းကြောင်းတူသူများနှင့် အတူစီးပါ</p>
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 1.5rem;
+          margin-bottom: 2rem;
+        "
+      >
+        <a
+          href="find-ride.html"
+          class="glass-card"
+          style="text-decoration: none; text-align: center; padding: 2rem"
+        >
+          <div style="font-size: 3rem; margin-bottom: 1rem">🚗</div>
+          <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
+            ကားစီးမည်
+          </h3>
+          <p style="color: var(--gray); font-size: 0.85rem">
+            လမ်းကြောင်းတူသူများနှင့် အတူစီးပါ
+          </p>
         </a>
-        <a href="offer-ride.html" class="glass-card" style="text-decoration: none; text-align: center; padding: 2rem;">
-          <div style="font-size: 3rem; margin-bottom: 1rem;">🚙</div>
-          <h3 style="color: var(--green-dark); margin-bottom: 0.5rem;">ကားမောင်းမည်</h3>
-          <p style="color: var(--gray); font-size: 0.85rem;">ကားရှိသူများ ဝင်ငွေရှာပါ</p>
+        <a
+          href="offer-ride.html"
+          class="glass-card"
+          style="text-decoration: none; text-align: center; padding: 2rem"
+        >
+          <div style="font-size: 3rem; margin-bottom: 1rem">🚙</div>
+          <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
+            ကားမောင်းမည်
+          </h3>
+          <p style="color: var(--gray); font-size: 0.85rem">
+            ကားရှိသူများ ဝင်ငွေရှာပါ
+          </p>
         </a>
-        <a href="wallet.html" class="glass-card" style="text-decoration: none; text-align: center; padding: 2rem;">
-          <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
-          <h3 style="color: var(--green-dark); margin-bottom: 0.5rem;">ပိုက်ဆံအိတ်</h3>
-          <p style="color: var(--gray); font-size: 0.85rem;">ငွေသွင်း၊ ငွေထုတ်နှင့် မှတ်တမ်းများ</p>
+        <a
+          href="wallet.html"
+          class="glass-card"
+          style="text-decoration: none; text-align: center; padding: 2rem"
+        >
+          <div style="font-size: 3rem; margin-bottom: 1rem">💰</div>
+          <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
+            ပိုက်ဆံအိတ်
+          </h3>
+          <p style="color: var(--gray); font-size: 0.85rem">
+            ငွေသွင်း၊ ငွေထုတ်နှင့် မှတ်တမ်းများ
+          </p>
         </a>
-        <a href="my-rides.html" class="glass-card" style="text-decoration: none; text-align: center; padding: 2rem;">
-          <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
-          <h3 style="color: var(--green-dark); margin-bottom: 0.5rem;">ခရီးစဉ်များ</h3>
-          <p style="color: var(--gray); font-size: 0.85rem;">သင်၏ ခရီးစဉ်မှတ်တမ်းများ</p>
+        <a
+          href="my-rides.html"
+          class="glass-card"
+          style="text-decoration: none; text-align: center; padding: 2rem"
+        >
+          <div style="font-size: 3rem; margin-bottom: 1rem">📋</div>
+          <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
+            ခရီးစဉ်များ
+          </h3>
+          <p style="color: var(--gray); font-size: 0.85rem">
+            သင်၏ ခရီးစဉ်မှတ်တမ်းများ
+          </p>
         </a>
       </div>
       <div class="glass-card">
-        <h3 style="font-family: var(--font-heading); color: var(--green-dark); margin-bottom: 1rem;">📊 အမြန်စာရင်းဇယား</h3>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+        <h3
+          style="
+            font-family: var(--font-heading);
+            color: var(--green-dark);
+            margin-bottom: 1rem;
+          "
+        >
+          📊 အမြန်စာရင်းဇယား
+        </h3>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+          "
+        >
           <div>
-            <div style="font-size: 0.75rem; color: var(--gray);">စုစုပေါင်းခရီးစဉ်</div>
-            <div style="font-size: 1.5rem; font-weight: 700; color: var(--green);" id="totalRides">0</div>
+            <div style="font-size: 0.75rem; color: var(--gray)">
+              စုစုပေါင်းခရီးစဉ်
+            </div>
+            <div
+              style="font-size: 1.5rem; font-weight: 700; color: var(--green)"
+              id="totalRides"
+            >
+              0
+            </div>
           </div>
           <div>
-            <div style="font-size: 0.75rem; color: var(--gray);">သက်သာခဲ့သောငွေ</div>
-            <div style="font-size: 1.5rem; font-weight: 700; color: var(--green);" id="totalSaved">0</div>
+            <div style="font-size: 0.75rem; color: var(--gray)">
+              သက်သာခဲ့သောငွေ
+            </div>
+            <div
+              style="font-size: 1.5rem; font-weight: 700; color: var(--green)"
+              id="totalSaved"
+            >
+              0
+            </div>
           </div>
         </div>
       </div>
     </div>
     <script type="module">
-      import { requireAuth, getCurrentUser, logout } from '../js/auth.js';
-      import { db } from '../js/database.js';
+      // dashboard.html ထဲက <script type="module"> အပိုင်းကို ဒီလိုပြင်ပါ
+      import { requireAuth, getCurrentUser, logout } from "../js/auth.js";
+      import { db } from "../js/database.js";
+
       if (!requireAuth()) {
         // Redirect handled in requireAuth
       } else {
-        const user = getCurrentUser();
-        document.getElementById('userName').textContent = user.name || user.email;
-        document.getElementById('userEmail').textContent = user.email;
-        document.getElementById('userBalance').textContent = user.balance?.toLocaleString() || '0';
-        // Calculate stats
-        const bookings = db.getBookingsByPassenger(user.id);
-        document.getElementById('totalRides').textContent = bookings.length;
+        // 💡 အမြဲတမ်း နောက်ဆုံးရ User Balance အစစ်အမှန်ကို localStorage ထဲက တိုက်ရိုက်ဆွဲယူရန် ပြင်ဆင်ခြင်း
+        const user = db.getCurrentUser() || getCurrentUser();
+
+        document.getElementById("userName").textContent =
+          user.name || user.email;
+        document.getElementById("userEmail").textContent = user.email;
+        document.getElementById("userBalance").textContent =
+          user.balance?.toLocaleString() || "0";
+
+        // စာရင်းဇယားများ တွက်ချက်ခြင်း
+        const bookings = db.getBookingsByPassenger(user.id) || [];
+        document.getElementById("totalRides").textContent = bookings.length;
+
         let totalSaved = 0;
-        bookings.forEach(booking => {
-          const ride = db.getRides().find(r => r.id === booking.rideId);
-          if (ride) {
-            totalSaved += (7500 - booking.totalPrice);
-          }
+        bookings.forEach((booking) => {
+          // ပုံမှန်တက္ကစီခ ၇၅၀၀ ကျပ်ထဲကမှ user တကယ်ပေးခဲ့ရတဲ့ dynamic price ကို နှုတ်ပြီး သက်သာငွေတွက်ခြင်း
+          totalSaved += 7500 - booking.totalPrice;
         });
-        document.getElementById('totalSaved').textContent = totalSaved.toLocaleString();
+        document.getElementById("totalSaved").textContent =
+          totalSaved.toLocaleString() + " ကျပ်";
       }
-      document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+
+      document.getElementById("logoutBtn")?.addEventListener("click", (e) => {
         e.preventDefault();
         logout();
       });
+    </script>
+    <script>
+      // Mobile hamburger menu toggle
+      (function() {
+        const btn = document.getElementById('mobileMenuBtn');
+        const nav = document.querySelector('.nav-links');
+        if (btn && nav) {
+          btn.addEventListener('click', function() {
+            nav.classList.toggle('active');
+            btn.classList.toggle('active');
+          });
+          nav.querySelectorAll('a').forEach(function(link) {
+            link.addEventListener('click', function() {
+              nav.classList.remove('active');
+              btn.classList.remove('active');
+            });
+          });
+        }
+      })();
     </script>
   </body>
 </html>
