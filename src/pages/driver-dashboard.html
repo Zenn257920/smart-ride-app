@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Driver Dashboard - Innovix SmartRide</title>
   <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     /* Driver Dashboard Specific Styles */
     .driver-hero {
@@ -782,6 +784,19 @@
       </div>
     </div>
 
+    <!-- Ride Map Section -->
+    <div class="glass-card animate-fade-in-up ride-map-section">
+      <div class="section-header">
+        <h3>📍 ခရီးစဉ်မြေပုံ</h3>
+        <a href="#" id="resetMapView" style="font-size: 0.72rem;">အားလုံးပြမည် ↻</a>
+      </div>
+      <div id="driverMap" class="map-container" style="height: 350px;"></div>
+      <div id="mapLegend" class="ride-map-legend"></div>
+      <div id="mapEmptyState" style="display: none; text-align: center; padding: 1.5rem; color: var(--gray);">
+        <p style="font-size: 0.82rem;">🗺️ ခရီးစဉ် ကမ်းလှမ်းပြီးမှ မြေပုံပေါ်တွင် ပြသပါမည်</p>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <div class="driver-content-grid">
 
@@ -883,6 +898,7 @@
   <script type="module">
     import { requireAuth, getCurrentUser, logout } from '../js/auth.js';
     import { db } from '../js/database.js';
+    import { RideMap } from '../js/map.js';
 
     if (!requireAuth()) {
       // Redirect handled in requireAuth
@@ -928,17 +944,90 @@
       document.getElementById('earnPassengerCount').textContent = totalPassengers;
       document.getElementById('earnEstimated').textContent = estimatedEarnings.toLocaleString() + ' ကျပ်';
 
-      // Render active rides
+      // ─── Initialize the ride map ───
+      let rideMap = null;
+      const routeColors = ['#1d9e75', '#3498db', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c'];
+
+      async function initDriverMap() {
+        if (typeof L === 'undefined') return;
+
+        const mapContainer = document.getElementById('driverMap');
+        const mapEmptyState = document.getElementById('mapEmptyState');
+        const mapLegend = document.getElementById('mapLegend');
+
+        if (driverRides.length === 0) {
+          mapContainer.style.display = 'none';
+          mapEmptyState.style.display = 'block';
+          return;
+        }
+
+        rideMap = new RideMap('driverMap');
+
+        // Add each ride route to the map
+        for (let i = 0; i < driverRides.length; i++) {
+          const ride = driverRides[i];
+          await rideMap.addRideRoute(ride, routeColors[i % routeColors.length], i);
+        }
+
+        // Fit map to show all routes
+        rideMap.fitAllRoutes();
+
+        // Build legend
+        mapLegend.innerHTML = driverRides.map((ride, i) => {
+          const color = routeColors[i % routeColors.length];
+          const shortRoute = `${ride.startLocation.split('(')[0].trim()} → ${ride.endLocation.split('(')[0].trim()}`;
+          return `
+            <div class="ride-map-legend-item" data-ride-index="${i}" onclick="window.highlightRide(${i})">
+              <div class="ride-map-legend-dot" style="background: ${color};"></div>
+              <span>${shortRoute}</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Highlight a ride on the map
+      let activeHighlight = -1;
+      window.highlightRide = function (index) {
+        if (!rideMap) return;
+
+        const legendItems = document.querySelectorAll('.ride-map-legend-item');
+
+        if (activeHighlight === index) {
+          // Toggle off — show all
+          rideMap.resetHighlights();
+          activeHighlight = -1;
+          legendItems.forEach(item => item.classList.remove('active'));
+        } else {
+          // Highlight selected
+          rideMap.highlightRide(index);
+          activeHighlight = index;
+          legendItems.forEach((item, i) => {
+            item.classList.toggle('active', i === index);
+          });
+        }
+      };
+
+      // Reset map view button
+      document.getElementById('resetMapView')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!rideMap) return;
+        rideMap.resetHighlights();
+        activeHighlight = -1;
+        document.querySelectorAll('.ride-map-legend-item').forEach(item => item.classList.remove('active'));
+      });
+
+      // Render active rides (with map interaction)
       const activeRidesList = document.getElementById('activeRidesList');
       if (driverRides.length > 0) {
-        activeRidesList.innerHTML = driverRides.map(ride => {
+        activeRidesList.innerHTML = driverRides.map((ride, idx) => {
           const time = new Date(ride.departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           const date = new Date(ride.departureTime).toLocaleDateString('my-MM', { month: 'short', day: 'numeric' });
           const booked = ride.bookedSeats || 0;
           const total = ride.availableSeats || 4;
+          const color = routeColors[idx % routeColors.length];
           return `
-            <div class="ride-item">
-              <div class="ride-route-icon">🛣️</div>
+            <div class="ride-item" style="cursor: pointer; border-left: 3px solid ${color};" onclick="window.highlightRide(${idx})">
+              <div class="ride-route-icon" style="background: ${color}15; color: ${color};">🛣️</div>
               <div class="ride-details">
                 <div class="ride-route">${ride.startLocation} → ${ride.endLocation}</div>
                 <div class="ride-meta">
@@ -981,6 +1070,9 @@
           `;
         }).join('');
       }
+
+      // Initialize map after page loads
+      initDriverMap();
 
       // Logout
       document.getElementById('logoutBtn')?.addEventListener('click', (e) => {

@@ -1,117 +1,87 @@
 <!doctype html>
 <html lang="my">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Find Ride - Innovix SmartRide</title>
-    <link rel="stylesheet" href="/src/style.css" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  </head>
 
-  <body>
-    <div class="bg-grid"></div>
-    <div class="bg-glow bg-glow--1"></div>
-    <div class="bg-glow bg-glow--2"></div>
-    <nav class="nav-wrapper">
-      <div class="nav-inner">
-        <a href="/" class="logo">
-          <div class="logo-icon">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#fff"
-              stroke-width="2"
-            >
-              <rect x="1" y="3" width="15" height="13" rx="2" />
-              <path d="M16 8h4l3 4v4h-7V8z" />
-              <circle cx="5.5" cy="18.5" r="2.5" />
-              <circle cx="18.5" cy="18.5" r="2.5" />
-            </svg>
-          </div>
-          <div>
-            <span class="logo-text">Innovix SmartRide</span>
-            <span class="logo-sub">Myanmar</span>
-          </div>
-        </a>
-        <div class="nav-links">
-          <a href="find-ride.html" class="nav-link nav-cta">ကားစီးမည်</a>
-          <a href="offer-ride.html" class="nav-link">ကားမောင်းမည်</a>
-          <a href="dashboard.html" class="nav-link">Dashboard</a>
-          <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Find Ride - Innovix SmartRide</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow bg-glow--1"></div>
+  <div class="bg-glow bg-glow--2"></div>
+  <nav class="nav-wrapper">
+    <div class="nav-inner">
+      <a href="/" class="logo">
+        <div class="logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <rect x="1" y="3" width="15" height="13" rx="2" />
+            <path d="M16 8h4l3 4v4h-7V8z" />
+            <circle cx="5.5" cy="18.5" r="2.5" />
+            <circle cx="18.5" cy="18.5" r="2.5" />
+          </svg>
         </div>
-        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
-          <span></span><span></span><span></span>
-        </button>
+        <div>
+          <span class="logo-text">Innovix SmartRide</span>
+          <span class="logo-sub">Myanmar</span>
+        </div>
+      </a>
+      <div class="nav-links">
+        <a href="find-ride.html" class="nav-link nav-cta">ကားစီးမည်</a>
+        <a href="offer-ride.html" class="nav-link">ကားမောင်းမည်</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
       </div>
-    </nav>
-    <div class="container" style="padding: 2rem">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem">
-        <!-- Search Form -->
-        <div class="glass-card animate-fade-in-up">
-          <h2
-            style="
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+  <div class="container" style="padding: 2rem">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem">
+      <!-- Search Form -->
+      <div class="glass-card animate-fade-in-up">
+        <h2 style="
               font-family: var(--font-heading);
               color: var(--green-dark);
               margin-bottom: 1.5rem;
-            "
-          >
-            🔍 ခရီးစဉ်ရှာမည်
-          </h2>
-          <form id="searchForm">
-            <div class="input-group">
-              <label class="input-label">ထွက်ခွာမည့်နေရာ</label>
-              <input
-                type="text"
-                id="startLocation"
-                class="input-field"
-                placeholder="e.g. သံလျင်, လှိုင်, ဒဂုံ"
-                required
-              />
-            </div>
-            <div class="input-group">
-              <label class="input-label">ဦးတည်ရာ</label>
-              <input
-                type="text"
-                id="endLocation"
-                class="input-field"
-                placeholder="e.g. ဗဟန်း, လမ်းမတော်, ရန်ကင်း"
-                required
-              />
-            </div>
-            <div class="input-group">
-              <label class="input-label">ထွက်ခွာမည့်အချိန်</label>
-              <input
-                type="datetime-local"
-                id="departureTime"
-                class="input-field"
-                required
-              />
-            </div>
-            <button type="submit" class="btn-primary" style="width: 100%">
-              🤖 AI ဖြင့်ရှာမည်
-            </button>
-          </form>
-        </div>
-        <!-- Map -->
-        <div class="glass-card animate-fade-in-up animate-delay-2">
-          <h3
-            style="
+            ">
+          🔍 ခရီးစဉ်ရှာမည်
+        </h2>
+        <form id="searchForm">
+          <div class="input-group">
+            <label class="input-label">ထွက်ခွာမည့်နေရာ</label>
+            <input type="text" id="startLocation" class="input-field" placeholder="e.g. သံလျင်, လှိုင်, ဒဂုံ"
+              required />
+          </div>
+          <div class="input-group">
+            <label class="input-label">ဦးတည်ရာ</label>
+            <input type="text" id="endLocation" class="input-field" placeholder="e.g. ဗဟန်း, လမ်းမတော်, ရန်ကင်း"
+              required />
+          </div>
+          <div class="input-group">
+            <label class="input-label">ထွက်ခွာမည့်အချိန်</label>
+            <input type="datetime-local" id="departureTime" class="input-field" required />
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%">
+            🤖 AI ဖြင့်ရှာမည်
+          </button>
+        </form>
+      </div>
+      <!-- Map -->
+      <div class="glass-card animate-fade-in-up animate-delay-2">
+        <h3 style="
               font-family: var(--font-heading);
               color: var(--green-dark);
               margin-bottom: 1rem;
-            "
-          >
-            🗺️ မြေပုံ
-          </h3>
-          <div
-            id="mapClickHint"
-            style="
+            ">
+          🗺️ မြေပုံ
+        </h3>
+        <div id="mapClickHint" style="
               margin-bottom: 0.75rem;
               padding: 0.6rem 1rem;
               border-radius: 10px;
@@ -125,121 +95,169 @@
               opacity: 0;
               transition: all 0.3s ease;
               transform: translateY(-4px);
-            "
-          >
-            <span style="font-size: 1rem">👆</span>
-            <span id="mapClickHintText">မြေပုံပေါ်တွင် နှိပ်၍ နေရာရွေးပါ</span>
-          </div>
-          <div id="map" class="map-container" style="height: 400px"></div>
-          <div style="margin-top: 1rem; display: flex; gap: 0.5rem">
-            <button
-              id="getCurrentLocation"
-              class="btn-outline"
-              style="font-size: 0.75rem"
-            >
-              📍 လက်ရှိတည်နေရာ
-            </button>
-          </div>
+            ">
+          <span style="font-size: 1rem">👆</span>
+          <span id="mapClickHintText">မြေပုံပေါ်တွင် နှိပ်၍ နေရာရွေးပါ</span>
+        </div>
+        <div id="map" class="map-container" style="height: 400px"></div>
+        <div style="margin-top: 1rem; display: flex; gap: 0.5rem">
+          <button id="getCurrentLocation" class="btn-outline" style="font-size: 0.75rem">
+            📍 လက်ရှိတည်နေရာ
+          </button>
         </div>
       </div>
-      <!-- Results -->
-      <div id="resultsSection" style="margin-top: 2rem; display: none">
-        <h3
-          style="
+    </div>
+    <!-- Results -->
+    <div id="resultsSection" style="margin-top: 2rem; display: none">
+      <h3 style="
             font-family: var(--font-heading);
             color: var(--green-dark);
             margin-bottom: 1rem;
-          "
-        >
-          🤖 AI အကြံပြုထားသော ခရီးစဉ်များ
-        </h3>
-        <div
-          id="resultsList"
-          style="display: flex; flex-direction: column; gap: 1rem"
-        ></div>
-      </div>
+          ">
+        🤖 AI အကြံပြုထားသော ခရီးစဉ်များ
+      </h3>
+      <div id="resultsList" style="display: flex; flex-direction: column; gap: 1rem"></div>
     </div>
-    <!-- Booking Modal -->
-    <div id="bookingModal" class="modal">
-      <div class="modal-content">
-        <h3 style="color: var(--green); margin-bottom: 1rem">
-          ✅ ခရီးစဉ် အတည်ပြုရန်
-        </h3>
-        <div style="margin-bottom: 1rem; line-height: 1.8">
-          <p>
-            <span style="color: var(--gray)">ယာဉ်မောင်း:</span>
-            <strong id="modalDriverName">—</strong>
-          </p>
-          <p>
-            <span style="color: var(--gray)">လမ်းကြောင်း:</span>
-            <strong id="modalRoute">—</strong>
-          </p>
-          <p>
-            <span style="color: var(--gray)">ခရီးသည်များ:</span>
-            <span id="modalPassengers">—</span>
-          </p>
-          <p style="margin-top: 0.5rem">
-            <span style="color: var(--gray)">ကျသင့်ငွေ:</span>
-            <span
-              id="modalPrice"
-              style="
+  </div>
+  <!-- Booking Modal -->
+  <div id="bookingModal" class="modal">
+    <div class="modal-content">
+      <h3 style="color: var(--green); margin-bottom: 1rem">
+        ✅ ခရီးစဉ် အတည်ပြုရန်
+      </h3>
+      <div style="margin-bottom: 1rem; line-height: 1.8">
+        <p>
+          <span style="color: var(--gray)">ယာဉ်မောင်း:</span>
+          <strong id="modalDriverName">—</strong>
+        </p>
+        <p>
+          <span style="color: var(--gray)">လမ်းကြောင်း:</span>
+          <strong id="modalRoute">—</strong>
+        </p>
+        <p>
+          <span style="color: var(--gray)">ခရီးသည်များ:</span>
+          <span id="modalPassengers">—</span>
+        </p>
+        <p style="margin-top: 0.5rem">
+          <span style="color: var(--gray)">ကျသင့်ငွေ:</span>
+          <span id="modalPrice" style="
                 font-family: var(--font-heading);
                 font-size: 1.5rem;
                 font-weight: 800;
                 color: var(--green);
-              "
-              >—</span
-            >
-          </p>
-        </div>
-        <div class="modal-actions">
-          <button onclick="confirmBooking()" class="btn-primary">
-            အတည်ပြုမည်
-          </button>
-          <button onclick="closeBookingModal()" class="btn-outline">
-            မယ်တော့ဘူး
-          </button>
-        </div>
+              ">—</span>
+        </p>
+      </div>
+      <div class="modal-actions">
+        <button onclick="confirmBooking()" class="btn-primary">
+          အတည်ပြုမည်
+        </button>
+        <button onclick="closeBookingModal()" class="btn-outline">
+          မယ်တော့ဘူး
+        </button>
       </div>
     </div>
-    <script type="module">
-      import { requireAuth, getCurrentUser, logout } from "../js/auth.js";
-      import { db } from "../js/database.js";
+  </div>
+  <script type="module">
+    import { requireAuth, getCurrentUser, logout } from "../js/auth.js";
+    import { db } from "../js/database.js";
+    import { RideMap } from "../js/map.js";
 
-      if (!requireAuth()) {
-        // Redirection logic handled inside auth guard
-      } else {
-        const user = getCurrentUser();
-        let currentSelectedRide = null;
-        let map;
+    if (!requireAuth()) {
+      // Redirection logic handled inside auth guard
+    } else {
+      const user = getCurrentUser();
+      let currentSelectedRide = null;
+      let rideMap;
 
-        // Leaflet Maps Setup
-        function initMap() {
-          if (typeof L === "undefined") return;
-          map = L.map("map").setView([16.8661, 96.1951], 12);
-          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution: "© OpenStreetMap contributors",
-          }).addTo(map);
+      const startInput = document.getElementById("startLocation");
+      const endInput = document.getElementById("endLocation");
+      const mapClickHint = document.getElementById("mapClickHint");
+      const mapClickHintText = document.getElementById("mapClickHintText");
+
+      // Initialize interactive map
+      function initMap() {
+        if (typeof L === "undefined") return;
+        rideMap = new RideMap("map", {
+          onLocationSelected: (mode, location) => {
+            startInput.classList.remove("map-select-active");
+            endInput.classList.remove("map-select-active");
+          },
+        });
+      }
+
+      // Focus on start input → enable map click-to-select
+      startInput.addEventListener("focus", () => {
+        if (!rideMap) return;
+        endInput.classList.remove("map-select-active");
+        startInput.classList.add("map-select-active");
+        rideMap.enableClickToSelect("start", startInput, mapClickHint, mapClickHintText);
+      });
+
+      // Focus on end input → enable map click-to-select
+      endInput.addEventListener("focus", () => {
+        if (!rideMap) return;
+        startInput.classList.remove("map-select-active");
+        endInput.classList.add("map-select-active");
+        rideMap.enableClickToSelect("end", endInput, mapClickHint, mapClickHintText);
+      });
+
+      // Current location button
+      document.getElementById("getCurrentLocation")?.addEventListener("click", async (e) => {
+        e.preventDefault();
+        if (!rideMap) return;
+
+        const btn = e.currentTarget;
+        btn.textContent = "⏳ ရှာဖွေနေသည်...";
+        btn.disabled = true;
+
+        try {
+          const pos = await rideMap.getCurrentLocation();
+          const address = await rideMap._reverseGeocode(pos.lat, pos.lng);
+          const displayAddr = address || `${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)}`;
+
+          rideMap.setStartLocation(pos.lat, pos.lng, displayAddr);
+          startInput.value = displayAddr;
+
+          btn.textContent = "✅ တည်နေရာရပြီ";
+          setTimeout(() => {
+            btn.textContent = "📍 လက်ရှိတည်နေရာ";
+            btn.disabled = false;
+          }, 2000);
+        } catch (err) {
+          console.error("Geolocation error:", err);
+          btn.textContent = "❌ ရှာမတွေ့ပါ";
+          setTimeout(() => {
+            btn.textContent = "📍 လက်ရှိတည်နေရာ";
+            btn.disabled = false;
+          }, 2000);
         }
+      });
 
-        // Search Trigger — sends user input to Gemini AI and renders results
-        document
-          .getElementById("searchForm")
-          .addEventListener("submit", async (e) => {
-            e.preventDefault();
+      // Default departure: tomorrow 8:30 AM
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(8, 30, 0, 0);
+      document.getElementById("departureTime").value = tomorrow
+        .toISOString()
+        .slice(0, 16);
 
-            const startLocation =
-              document.getElementById("startLocation").value;
-            const endLocation = document.getElementById("endLocation").value;
-            const departureTime =
-              document.getElementById("departureTime").value;
+      // Search Trigger — sends user input to Gemini AI and renders results
+      document
+        .getElementById("searchForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
 
-            const resultsSection = document.getElementById("resultsSection");
-            const resultsList = document.getElementById("resultsList");
+          const startLocation = document.getElementById("startLocation").value;
+          const endLocation = document.getElementById("endLocation").value;
+          const departureTime = document.getElementById("departureTime").value;
 
-            // Display AI Loading State
-            resultsSection.style.display = "block";
-            resultsList.innerHTML = `
+          const resultsSection = document.getElementById("resultsSection");
+          const resultsList = document.getElementById("resultsList");
+
+          // Display AI Loading State
+          resultsSection.style.display = "block";
+          resultsList.innerHTML = `
             <div style="text-align:center; padding:3rem; width:100%;">
               <div class="loading-spinner" style="margin:0 auto 1.5rem; border: 4px solid rgba(0,0,0,0.06); border-left-color: var(--green); width: 44px; height: 44px; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
               <p style="color:var(--green); font-weight:600; font-family: var(--font-heading); font-size: 1rem;">🤖 Gemini AI က လမ်းကြောင်းတူညီသူများကို ရှာဖွေနေပါသည်...</p>
@@ -247,67 +265,73 @@
             </div>
           `;
 
-            // Inject spinner keyframes
-            if (!document.getElementById("spinner-style")) {
-              const style = document.createElement("style");
-              style.id = "spinner-style";
-              style.innerHTML =
-                "@keyframes spin { to { transform: rotate(360deg); } }";
-              document.head.appendChild(style);
-            }
+          // Inject spinner keyframes
+          if (!document.getElementById("spinner-style")) {
+            const style = document.createElement("style");
+            style.id = "spinner-style";
+            style.innerHTML =
+              "@keyframes spin { to { transform: rotate(360deg); } }";
+            document.head.appendChild(style);
+          }
 
-            // 🚀 Send user input to Gemini AI via database.js
-            const matchedRides = await db.searchRidesWithGemini(
-              startLocation,
-              endLocation,
-              departureTime,
-            );
+          // Show user's route on the map
+          if (rideMap && startLocation && endLocation) {
+            rideMap.clearAll();
+            await rideMap.showRouteByNames(startLocation, endLocation);
+          }
 
-            // No results
-            if (!matchedRides || matchedRides.length === 0) {
-              resultsList.innerHTML = `
+          // 🚀 Send user input to Gemini AI via database.js
+          const matchedRides = await db.searchRidesWithGemini(
+            startLocation,
+            endLocation,
+            departureTime,
+          );
+
+          // No results
+          if (!matchedRides || matchedRides.length === 0) {
+            resultsList.innerHTML = `
               <div class="glass-card" style="text-align:center; padding:3rem; color:var(--gray);">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
                 <p style="font-weight: 600; color: var(--green-dark); margin-bottom: 0.5rem;">ကိုက်ညီသော ခရီးစဉ် မရှိသေးပါ</p>
                 <p style="font-size: 0.85rem;">လက်ရှိအချိန်တွင် "${startLocation}" မှ "${endLocation}" သို့ လမ်းကြုံယာဉ်မောင်း မရှိသေးပါ။ နောက်မှ ထပ်ကြိုးစားပါ။</p>
               </div>
             `;
-              return;
-            }
+            return;
+          }
 
-            const totalMatches = matchedRides.length;
+          const totalMatches = matchedRides.length;
 
-            // Header showing total matches
-            let htmlContent = `
+          // Header showing total matches
+          let htmlContent = `
             <div style="width:100%; margin-bottom:1rem; padding: 0.75rem 1.25rem; background: var(--green-light); border-left: 4px solid var(--green); color: var(--green-dark); font-weight:700; border-radius: 8px; font-family: var(--font-heading); display: flex; align-items: center; gap: 0.5rem;">
               <span style="font-size: 1.2rem;">✨</span>
               <span>Gemini AI Match — လမ်းကြောင်းတူညီသူ <strong>${totalMatches}</strong> ဦး တွေ့ရှိပါသည်</span>
             </div>
           `;
 
-            // Render each matched ride card with passenger list
-            htmlContent += matchedRides
-              .map((ride) => {
-                // Build passenger avatar pills
-                const passengerList =
-                  ride.passengers && ride.passengers.length > 0
-                    ? ride.passengers
-                        .map(
-                          (p) => `
+          // Render each matched ride card with passenger list
+          htmlContent += matchedRides
+            .map((ride, rideIndex) => {
+              // Build passenger avatar pills
+              const passengerList =
+                ride.passengers && ride.passengers.length > 0
+                  ? ride.passengers
+                    .map(
+                      (p) => `
                     <div style="display: inline-flex; align-items: center; gap: 4px; background: var(--green-light); padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600; color: var(--green-dark);">
                       <span style="width: 20px; height: 20px; background: var(--green); color: #fff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700;">${p.name.charAt(0)}</span>
                       ${p.name}
                     </div>
                 `,
-                        )
-                        .join("")
-                    : `<span style="font-size: 0.78rem; color: var(--gray); font-style: italic;">ပထမဆုံး ခရီးသည် ဖြစ်ပါလိမ့်မည် 🎉</span>`;
+                    )
+                    .join("")
+                  : `<span style="font-size: 0.78rem; color: var(--gray); font-style: italic;">ပထမဆုံး ခရီးသည် ဖြစ်ပါလိမ့်မည် 🎉</span>`;
 
-                const seatsLeft =
-                  (ride.availableSeats || 4) - (ride.bookedSeats || 0);
+              const seatsLeft =
+                (ride.availableSeats || 4) - (ride.bookedSeats || 0);
 
-                return `
-              <div class="glass-card animate-fade-in-up" style="padding: 1.5rem; position: relative;">
+              return `
+              <div class="glass-card animate-fade-in-up" style="padding: 1.5rem; position: relative; cursor: pointer;" onclick="window.showRideOnMap('${ride.startLocation}', '${ride.endLocation}')">
                 <!-- Match Score Badge -->
                 <div style="position: absolute; top: 12px; right: 12px; background: linear-gradient(135deg, var(--green-dark), var(--green)); color: #fff; padding: 0.3rem 0.75rem; font-size: 0.72rem; font-weight:700; border-radius: 20px; box-shadow: 0 2px 8px rgba(29,158,117,0.3);">
                   🔥 ${ride.matchScore}% Match
@@ -326,6 +350,11 @@
                     🕒 ${new Date(ride.departureTime).toLocaleString("my-MM", { hour: "2-digit", minute: "2-digit", month: "short", day: "numeric" })}
                     &nbsp;·&nbsp; 💺 ${seatsLeft} နေရာ လွတ်
                   </p>
+                </div>
+
+                <!-- Map preview hint -->
+                <div style="font-size: 0.68rem; color: var(--green); font-weight: 500; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.3rem;">
+                  🗺️ Card ကို နှိပ်၍ မြေပုံပေါ်တွင် ကြည့်နိုင်ပါသည်
                 </div>
 
                 <!-- Existing Passengers -->
@@ -351,93 +380,107 @@
                       💰 ${ride.savings.toLocaleString()} ကျပ် သက်သာ
                     </span>
                   </div>
-                  <button onclick="window.selectRide('${ride.id}', ${ride.discountedPrice}, '${ride.driverName}', '${ride.startLocation} → ${ride.endLocation}', '${(ride.passengers || []).map((p) => p.name).join(", ") || "သင်သာ"}')" class="btn-primary" style="font-size: 0.82rem; padding: 0.65rem 1.3rem; border-radius: 10px; font-weight:600; cursor:pointer;">
+                  <button onclick="event.stopPropagation(); window.selectRide('${ride.id}', ${ride.discountedPrice}, '${ride.driverName}', '${ride.startLocation} → ${ride.endLocation}', '${(ride.passengers || []).map((p) => p.name).join(", ") || "သင်သာ"}')" class="btn-primary" style="font-size: 0.82rem; padding: 0.65rem 1.3rem; border-radius: 10px; font-weight:600; cursor:pointer;">
                     အတူစီးမည် 🚗
                   </button>
                 </div>
               </div>
             `;
-              })
-              .join("");
+            })
+            .join("");
 
-            resultsList.innerHTML = htmlContent;
+          resultsList.innerHTML = htmlContent;
 
-            // Scroll to results
-            resultsSection.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
+          // Scroll to results
+          resultsSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
           });
+        });
 
-        // Trigger Confirm Booking Dialog Modal
-        window.selectRide = function (
-          rideId,
-          price,
-          driverName,
-          route,
-          passengers,
-        ) {
-          currentSelectedRide = { rideId, price };
-          document.getElementById("modalDriverName").textContent = driverName;
-          document.getElementById("modalRoute").textContent = route;
-          document.getElementById("modalPassengers").textContent =
-            passengers || "—";
-          document.getElementById("modalPrice").textContent =
-            price.toLocaleString() + " ကျပ်";
-          document.getElementById("bookingModal").style.display = "flex";
-        };
+      // Show a specific ride route on the map
+      window.showRideOnMap = async function (startLoc, endLoc) {
+        if (!rideMap) return;
+        rideMap.clearAll();
+        await rideMap.showRouteByNames(startLoc, endLoc);
 
-        // Complete Booking Process
-        window.confirmBooking = function () {
-          if (!currentSelectedRide) return;
-          try {
-            db.bookRide(
-              currentSelectedRide.rideId,
-              user.id,
-              currentSelectedRide.price,
-            );
-            alert(
-              "✅ ကားစီးနင်းလိုက်ပါရန် အတည်ပြုချက် အောင်မြင်ပါသည်။ Wallet ထဲမှ ကျသင့်ငွေအား ဖြတ်တောက်ပြီးပါပြီ။",
-            );
-            window.location.href = "dashboard.html";
-          } catch (err) {
-            alert("❌ စာရင်းသွင်း၍မရပါ — " + err.message);
-          }
-          window.closeBookingModal();
-        };
+        // Scroll to map
+        document.getElementById("map").scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      };
 
-        window.closeBookingModal = function () {
-          document.getElementById("bookingModal").style.display = "none";
-          currentSelectedRide = null;
-        };
+      // Trigger Confirm Booking Dialog Modal
+      window.selectRide = function (
+        rideId,
+        price,
+        driverName,
+        route,
+        passengers,
+      ) {
+        currentSelectedRide = { rideId, price };
+        document.getElementById("modalDriverName").textContent = driverName;
+        document.getElementById("modalRoute").textContent = route;
+        document.getElementById("modalPassengers").textContent =
+          passengers || "—";
+        document.getElementById("modalPrice").textContent =
+          price.toLocaleString() + " ကျပ်";
+        document.getElementById("bookingModal").style.display = "flex";
+      };
 
-        // Initialize Web Elements
-        initMap();
+      // Complete Booking Process
+      window.confirmBooking = function () {
+        if (!currentSelectedRide) return;
+        try {
+          db.bookRide(
+            currentSelectedRide.rideId,
+            user.id,
+            currentSelectedRide.price,
+          );
+          alert(
+            "✅ ကားစီးနင်းလိုက်ပါရန် အတည်ပြုချက် အောင်မြင်ပါသည်။ Wallet ထဲမှ ကျသင့်ငွေအား ဖြတ်တောက်ပြီးပါပြီ။",
+          );
+          window.location.href = "dashboard.html";
+        } catch (err) {
+          alert("❌ စာရင်းသွင်း၍မရပါ — " + err.message);
+        }
+        window.closeBookingModal();
+      };
 
-        document.getElementById("logoutBtn")?.addEventListener("click", (e) => {
-          e.preventDefault();
-          logout();
+      window.closeBookingModal = function () {
+        document.getElementById("bookingModal").style.display = "none";
+        currentSelectedRide = null;
+      };
+
+      // Initialize Web Elements
+      initMap();
+
+      document.getElementById("logoutBtn")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        logout();
+      });
+    }
+  </script>
+  <script>
+    // Mobile hamburger menu toggle
+    (function () {
+      const btn = document.getElementById("mobileMenuBtn");
+      const nav = document.querySelector(".nav-links");
+      if (btn && nav) {
+        btn.addEventListener("click", function () {
+          nav.classList.toggle("active");
+          btn.classList.toggle("active");
+        });
+        nav.querySelectorAll("a").forEach(function (link) {
+          link.addEventListener("click", function () {
+            nav.classList.remove("active");
+            btn.classList.remove("active");
+          });
         });
       }
-    </script>
-    <script>
-      // Mobile hamburger menu toggle
-      (function () {
-        const btn = document.getElementById("mobileMenuBtn");
-        const nav = document.querySelector(".nav-links");
-        if (btn && nav) {
-          btn.addEventListener("click", function () {
-            nav.classList.toggle("active");
-            btn.classList.toggle("active");
-          });
-          nav.querySelectorAll("a").forEach(function (link) {
-            link.addEventListener("click", function () {
-              nav.classList.remove("active");
-              btn.classList.remove("active");
-            });
-          });
-        }
-      })();
-    </script>
-  </body>
+    })();
+  </script>
+</body>
+
 </html>

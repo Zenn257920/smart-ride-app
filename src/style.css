@@ -1,6 +1,7 @@
 /* style.css - Combined design from both reference files with SmartRide colors */
 /* Import fonts */
 @import "./font.css";
+
 /* CSS Variables - SmartRide color palette */
 :root {
   /* Colors from your project */
@@ -23,6 +24,7 @@
   --font-heading: "MiSans Latin", "MiSans Myanmar", "Syne", sans-serif;
   --font-body: "MiSans Latin", "MiSans Myanmar", "Inter", sans-serif;
 }
+
 /* Reset & Base */
 *,
 *::before,
@@ -31,9 +33,11 @@
   padding: 0;
   box-sizing: border-box;
 }
+
 html {
   scroll-behavior: smooth;
 }
+
 body {
   font-family: var(--font-body);
   background: var(--bg-primary);
@@ -44,10 +48,12 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
 ::selection {
   background: rgba(29, 158, 117, 0.2);
   color: var(--text-primary);
 }
+
 /* ── Animated Background Grid ── */
 .bg-grid {
   position: fixed;
@@ -59,6 +65,7 @@ body {
   z-index: 0;
   pointer-events: none;
 }
+
 .bg-glow {
   position: fixed;
   width: 600px;
@@ -69,85 +76,101 @@ body {
   z-index: 0;
   pointer-events: none;
 }
+
 .bg-glow--1 {
   top: -200px;
   left: -100px;
-  background: radial-gradient(
-    circle,
-    rgba(29, 158, 117, 0.12),
-    transparent 70%
-  );
+  background: radial-gradient(circle,
+      rgba(29, 158, 117, 0.12),
+      transparent 70%);
   animation: floatGlow1 12s ease-in-out infinite;
 }
+
 .bg-glow--2 {
   bottom: -250px;
   right: -150px;
-  background: radial-gradient(
-    circle,
-    rgba(186, 117, 23, 0.08),
-    transparent 70%
-  );
+  background: radial-gradient(circle,
+      rgba(186, 117, 23, 0.08),
+      transparent 70%);
   animation: floatGlow2 15s ease-in-out infinite;
 }
+
 @keyframes floatGlow1 {
+
   0%,
   100% {
     transform: translate(0, 0) scale(1);
   }
+
   50% {
     transform: translate(60px, 40px) scale(1.1);
   }
 }
+
 @keyframes floatGlow2 {
+
   0%,
   100% {
     transform: translate(0, 0) scale(1);
   }
+
   50% {
     transform: translate(-50px, -30px) scale(1.15);
   }
 }
+
 /* ── Fade In Animation ── */
 @keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(24px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 .animate-fade-in-up {
   animation: fadeInUp 0.6s ease-out both;
 }
+
 .animate-delay-1 {
   animation-delay: 0.1s;
 }
+
 .animate-delay-2 {
   animation-delay: 0.2s;
 }
+
 .animate-delay-3 {
   animation-delay: 0.3s;
 }
+
 .animate-delay-4 {
   animation-delay: 0.4s;
 }
+
 .animate-delay-5 {
   animation-delay: 0.5s;
 }
+
 /* ── Pulse Animation ── */
 @keyframes pulse {
+
   0%,
   100% {
     opacity: 1;
     box-shadow: 0 0 0 0 rgba(29, 158, 117, 0.4);
   }
+
   50% {
     opacity: 0.7;
     box-shadow: 0 0 0 6px rgba(29, 158, 117, 0);
   }
 }
+
 .pulse-dot {
   width: 8px;
   height: 8px;
@@ -155,6 +178,7 @@ body {
   background: var(--green);
   animation: pulse 2s ease-in-out infinite;
 }
+
 /* ── Navigation (Glassmorphic) ── */
 .nav-wrapper {
   position: sticky;
@@ -165,6 +189,7 @@ body {
   background: rgba(248, 249, 244, 0.85);
   border-bottom: 1px solid var(--border-subtle);
 }
+
 .nav-inner {
   max-width: 1280px;
   margin: 0 auto;
@@ -173,12 +198,14 @@ body {
   align-items: center;
   justify-content: space-between;
 }
+
 .logo {
   display: flex;
   align-items: center;
   gap: 10px;
   text-decoration: none;
 }
+
 .logo-icon {
   width: 38px;
   height: 38px;
@@ -189,14 +216,17 @@ body {
   justify-content: center;
   transition: transform 0.3s ease;
 }
+
 .logo:hover .logo-icon {
   transform: scale(1.05);
 }
+
 .logo-icon svg {
   width: 20px;
   height: 20px;
   stroke: #fff;
 }
+
 .logo-text {
   font-family: var(--font-heading);
   font-weight: 800;
@@ -204,17 +234,20 @@ body {
   color: var(--green-dark);
   letter-spacing: -0.5px;
 }
+
 .logo-sub {
   font-size: 0.6rem;
   color: var(--gray);
   display: block;
   margin-top: -2px;
 }
+
 .nav-links {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
+
 .nav-link {
   display: flex;
   align-items: center;
@@ -226,10 +259,12 @@ body {
   text-decoration: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .nav-link:hover {
   color: var(--text-primary);
   background: var(--bg-card);
 }
+
 .nav-cta {
   background: var(--green);
   color: #fff !important;
@@ -237,10 +272,12 @@ body {
   border-radius: 8px;
   font-weight: 600;
 }
+
 .nav-cta:hover {
   background: var(--green-dark);
   transform: translateY(-1px);
 }
+
 /* ── Glassmorphic Card ── */
 .glass-card {
   position: relative;
@@ -252,12 +289,14 @@ body {
   padding: 1.5rem;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .glass-card:hover {
   border-color: rgba(29, 158, 117, 0.2);
   background: rgba(255, 255, 255, 0.8);
   transform: translateY(-3px);
   box-shadow: 0 12px 40px rgba(29, 158, 117, 0.08);
 }
+
 /* ── Badge Pill ── */
 .badge {
   display: inline-flex;
@@ -273,6 +312,7 @@ body {
   text-transform: uppercase;
   color: var(--text-secondary);
 }
+
 /* ── Buttons ── */
 .btn-primary {
   background: var(--green);
@@ -287,11 +327,13 @@ body {
   text-decoration: none;
   display: inline-block;
 }
+
 .btn-primary:hover {
   background: var(--green-dark);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(29, 158, 117, 0.2);
 }
+
 .btn-secondary {
   background: transparent;
   color: var(--green);
@@ -305,11 +347,13 @@ body {
   text-decoration: none;
   display: inline-block;
 }
+
 .btn-secondary:hover {
   border-color: var(--green);
   background: rgba(29, 158, 117, 0.05);
   transform: translateY(-2px);
 }
+
 .btn-outline {
   background: transparent;
   color: var(--text-secondary);
@@ -322,15 +366,18 @@ body {
   transition: all 0.3s ease;
   text-decoration: none;
 }
+
 .btn-outline:hover {
   border-color: var(--green);
   color: var(--green);
   background: rgba(29, 158, 117, 0.05);
 }
+
 /* ── Form Inputs (Glassmorphic) ── */
 .input-group {
   margin-bottom: 1.25rem;
 }
+
 .input-label {
   display: block;
   font-size: 0.8rem;
@@ -338,6 +385,7 @@ body {
   color: var(--text-secondary);
   margin-bottom: 0.5rem;
 }
+
 .input-field {
   width: 100%;
   padding: 0.85rem 1rem;
@@ -348,12 +396,14 @@ body {
   font-size: 0.9rem;
   transition: all 0.3s ease;
 }
+
 .input-field:focus {
   outline: none;
   border-color: var(--green);
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.1);
 }
+
 /* ── Map Container ── */
 .map-container {
   width: 100%;
@@ -365,23 +415,28 @@ body {
   position: relative;
   z-index: 1;
 }
+
 /* Leaflet overrides for glass-card compatibility */
 .map-container .leaflet-control-container .leaflet-top,
 .map-container .leaflet-control-container .leaflet-bottom {
   z-index: 10;
 }
+
 .map-container .leaflet-tile-pane {
   z-index: 1;
 }
+
 .leaflet-popup-content-wrapper {
   border-radius: 12px !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
   font-family: var(--font-body) !important;
 }
+
 .leaflet-popup-content {
   font-size: 0.85rem !important;
   margin: 10px 14px !important;
 }
+
 .custom-marker {
   display: flex;
   align-items: center;
@@ -389,6 +444,189 @@ body {
   font-size: 1.5rem;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
+
+/* ── SmartRide Map Markers ── */
+.smartride-marker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.marker-pin {
+  width: 36px;
+  height: 36px;
+  border-radius: 50% 50% 50% 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-45deg);
+  position: relative;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.marker-pin--start {
+  background: linear-gradient(135deg, #1d9e75, #2bc48a);
+  box-shadow: 0 3px 12px rgba(29, 158, 117, 0.4);
+}
+
+.marker-pin--end {
+  background: linear-gradient(135deg, #e74c3c, #ff6b6b);
+  box-shadow: 0 3px 12px rgba(231, 76, 60, 0.4);
+}
+
+.marker-icon-inner {
+  transform: rotate(45deg);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.marker-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #333;
+  background: #fff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+}
+
+/* Marker pulse animation */
+.marker-pulse {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50% 50% 50% 0;
+  opacity: 0;
+  animation: markerPulse 2s ease-out infinite;
+}
+
+.marker-pulse--start {
+  background: rgba(29, 158, 117, 0.3);
+}
+
+.marker-pulse--end {
+  background: rgba(231, 76, 60, 0.3);
+}
+
+@keyframes markerPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Map input active state (when user is selecting on map) */
+.input-field.map-select-active {
+  border-color: var(--green) !important;
+  background: rgba(29, 158, 117, 0.06) !important;
+  box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.15), inset 0 0 0 1px var(--green) !important;
+  animation: inputMapPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes inputMapPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.15), inset 0 0 0 1px var(--green);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px rgba(29, 158, 117, 0.08), inset 0 0 0 1px var(--green);
+  }
+}
+
+/* Map click hint banner */
+.map-click-hint {
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  font-size: 0.78rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: all 0.3s ease;
+  transform: translateY(-4px);
+}
+
+.map-click-hint.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Dashboard ride map section */
+.ride-map-section {
+  margin-bottom: 2rem;
+}
+
+.ride-map-section .map-container {
+  height: 350px;
+  border-radius: 16px;
+}
+
+.ride-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.ride-map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--gray);
+  cursor: pointer;
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.5);
+  transition: all 0.25s ease;
+}
+
+.ride-map-legend-item:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(29, 158, 117, 0.2);
+  transform: translateY(-1px);
+}
+
+.ride-map-legend-item.active {
+  background: var(--green-light);
+  border-color: var(--green);
+  color: var(--green-dark);
+  font-weight: 600;
+}
+
+.ride-map-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .ride-map-section .map-container {
+    height: 250px;
+  }
+}
+
 /* ── Stats Row ── */
 .stats-row {
   background: #fff;
@@ -396,6 +634,7 @@ body {
   border-bottom: 1px solid #f0f0e8;
   padding: 2rem 5%;
 }
+
 .stats-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -404,17 +643,20 @@ body {
   gap: 2rem;
   text-align: center;
 }
+
 .stat-num {
   font-family: var(--font-heading);
   font-size: 2rem;
   font-weight: 800;
   color: var(--green);
 }
+
 .stat-label {
   font-size: 0.82rem;
   color: var(--muted);
   margin-top: 4px;
 }
+
 /* ── Section Styles ── */
 .section {
   padding: 5rem 5%;
@@ -423,6 +665,7 @@ body {
   position: relative;
   z-index: 1;
 }
+
 .section-tag {
   font-size: 0.78rem;
   font-weight: 700;
@@ -431,6 +674,7 @@ body {
   text-transform: uppercase;
   margin-bottom: 0.5rem;
 }
+
 .section-title {
   font-family: var(--font-heading);
   font-size: 2rem;
@@ -439,6 +683,7 @@ body {
   margin-bottom: 1rem;
   letter-spacing: -0.02em;
 }
+
 .section-sub {
   color: var(--muted);
   font-size: 0.95rem;
@@ -446,12 +691,14 @@ body {
   max-width: 500px;
   margin-bottom: 3rem;
 }
+
 /* ── Step Cards ── */
 .steps-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
 }
+
 .step-card {
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(10px);
@@ -461,12 +708,14 @@ body {
   position: relative;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .step-card:hover {
   transform: translateY(-5px);
   border-color: rgba(29, 158, 117, 0.2);
   background: rgba(255, 255, 255, 0.8);
   box-shadow: 0 12px 30px rgba(29, 158, 117, 0.08);
 }
+
 .step-num {
   font-family: var(--font-heading);
   font-size: 2.5rem;
@@ -476,6 +725,7 @@ body {
   top: 12px;
   right: 16px;
 }
+
 .step-icon {
   width: 48px;
   height: 48px;
@@ -486,6 +736,7 @@ body {
   justify-content: center;
   margin-bottom: 1rem;
 }
+
 .step-icon svg {
   width: 24px;
   height: 24px;
@@ -493,17 +744,20 @@ body {
   fill: none;
   stroke-width: 2;
 }
+
 .step-card h4 {
   font-size: 1rem;
   font-weight: 700;
   color: var(--green-dark);
   margin-bottom: 0.5rem;
 }
+
 .step-card p {
   font-size: 0.82rem;
   line-height: 1.6;
   color: var(--muted);
 }
+
 /* ── Price Cards ── */
 .pricing-grid {
   display: grid;
@@ -511,6 +765,7 @@ body {
   gap: 1.5rem;
   margin-top: 2rem;
 }
+
 .price-card {
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(10px);
@@ -521,13 +776,16 @@ body {
   position: relative;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .price-card:hover {
   transform: translateY(-4px);
 }
+
 .price-card.featured {
   border: 2px solid var(--green);
   background: rgba(225, 245, 238, 0.5);
 }
+
 .popular-badge {
   position: absolute;
   top: -12px;
@@ -541,16 +799,19 @@ body {
   border-radius: 20px;
   white-space: nowrap;
 }
+
 .price-icon {
   font-size: 2.5rem;
   margin-bottom: 0.8rem;
 }
+
 .price-card h3 {
   font-size: 1rem;
   font-weight: 700;
   color: var(--green-dark);
   margin-bottom: 0.5rem;
 }
+
 .price-amount {
   font-family: var(--font-heading);
   font-size: 2.4rem;
@@ -558,17 +819,20 @@ body {
   color: var(--green);
   line-height: 1;
 }
+
 .price-unit {
   font-size: 0.8rem;
   color: var(--muted);
   margin-top: 0.3rem;
 }
+
 .price-desc {
   font-size: 0.8rem;
   color: var(--muted);
   margin-top: 1rem;
   line-height: 1.5;
 }
+
 /* ── Benefit Items ── */
 .benefits-grid {
   display: grid;
@@ -576,6 +840,7 @@ body {
   gap: 1.5rem;
   margin-top: 2rem;
 }
+
 .benefit-item {
   display: flex;
   gap: 1rem;
@@ -587,10 +852,12 @@ body {
   border: 1px solid var(--border-subtle);
   transition: all 0.3s ease;
 }
+
 .benefit-item:hover {
   transform: translateX(5px);
   border-color: rgba(29, 158, 117, 0.2);
 }
+
 .benefit-icon {
   width: 44px;
   height: 44px;
@@ -601,6 +868,7 @@ body {
   justify-content: center;
   flex-shrink: 0;
 }
+
 .benefit-icon svg {
   width: 22px;
   height: 22px;
@@ -608,17 +876,20 @@ body {
   fill: none;
   stroke-width: 2;
 }
+
 .benefit-text h5 {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--green-dark);
   margin-bottom: 0.25rem;
 }
+
 .benefit-text p {
   font-size: 0.8rem;
   color: var(--muted);
   line-height: 1.5;
 }
+
 /* ── Modal (Glassmorphic) ── */
 .modal {
   display: none;
@@ -630,6 +901,7 @@ body {
   align-items: center;
   z-index: 1000;
 }
+
 .modal-content {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
@@ -640,11 +912,13 @@ body {
   border: 1px solid var(--border-subtle);
   animation: fadeInUp 0.3s ease-out;
 }
+
 .modal-actions {
   display: flex;
   gap: 1rem;
   margin-top: 1.5rem;
 }
+
 .modal-actions button {
   flex: 1;
   padding: 0.75rem;
@@ -653,20 +927,24 @@ body {
   cursor: pointer;
   font-weight: 600;
 }
+
 .pricing-section {
   background: var(--bg-primary);
   padding: 5rem 5%;
 }
+
 .pricing-inner {
   max-width: 1200px;
   margin: 0 auto;
 }
+
 .pricing-compare {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
   margin-top: 3rem;
 }
+
 .price-card {
   border-radius: 18px;
   padding: 2rem;
@@ -675,13 +953,16 @@ body {
   position: relative;
   transition: all 0.25s;
 }
+
 .price-card:hover {
   transform: translateY(-4px);
 }
+
 .price-card.featured {
   border: 2px solid var(--green);
   background: var(--green-light);
 }
+
 .popular-badge {
   position: absolute;
   top: -12px;
@@ -695,16 +976,19 @@ body {
   border-radius: 20px;
   white-space: nowrap;
 }
+
 .price-icon {
   font-size: 2rem;
   margin-bottom: 0.8rem;
 }
+
 .price-card h3 {
   font-size: 1rem;
   font-weight: 700;
   color: var(--green-dark);
   margin-bottom: 0.5rem;
 }
+
 .price-amount {
   font-family: "Syne", sans-serif;
   font-size: 2.4rem;
@@ -712,17 +996,20 @@ body {
   color: var(--green);
   line-height: 1;
 }
+
 .price-unit {
   font-size: 0.8rem;
   color: var(--muted);
   margin-top: 0.3rem;
 }
+
 .price-desc {
   font-size: 0.8rem;
   color: var(--muted);
   margin-top: 1rem;
   line-height: 1.5;
 }
+
 .price-card.disabled .price-amount {
   color: var(--muted);
 }
@@ -744,6 +1031,7 @@ footer {
   position: relative;
   z-index: 1;
 }
+
 .footer-inner {
   max-width: 1280px;
   margin: 0 auto;
@@ -751,27 +1039,33 @@ footer {
   grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 3rem;
 }
+
 footer h5 {
   font-size: 0.85rem;
   font-weight: 700;
   color: #fff;
   margin-bottom: 1rem;
 }
+
 footer ul {
   list-style: none;
 }
+
 footer ul li {
   margin-bottom: 0.5rem;
 }
+
 footer ul a {
   font-size: 0.8rem;
   color: #888;
   text-decoration: none;
   transition: color 0.2s;
 }
+
 footer ul a:hover {
   color: var(--green-light);
 }
+
 .footer-bottom {
   max-width: 1280px;
   margin: 2rem auto 0;
@@ -781,6 +1075,7 @@ footer ul a:hover {
   justify-content: space-between;
   font-size: 0.75rem;
 }
+
 /* ── Container Utility ── */
 .container {
   max-width: 1280px;
@@ -789,6 +1084,7 @@ footer ul a:hover {
   position: relative;
   z-index: 1;
 }
+
 /* ── Mobile Hamburger Menu Button ── */
 .mobile-menu-btn {
   display: none;
@@ -806,10 +1102,12 @@ footer ul a:hover {
   transition: all 0.3s ease;
   padding: 0;
 }
+
 .mobile-menu-btn:hover {
   background: var(--bg-card);
   border-color: var(--green);
 }
+
 .mobile-menu-btn span {
   display: block;
   width: 20px;
@@ -819,16 +1117,20 @@ footer ul a:hover {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: center;
 }
+
 .mobile-menu-btn.active span:nth-child(1) {
   transform: translateY(7px) rotate(45deg);
 }
+
 .mobile-menu-btn.active span:nth-child(2) {
   opacity: 0;
   transform: scaleX(0);
 }
+
 .mobile-menu-btn.active span:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
 }
+
 /* ── Mobile Nav Overlay ── */
 .nav-overlay {
   display: none;
@@ -840,37 +1142,47 @@ footer ul a:hover {
   opacity: 0;
   transition: opacity 0.3s ease;
 }
+
 .nav-overlay.active {
   display: block;
   opacity: 1;
 }
+
 /* ── Responsive ── */
 @media (max-width: 1024px) {
+
   .steps-grid,
   .pricing-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
   .benefits-grid {
     grid-template-columns: 1fr;
   }
+
   .footer-inner {
     grid-template-columns: repeat(2, 1fr);
   }
-  .hero-section > div {
+
+  .hero-section>div {
     grid-template-columns: 1fr !important;
     gap: 2rem !important;
   }
+
   .hero-section h1 {
     font-size: 2.2rem !important;
   }
 }
+
 @media (max-width: 768px) {
   .mobile-menu-btn {
     display: flex;
   }
+
   .nav-inner {
     padding: 0.875rem 1rem;
   }
+
   .nav-links {
     display: none;
     position: fixed;
@@ -895,11 +1207,13 @@ footer ul a:hover {
     opacity: 0;
     overflow-y: auto;
   }
+
   .nav-links.active {
     display: flex;
     transform: translateX(0);
     opacity: 1;
   }
+
   .nav-links .nav-link {
     padding: 0.85rem 1rem;
     font-size: 0.95rem;
@@ -908,55 +1222,69 @@ footer ul a:hover {
     color: var(--text-primary);
     transition: all 0.2s ease;
   }
+
   .nav-links .nav-link:hover {
     background: var(--green-light);
     color: var(--green-dark);
   }
+
   .nav-links .nav-cta {
     margin-top: 0.5rem;
     text-align: center;
   }
+
   .stats-inner {
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
   }
+
   .steps-grid,
   .pricing-grid {
     grid-template-columns: 1fr;
   }
+
   .pricing-compare {
     grid-template-columns: 1fr;
   }
+
   .section-title {
     font-size: 1.5rem;
   }
+
   .container {
     padding: 0 1rem;
   }
+
   /* Map page 2-column layout → single column on mobile */
-  .container > div[style*="grid-template-columns: 1fr 1fr"] {
+  .container>div[style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
+
   .map-container {
     height: 300px;
   }
 }
+
 @media (max-width: 480px) {
   .stats-inner {
     grid-template-columns: 1fr;
   }
+
   .footer-inner {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
+
   .footer-bottom {
     flex-direction: column;
     text-align: center;
     gap: 0.5rem;
   }
+
   .hero-section h1 {
     font-size: 1.8rem !important;
   }
+
   .map-container {
     height: 250px;
   }
