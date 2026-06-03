@@ -158,7 +158,7 @@
             margin-bottom: 1rem;
           "
         >
-          📊 အမြန်စာရင်းဇယား
+          အမြန်စာရင်းဇယား
         </h3>
         <div
           style="
@@ -200,7 +200,7 @@
       if (!requireAuth()) {
         // Redirect handled in requireAuth
       } else {
-        // 💡 အမြဲတမ်း နောက်ဆုံးရ User Balance အစစ်အမှန်ကို localStorage ထဲက တိုက်ရိုက်ဆွဲယူရန် ပြင်ဆင်ခြင်း
+        //  အမြဲတမ်း နောက်ဆုံးရ User Balance အစစ်အမှန်ကို localStorage ထဲက တိုက်ရိုက်ဆွဲယူရန် ပြင်ဆင်ခြင်း
         const user = db.getCurrentUser() || getCurrentUser();
 
         document.getElementById("userName").textContent =
@@ -229,18 +229,18 @@
     </script>
     <script>
       // Mobile hamburger menu toggle
-      (function() {
-        const btn = document.getElementById('mobileMenuBtn');
-        const nav = document.querySelector('.nav-links');
+      (function () {
+        const btn = document.getElementById("mobileMenuBtn");
+        const nav = document.querySelector(".nav-links");
         if (btn && nav) {
-          btn.addEventListener('click', function() {
-            nav.classList.toggle('active');
-            btn.classList.toggle('active');
+          btn.addEventListener("click", function () {
+            nav.classList.toggle("active");
+            btn.classList.toggle("active");
           });
-          nav.querySelectorAll('a').forEach(function(link) {
-            link.addEventListener('click', function() {
-              nav.classList.remove('active');
-              btn.classList.remove('active');
+          nav.querySelectorAll("a").forEach(function (link) {
+            link.addEventListener("click", function () {
+              nav.classList.remove("active");
+              btn.classList.remove("active");
             });
           });
         }

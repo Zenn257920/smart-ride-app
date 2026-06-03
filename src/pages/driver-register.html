@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ယာဉ်မောင်းစာရင်းသွင်းရန် - Innovix SmartRide</title>
+    <title>Driver Register - Innovix SmartRide</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -218,18 +218,18 @@
     </script>
     <script>
       // Mobile hamburger menu toggle
-      (function() {
-        const btn = document.getElementById('mobileMenuBtn');
-        const nav = document.querySelector('.nav-links');
+      (function () {
+        const btn = document.getElementById("mobileMenuBtn");
+        const nav = document.querySelector(".nav-links");
         if (btn && nav) {
-          btn.addEventListener('click', function() {
-            nav.classList.toggle('active');
-            btn.classList.toggle('active');
+          btn.addEventListener("click", function () {
+            nav.classList.toggle("active");
+            btn.classList.toggle("active");
           });
-          nav.querySelectorAll('a').forEach(function(link) {
-            link.addEventListener('click', function() {
-              nav.classList.remove('active');
-              btn.classList.remove('active');
+          nav.querySelectorAll("a").forEach(function (link) {
+            link.addEventListener("click", function () {
+              nav.classList.remove("active");
+              btn.classList.remove("active");
             });
           });
         }

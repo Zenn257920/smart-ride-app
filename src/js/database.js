@@ -3,13 +3,13 @@
 class DatabaseManager {
   constructor() {
     this.initDatabase();
-    // ⚠️ Gemini API Key — Replace with your valid key (starts with AIzaSy...)
+    //  Gemini API Key — Replace with your valid key (starts with AIzaSy...)
     this.apiKey = "AIzaSyAQ-Ab8RN6ICmmw0YVmfI0xeyC78lLvzCO";
   }
 
   initDatabase() {
     if (!localStorage.getItem("smartride_users")) {
-      // 📝 Sample Users JSON Data — Passengers & Drivers in Yangon
+      //  Sample Users JSON Data — Passengers & Drivers in Yangon
       const sampleUsers = [
         {
           id: "u-1",
@@ -131,7 +131,7 @@ class DatabaseManager {
         return d.toISOString();
       };
 
-      // 🚗 Sample Rides — Covering major Yangon routes
+      //  Sample Rides — Covering major Yangon routes
       const sampleRides = [
         {
           id: "ride-101",
@@ -344,7 +344,7 @@ class DatabaseManager {
     return newRide;
   }
 
-  // 🤖 🧠 Gemini AI Engine: Compares User Inputs & Sample Data via JSON
+  //Gemini AI Engine: Compares User Inputs & Sample Data via JSON
   async searchRidesWithGemini(startLocation, endLocation, departureTime) {
     const availableRides = this.getRides();
 
@@ -472,7 +472,7 @@ Do NOT include any text outside the JSON array.
     }
   }
 
-  // 🛡️ Fallback local matching when Gemini API is unavailable
+  //  Fallback local matching when Gemini API is unavailable
   _fallbackMatch(startLocation, endLocation, departureTime, availableRides) {
     const normalize = (str) =>
       str
@@ -563,7 +563,7 @@ Do NOT include any text outside the JSON array.
       .sort((a, b) => b.matchScore - a.matchScore);
 
     return scored.map((r) => {
-      const totalPassengers = (r.bookedSeats || 0) + 1 + 1; // existing + new + driver
+      const totalPassengers = (r.bookedSeats || 0) + 1; // existing + new + driver
       const discountedPrice = Math.round(r.price / totalPassengers);
       return {
         ...r,
