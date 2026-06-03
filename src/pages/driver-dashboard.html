@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="my">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Driver Dashboard - Innovix SmartRide</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <style>
+    /* Driver Dashboard Specific Styles */
+    .driver-hero {
+      background: linear-gradient(135deg, var(--green-dark) 0%, var(--green) 50%, #2bc48a 100%);
+      border-radius: 24px;
+      padding: 2rem 2.5rem;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .driver-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .driver-hero::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -10%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .driver-hero-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .driver-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      flex-shrink: 0;
+    }
+
+    .driver-info h2 {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+    }
+
+    .driver-info p {
+      opacity: 0.85;
+      font-size: 0.85rem;
+    }
+
+    .driver-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(6px);
+      padding: 0.35rem 0.85rem;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      margin-top: 0.5rem;
+    }
+
+    .driver-badge .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #4ade80;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .driver-balance-card {
+      text-align: right;
+    }
+
+    .driver-balance-card .label {
+      font-size: 0.75rem;
+      opacity: 0.7;
+      margin-bottom: 0.25rem;
+    }
+
+    .driver-balance-card .amount {
+      font-family: var(--font-heading);
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .driver-balance-card .currency {
+      font-size: 0.75rem;
+      opacity: 0.7;
+      margin-top: 0.15rem;
+    }
+
+    /* Stats Grid */
+    .driver-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .driver-stat-card {
+      position: relative;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 1.25rem;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+
+    .driver-stat-card:hover {
+      border-color: rgba(29, 158, 117, 0.2);
+      background: rgba(255, 255, 255, 0.85);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(29, 158, 117, 0.08);
+    }
+
+    .driver-stat-card .stat-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .driver-stat-card .stat-value {
+      font-family: var(--font-heading);
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--green);
+      line-height: 1;
+    }
+
+    .driver-stat-card .stat-label {
+      font-size: 0.72rem;
+      color: var(--gray);
+      margin-top: 0.35rem;
+      font-weight: 500;
+    }
+
+    .driver-stat-card .stat-trend {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      background: var(--green-light);
+      color: var(--green);
+    }
+
+    /* Main Content Grid */
+    .driver-content-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Active Rides Section */
+    .ride-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 0.75rem;
+      transition: all 0.3s ease;
+    }
+
+    .ride-item:hover {
+      border-color: rgba(29, 158, 117, 0.2);
+      transform: translateX(4px);
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .ride-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .ride-route-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--green-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .ride-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .ride-route {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--green-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ride-meta {
+      font-size: 0.72rem;
+      color: var(--gray);
+      margin-top: 0.2rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .ride-passengers-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 8px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--green-light);
+      color: var(--green);
+      flex-shrink: 0;
+    }
+
+    /* Passenger List */
+    .passenger-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.4);
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .passenger-item:hover {
+      background: rgba(255, 255, 255, 0.7);
+      border-color: rgba(29, 158, 117, 0.15);
+    }
+
+    .passenger-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--green-light), #d1f5e8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+      border: 1px solid rgba(29, 158, 117, 0.15);
+    }
+
+    .passenger-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--green-dark);
+    }
+
+    .passenger-pickup {
+      font-size: 0.68rem;
+      color: var(--gray);
+      margin-top: 0.1rem;
+    }
+
+    /* Quick Actions */
+    .quick-action-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .quick-action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1.25rem 0.75rem;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid var(--border-subtle);
+      text-decoration: none;
+      color: var(--green-dark);
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .quick-action-btn:hover {
+      border-color: rgba(29, 158, 117, 0.25);
+      background: rgba(255, 255, 255, 0.85);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(29, 158, 117, 0.1);
+    }
+
+    .quick-action-btn .action-icon {
+      font-size: 1.5rem;
+    }
+
+    .quick-action-btn .action-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    /* Vehicle Info Card */
+    .vehicle-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: linear-gradient(135deg, rgba(29, 158, 117, 0.06), rgba(29, 158, 117, 0.02));
+      border-radius: 14px;
+      border: 1px solid rgba(29, 158, 117, 0.1);
+    }
+
+    .vehicle-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: var(--green-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .vehicle-details h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--green-dark);
+    }
+
+    .vehicle-details p {
+      font-size: 0.75rem;
+      color: var(--gray);
+      margin-top: 0.15rem;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--gray);
+    }
+
+    .empty-state .empty-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      opacity: 0.5;
+    }
+
+    .empty-state p {
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    /* Section Header */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .section-header h3 {
+      font-family: var(--font-heading);
+      color: var(--green-dark);
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .section-header a {
+      font-size: 0.75rem;
+      color: var(--green);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .section-header a:hover {
+      color: var(--green-dark);
+    }
+
+    /* Earnings breakdown */
+    .earnings-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .earnings-row:last-child {
+      border-bottom: none;
+    }
+
+    .earnings-row .label {
+      font-size: 0.8rem;
+      color: var(--gray);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .earnings-row .value {
+      font-family: var(--font-heading);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--green-dark);
+    }
+
+    .earnings-row .value.positive {
+      color: var(--green);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .driver-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .driver-content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .driver-hero-content {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .driver-balance-card {
+        text-align: center;
+      }
+
+      .driver-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .driver-hero {
+        padding: 1.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .driver-stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+      }
+
+      .quick-action-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow bg-glow--1"></div>
+  <div class="bg-glow bg-glow--2"></div>
+
+  <nav class="nav-wrapper">
+    <div class="nav-inner">
+      <a href="/" class="logo">
+        <div class="logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <rect x="1" y="3" width="15" height="13" rx="2" />
+            <path d="M16 8h4l3 4v4h-7V8z" />
+            <circle cx="5.5" cy="18.5" r="2.5" />
+            <circle cx="18.5" cy="18.5" r="2.5" />
+          </svg>
+        </div>
+        <div>
+          <span class="logo-text">Innovix SmartRide</span>
+          <span class="logo-sub">Myanmar</span>
+        </div>
+      </a>
+      <div class="nav-links">
+        <a href="offer-ride.html" class="nav-link">ခရီးစဉ်ကမ်းလှမ်းမည်</a>
+        <a href="my-rides.html" class="nav-link">ခရီးစဉ်များ</a>
+        <a href="wallet.html" class="nav-link">ပိုက်ဆံအိတ်</a>
+        <a href="driver-dashboard.html" class="nav-link nav-cta">Driver Dashboard</a>
+        <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
+      </div>
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="container" style="padding: 2rem">
+
+    <!-- Driver Hero Banner -->
+    <div class="driver-hero animate-fade-in-up" id="driverHero">
+      <div class="driver-hero-content">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div class="driver-avatar">🚗</div>
+          <div class="driver-info">
+            <h2 id="driverName">Loading...</h2>
+            <p id="driverEmail">loading...</p>
+            <div class="driver-badge">
+              <span class="dot"></span>
+              <span>Verified Driver</span>
+            </div>
+          </div>
+        </div>
+        <div class="driver-balance-card">
+          <div class="label">လက်ကျန်ငွေ</div>
+          <div class="amount" id="driverBalance">0</div>
+          <div class="currency">ကျပ် (MMK)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="driver-stats-grid">
+      <div class="driver-stat-card animate-fade-in-up animate-delay-1">
+        <div class="stat-icon">🚙</div>
+        <div class="stat-value" id="statActiveRides">0</div>
+        <div class="stat-label">လက်ရှိခရီးစဉ်</div>
+        <div class="stat-trend">Active</div>
+      </div>
+      <div class="driver-stat-card animate-fade-in-up animate-delay-2">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value" id="statTotalPassengers">0</div>
+        <div class="stat-label">ခရီးသည်စုစုပေါင်း</div>
+      </div>
+      <div class="driver-stat-card animate-fade-in-up animate-delay-3">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value" id="statTotalEarnings">0</div>
+        <div class="stat-label">ရရှိခဲ့သောဝင်ငွေ</div>
+      </div>
+      <div class="driver-stat-card animate-fade-in-up animate-delay-4">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-value" id="statAvailableSeats">0</div>
+        <div class="stat-label">လွတ်နေသောနေရာ</div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="driver-content-grid">
+
+      <!-- Left Column: Active Rides -->
+      <div>
+        <!-- Active Rides Card -->
+        <div class="glass-card animate-fade-in-up" style="margin-bottom: 1.5rem;">
+          <div class="section-header">
+            <h3>📋 ကမ်းလှမ်းထားသော ခရီးစဉ်များ</h3>
+            <a href="offer-ride.html">ခရီးစဉ်အသစ် +</a>
+          </div>
+          <div id="activeRidesList">
+            <div class="empty-state">
+              <div class="empty-icon">🚗</div>
+              <p>ကမ်းလှမ်းထားသော ခရီးစဉ်မရှိသေးပါ</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Passengers Card -->
+        <div class="glass-card animate-fade-in-up animate-delay-2">
+          <div class="section-header">
+            <h3>👥 လက်ရှိခရီးသည်များ</h3>
+          </div>
+          <div id="passengersList">
+            <div class="empty-state">
+              <div class="empty-icon">👤</div>
+              <p>ခရီးသည်မရှိသေးပါ</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Quick Actions, Vehicle, Earnings -->
+      <div>
+        <!-- Quick Actions -->
+        <div class="glass-card animate-fade-in-up animate-delay-1" style="margin-bottom: 1.5rem;">
+          <div class="section-header">
+            <h3>⚡ အမြန်လုပ်ဆောင်ချက်များ</h3>
+          </div>
+          <div class="quick-action-grid">
+            <a href="offer-ride.html" class="quick-action-btn">
+              <span class="action-icon">🚙</span>
+              <span class="action-label">ခရီးစဉ်အသစ်<br>ကမ်းလှမ်းမည်</span>
+            </a>
+            <a href="wallet.html" class="quick-action-btn">
+              <span class="action-icon">💰</span>
+              <span class="action-label">ပိုက်ဆံအိတ်<br>ငွေသွင်း/ထုတ်</span>
+            </a>
+            <a href="my-rides.html" class="quick-action-btn">
+              <span class="action-icon">📋</span>
+              <span class="action-label">ခရီးစဉ်<br>မှတ်တမ်းများ</span>
+            </a>
+            <a href="driver-register.html" class="quick-action-btn">
+              <span class="action-icon">⚙️</span>
+              <span class="action-label">ယာဉ်အချက်<br>အလက်ပြင်ရန်</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Vehicle Info -->
+        <div class="glass-card animate-fade-in-up animate-delay-2" style="margin-bottom: 1.5rem;">
+          <div class="section-header">
+            <h3>🚘 ကားအချက်အလက်</h3>
+          </div>
+          <div class="vehicle-info" id="vehicleInfo">
+            <div class="vehicle-icon">🚗</div>
+            <div class="vehicle-details">
+              <h4 id="vehicleModel">—</h4>
+              <p id="vehiclePlate">—</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Earnings Summary -->
+        <div class="glass-card animate-fade-in-up animate-delay-3">
+          <div class="section-header">
+            <h3>📊 ဝင်ငွေအနှစ်ချုပ်</h3>
+          </div>
+          <div id="earningsSummary">
+            <div class="earnings-row">
+              <div class="label">🚙 ခရီးစဉ်အရေအတွက်</div>
+              <div class="value" id="earnRideCount">0</div>
+            </div>
+            <div class="earnings-row">
+              <div class="label">👥 ခရီးသည်စုစုပေါင်း</div>
+              <div class="value" id="earnPassengerCount">0</div>
+            </div>
+            <div class="earnings-row">
+              <div class="label">💵 ခန့်မှန်းဝင်ငွေ</div>
+              <div class="value positive" id="earnEstimated">0 ကျပ်</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, getCurrentUser, logout } from '../js/auth.js';
+    import { db } from '../js/database.js';
+
+    if (!requireAuth()) {
+      // Redirect handled in requireAuth
+    } else {
+      const user = db.getCurrentUser() || getCurrentUser();
+
+      // If not a driver, redirect to passenger dashboard
+      if (user.userType !== 'driver') {
+        window.location.href = '/src/pages/dashboard.html';
+      }
+
+      // Populate driver info
+      document.getElementById('driverName').textContent = user.name || user.email;
+      document.getElementById('driverEmail').textContent = user.email;
+      document.getElementById('driverBalance').textContent = user.balance?.toLocaleString() || '0';
+
+      // Vehicle info
+      document.getElementById('vehicleModel').textContent = user.carModel || 'မမှတ်ပုံတင်ရသေးပါ';
+      document.getElementById('vehiclePlate').textContent = user.carPlate || '—';
+
+      // Get driver's rides
+      const driverRides = db.getRidesByDriver(user.id) || [];
+
+      // Calculate stats
+      let totalPassengers = 0;
+      let totalAvailableSeats = 0;
+      let estimatedEarnings = 0;
+
+      driverRides.forEach(ride => {
+        const booked = ride.bookedSeats || 0;
+        totalPassengers += booked;
+        totalAvailableSeats += (ride.availableSeats || 4) - booked;
+        estimatedEarnings += (ride.price || 0) * booked;
+      });
+
+      document.getElementById('statActiveRides').textContent = driverRides.length;
+      document.getElementById('statTotalPassengers').textContent = totalPassengers;
+      document.getElementById('statTotalEarnings').textContent = estimatedEarnings.toLocaleString();
+      document.getElementById('statAvailableSeats').textContent = totalAvailableSeats;
+
+      // Earnings summary
+      document.getElementById('earnRideCount').textContent = driverRides.length;
+      document.getElementById('earnPassengerCount').textContent = totalPassengers;
+      document.getElementById('earnEstimated').textContent = estimatedEarnings.toLocaleString() + ' ကျပ်';
+
+      // Render active rides
+      const activeRidesList = document.getElementById('activeRidesList');
+      if (driverRides.length > 0) {
+        activeRidesList.innerHTML = driverRides.map(ride => {
+          const time = new Date(ride.departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const date = new Date(ride.departureTime).toLocaleDateString('my-MM', { month: 'short', day: 'numeric' });
+          const booked = ride.bookedSeats || 0;
+          const total = ride.availableSeats || 4;
+          return `
+            <div class="ride-item">
+              <div class="ride-route-icon">🛣️</div>
+              <div class="ride-details">
+                <div class="ride-route">${ride.startLocation} → ${ride.endLocation}</div>
+                <div class="ride-meta">
+                  <span>🕐 ${time}</span>
+                  <span>📅 ${date}</span>
+                  <span>💰 ${(ride.price || 0).toLocaleString()} ကျပ်</span>
+                </div>
+              </div>
+              <div class="ride-passengers-badge">${booked}/${total} ဦး</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Render passengers (collect from all rides)
+      const passengersList = document.getElementById('passengersList');
+      const allPassengers = [];
+      driverRides.forEach(ride => {
+        if (ride.passengers && ride.passengers.length > 0) {
+          ride.passengers.forEach(p => {
+            allPassengers.push({
+              ...p,
+              route: `${ride.startLocation} → ${ride.endLocation}`
+            });
+          });
+        }
+      });
+
+      if (allPassengers.length > 0) {
+        passengersList.innerHTML = allPassengers.map((p, i) => {
+          const avatarEmoji = ['👤', '👩', '👨', '🧑', '👦', '👧'][i % 6];
+          return `
+            <div class="passenger-item">
+              <div class="passenger-avatar">${avatarEmoji}</div>
+              <div>
+                <div class="passenger-name">${p.name}</div>
+                <div class="passenger-pickup">📍 ${p.pickup || 'N/A'}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Logout
+      document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        logout();
+      });
+    }
+  </script>
+  <script>
+    // Mobile hamburger menu toggle
+    (function () {
+      const btn = document.getElementById('mobileMenuBtn');
+      const nav = document.querySelector('.nav-links');
+      if (btn && nav) {
+        btn.addEventListener('click', function () {
+          nav.classList.toggle('active');
+          btn.classList.toggle('active');
+        });
+        nav.querySelectorAll('a').forEach(function (link) {
+          link.addEventListener('click', function () {
+            nav.classList.remove('active');
+            btn.classList.remove('active');
+          });
+        });
+      }
+    })();
+  </script>
+</body>
+
+</html>

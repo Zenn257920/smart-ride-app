@@ -203,23 +203,28 @@
         //  အမြဲတမ်း နောက်ဆုံးရ User Balance အစစ်အမှန်ကို localStorage ထဲက တိုက်ရိုက်ဆွဲယူရန် ပြင်ဆင်ခြင်း
         const user = db.getCurrentUser() || getCurrentUser();
 
-        document.getElementById("userName").textContent =
-          user.name || user.email;
-        document.getElementById("userEmail").textContent = user.email;
-        document.getElementById("userBalance").textContent =
-          user.balance?.toLocaleString() || "0";
+        // Driver ဖြစ်ပါက Driver Dashboard သို့ redirect လုပ်ပေးမည်
+        if (user.userType === 'driver') {
+          window.location.href = '/src/pages/driver-dashboard.html';
+        } else {
+          document.getElementById("userName").textContent =
+            user.name || user.email;
+          document.getElementById("userEmail").textContent = user.email;
+          document.getElementById("userBalance").textContent =
+            user.balance?.toLocaleString() || "0";
 
-        // စာရင်းဇယားများ တွက်ချက်ခြင်း
-        const bookings = db.getBookingsByPassenger(user.id) || [];
-        document.getElementById("totalRides").textContent = bookings.length;
+          // စာရင်းဇယားများ တွက်ချက်ခြင်း
+          const bookings = db.getBookingsByPassenger(user.id) || [];
+          document.getElementById("totalRides").textContent = bookings.length;
 
-        let totalSaved = 0;
-        bookings.forEach((booking) => {
-          // ပုံမှန်တက္ကစီခ ၇၅၀၀ ကျပ်ထဲကမှ user တကယ်ပေးခဲ့ရတဲ့ dynamic price ကို နှုတ်ပြီး သက်သာငွေတွက်ခြင်း
-          totalSaved += 7500 - booking.totalPrice;
-        });
-        document.getElementById("totalSaved").textContent =
-          totalSaved.toLocaleString() + " ကျပ်";
+          let totalSaved = 0;
+          bookings.forEach((booking) => {
+            // ပုံမှန်တက္ကစီခ ၇၅၀၀ ကျပ်ထဲကမှ user တကယ်ပေးခဲ့ရတဲ့ dynamic price ကို နှုတ်ပြီး သက်သာငွေတွက်ခြင်း
+            totalSaved += 7500 - booking.totalPrice;
+          });
+          document.getElementById("totalSaved").textContent =
+            totalSaved.toLocaleString() + " ကျပ်";
+        }
       }
 
       document.getElementById("logoutBtn")?.addEventListener("click", (e) => {

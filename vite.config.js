@@ -13,7 +13,8 @@ export default defineConfig({
         offerRide: resolve(__dirname, 'src/pages/offer-ride.html'),
         myRides: resolve(__dirname, 'src/pages/my-rides.html'),
         wallet: resolve(__dirname, 'src/pages/wallet.html'),
-        driverRegister: resolve(__dirname, 'src/pages/driver-register.html')
+        driverRegister: resolve(__dirname, 'src/pages/driver-register.html'),
+        driverDashboard: resolve(__dirname, 'src/pages/driver-dashboard.html')
       }
     }
   },
