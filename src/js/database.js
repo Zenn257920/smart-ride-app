@@ -14,7 +14,7 @@ class DatabaseManager {
         {
           id: "u-1",
           name: "Demo Passenger",
-          email: "passenger@demo.com",
+          email: "passenger@demo.mm",
           password: "123456",
           phone: "09123456789",
           balance: 50000,
