@@ -247,7 +247,7 @@ class DatabaseManager {
         {
           id: "ride-108",
           driverId: "u-4",
-          driverName: "ဒေါ်အေးအေး",
+          driverName: "U Kyaw Zaw",
           startLocation: "Thaketa (သာကေတ)",
           endLocation: "Tamwe (တာမွေ)",
           departureTime: setTime(8, 45),
@@ -403,9 +403,10 @@ For example: "သန်လျင်" matches "Thanlyin", "Thanlyin Star City"; "
 Consider departure time proximity (within 2 hours is acceptable).
 
 PRICING MODEL:
-- Each passenger pays: (baseFare / passengerCount) + (baseFare * 0.10 / passengerCount) + 5% app commission
+- FIRST RIDER RULE: If bookedSeats is 0, the new passenger is the first rider. First rider pays ONLY the base price (no bonus, no commission). Set discountedPrice = price, fareShare = price, driverBonusPerPassenger = 0, appCommissionPerPassenger = 0, savings = 0.
+- SHARED RIDE (bookedSeats >= 1): Each passenger pays: (baseFare / passengerCount) + (baseFare * 0.10 / passengerCount) + 5% app commission
 - "discountedPrice" = the total price ONE passenger pays
-- "driverEarnings" = baseFare + (baseFare * 0.10) — driver earns 10% bonus
+- "driverEarnings" = baseFare + (baseFare * 0.10) — driver earns 10% bonus (only when shared)
 - "appCommission" = 5% of (fareShare + driverBonusShare) per passenger × passengerCount
 - "savings" = originalPrice - discountedPrice (how much passenger saves vs riding alone)
 - passengerCount = bookedSeats + 1 (existing passengers + the new requesting passenger)
@@ -486,6 +487,36 @@ Do NOT include any text outside the JSON array.
       // Ensure each result has the required fields with defaults
       return results.map((ride) => {
         const basePrice = ride.price || 7500;
+        const isFirstRider = (ride.bookedSeats || 0) === 0;
+
+        // First rider pays standard fare only — no bonus/commission markup
+        if (isFirstRider) {
+          return {
+            id: ride.id || "ride-unknown",
+            driverId: ride.driverId || "",
+            driverName: ride.driverName || "Unknown Driver",
+            startLocation: ride.startLocation || "",
+            endLocation: ride.endLocation || "",
+            departureTime: ride.departureTime || new Date().toISOString(),
+            availableSeats: ride.availableSeats || 4,
+            bookedSeats: 0,
+            price: basePrice,
+            carModel: ride.carModel || "Unknown",
+            carPlate: ride.carPlate || "N/A",
+            passengers: ride.passengers || [],
+            matchScore: ride.matchScore || 70,
+            isFirstRider: true,
+            discountedPrice: basePrice,
+            fareShare: basePrice,
+            driverBonusPerPassenger: 0,
+            appCommissionPerPassenger: 0,
+            driverEarnings: basePrice,
+            appCommissionTotal: 0,
+            savings: 0,
+          };
+        }
+
+        // Shared ride pricing — split fare among all passengers
         const totalPassengers = (ride.bookedSeats || 0) + 1;
         const fareShare =
           ride.fareShare || Math.floor(basePrice / totalPassengers);
@@ -514,6 +545,7 @@ Do NOT include any text outside the JSON array.
           carPlate: ride.carPlate || "N/A",
           passengers: ride.passengers || [],
           matchScore: ride.matchScore || 70,
+          isFirstRider: false,
           discountedPrice: ride.discountedPrice || passengerPrice,
           fareShare: fareShare,
           driverBonusPerPassenger: driverBonusPerPassenger,
@@ -632,8 +664,26 @@ Do NOT include any text outside the JSON array.
       .sort((a, b) => b.matchScore - a.matchScore);
 
     return scored.map((r) => {
-      const totalPassengers = (r.bookedSeats || 0) + 1;
       const basePrice = r.price || 7500;
+      const isFirstRider = (r.bookedSeats || 0) === 0;
+
+      // First rider pays standard fare — no markup
+      if (isFirstRider) {
+        return {
+          ...r,
+          isFirstRider: true,
+          discountedPrice: basePrice,
+          fareShare: basePrice,
+          driverBonusPerPassenger: 0,
+          appCommissionPerPassenger: 0,
+          driverEarnings: basePrice,
+          appCommissionTotal: 0,
+          savings: 0,
+        };
+      }
+
+      // Shared ride pricing
+      const totalPassengers = (r.bookedSeats || 0) + 1;
       const fareShare = Math.floor(basePrice / totalPassengers);
       const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
       const driverBonusPerPassenger = Math.floor(
@@ -646,6 +696,7 @@ Do NOT include any text outside the JSON array.
       const passengerPrice = subtotal + appCommissionPerPassenger;
       return {
         ...r,
+        isFirstRider: false,
         discountedPrice: passengerPrice,
         fareShare: fareShare,
         driverBonusPerPassenger: driverBonusPerPassenger,
@@ -693,21 +744,34 @@ Do NOT include any text outside the JSON array.
     // Calculate pricing breakdown
     const basePrice = rides[rideIndex].price || 7500;
     const totalPassengers = rides[rideIndex].bookedSeats;
-    const fareShare = Math.floor(basePrice / totalPassengers);
-    const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
-    const driverBonusPerPassenger = Math.floor(
-      driverBonusTotal / totalPassengers,
-    );
-    const subtotal = fareShare + driverBonusPerPassenger;
-    const appCommissionPerPassenger = Math.floor(
-      subtotal * this.APP_COMMISSION_RATE,
-    );
+    const isFirstRider = totalPassengers === 1;
+
+    let fareShare, driverBonusPerPassenger, appCommissionPerPassenger, driverPayment;
+
+    if (isFirstRider) {
+      // First rider: standard fare, no bonus markup
+      fareShare = basePrice;
+      driverBonusPerPassenger = 0;
+      appCommissionPerPassenger = 0;
+      driverPayment = basePrice; // Driver gets full base fare
+    } else {
+      // Shared ride: split fare with bonus & commission
+      fareShare = Math.floor(basePrice / totalPassengers);
+      const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
+      driverBonusPerPassenger = Math.floor(
+        driverBonusTotal / totalPassengers,
+      );
+      const subtotal = fareShare + driverBonusPerPassenger;
+      appCommissionPerPassenger = Math.floor(
+        subtotal * this.APP_COMMISSION_RATE,
+      );
+      driverPayment = fareShare + driverBonusPerPassenger;
+    }
 
     // Deduct total price from passenger
     users[passengerIndex].balance -= totalPrice;
 
-    // Credit driver with base fare share + bonus share (excluding app commission)
-    const driverPayment = fareShare + driverBonusPerPassenger;
+    // Credit driver
     const driverId = rides[rideIndex].driverId;
     const driverIndex = users.findIndex((u) => u.id === driverId);
     if (driverIndex !== -1) {

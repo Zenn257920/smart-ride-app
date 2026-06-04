@@ -345,11 +345,12 @@
 
               const seatsLeft =
                 (ride.availableSeats || 4) - (ride.bookedSeats || 0);
+              const isFirstRider = ride.isFirstRider || (ride.bookedSeats || 0) === 0;
 
               // Calculate breakdown values with fallbacks
               const fareShare = ride.fareShare || Math.floor((ride.price || 7500) / ((ride.bookedSeats || 0) + 1));
-              const driverBonus = ride.driverBonusPerPassenger || Math.floor((ride.price || 7500) * 0.10 / ((ride.bookedSeats || 0) + 1));
-              const appFee = ride.appCommissionPerPassenger || Math.floor((fareShare + driverBonus) * 0.05);
+              const driverBonus = ride.driverBonusPerPassenger || 0;
+              const appFee = ride.appCommissionPerPassenger || 0;
 
               return `
               <div class="glass-card animate-fade-in-up" style="padding: 1.5rem; position: relative; cursor: pointer;" onclick="window.showRideOnMap('${ride.startLocation}', '${ride.endLocation}')">
@@ -358,8 +359,15 @@
                   🔥 ${ride.matchScore}% Match
                 </div>
 
+                ${isFirstRider ? `
+                <!-- First Rider Badge -->
+                <div style="position: absolute; top: 12px; left: 12px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; padding: 0.3rem 0.75rem; font-size: 0.72rem; font-weight:700; border-radius: 20px; box-shadow: 0 2px 8px rgba(245,158,11,0.3);">
+                  🎉 ပထမဆုံးခရီးသည်
+                </div>
+                ` : ''}
+
                 <!-- Route & Driver Info -->
-                <div style="margin-bottom: 1rem;">
+                <div style="margin-bottom: 1rem; ${isFirstRider ? 'margin-top: 1.5rem;' : ''}">
                   <div style="font-size: 0.7rem; color: var(--amber); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem;">AI ကိုက်ညီမှု ရလဒ်</div>
                   <h4 style="color: var(--green-dark); margin-bottom: 0.5rem; font-family: var(--font-heading); font-size: 1.15rem; font-weight:700;">
                     ${ride.startLocation} → ${ride.endLocation}
@@ -390,17 +398,29 @@
                   </div>
                 </div>
 
-                <!-- Price Breakdown & Book Button -->
+                <!-- Price & Book Button -->
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
                   <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div>
+                      ${isFirstRider ? `
+                      <!-- First Rider: Standard fare, no markup -->
+                      <span style="font-size: 0.72rem; color: var(--green-dark); font-weight: 600; display: block; margin-bottom: 0.2rem;">
+                        🚕 ပုံမှန်ခရီးစဉ်ခ
+                      </span>
+                      <span style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 800; color: var(--green);">
+                        ${(ride.price || 7500).toLocaleString()} ကျပ်
+                      </span>
+                      <span style="font-size: 0.7rem; color: var(--gray); display: block; margin-top: 0.2rem;">
+                        နောက်ထပ်ခရီးသည် ပါလာရင် စျေးပိုသက်သာပါမည် 💡
+                      </span>
+                      ` : seatsLeft > 0 ? `
+                      <!-- Shared Ride: Show savings -->
                       <span style="font-size: 0.72rem; color: var(--gray); text-decoration: line-through; display: block;">
                         တစ်ကိုယ်စီးလျှင် ${(ride.price || 7500).toLocaleString()} ကျပ်
                       </span>
-                      <span style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 800; color: ${seatsLeft > 0 ? 'var(--green)' : '#ef4444'};">
-                        ${seatsLeft > 0 ? ride.discountedPrice.toLocaleString() + ' ကျပ်' : 'ပြည့်သွားပါပြီ'}
+                      <span style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 800; color: var(--green);">
+                        ${ride.discountedPrice.toLocaleString()} ကျပ်
                       </span>
-                      ${seatsLeft > 0 ? `
                       <span style="font-size: 0.7rem; color: var(--amber); font-weight: 600; display: block;">
                         💰 ${ride.savings.toLocaleString()} ကျပ် သက်သာ
                       </span>
@@ -409,14 +429,18 @@
                         ခရီးစဉ်ခ ${fareShare.toLocaleString()} + Bonus ${driverBonus.toLocaleString()} + ဝန်ဆောင်ခ ${appFee.toLocaleString()}
                       </div>
                       ` : `
+                      <!-- Full -->
+                      <span style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 800; color: #ef4444;">
+                        ပြည့်သွားပါပြီ
+                      </span>
                       <span style="font-size: 0.7rem; color: #ef4444; font-weight: 600; display: block;">
                         🚫 နေရာလွတ် မရှိတော့ပါ
                       </span>
                       `}
                     </div>
                     ${seatsLeft > 0 ? `
-                    <button onclick="event.stopPropagation(); window.selectRide('${ride.id}', ${ride.discountedPrice}, '${ride.driverName}', '${ride.startLocation} → ${ride.endLocation}', '${(ride.passengers || []).map((p) => p.name).join(", ") || "သင်သာ"}', ${fareShare}, ${driverBonus}, ${appFee})" class="btn-primary" style="font-size: 0.82rem; padding: 0.65rem 1.3rem; border-radius: 10px; font-weight:600; cursor:pointer;">
-                      အတူစီးမည် 🚗
+                    <button onclick="event.stopPropagation(); window.selectRide('${ride.id}', ${ride.discountedPrice}, '${ride.driverName}', '${ride.startLocation} → ${ride.endLocation}', '${(ride.passengers || []).map((p) => p.name).join(", ") || "သင်သာ"}', ${fareShare}, ${driverBonus}, ${appFee}, ${isFirstRider})" class="btn-primary" style="font-size: 0.82rem; padding: 0.65rem 1.3rem; border-radius: 10px; font-weight:600; cursor:pointer;">
+                      ${isFirstRider ? 'စီးမည် 🚗' : 'အတူစီးမည် 🚗'}
                     </button>
                     ` : `
                     <button disabled class="btn-primary" style="font-size: 0.82rem; padding: 0.65rem 1.3rem; border-radius: 10px; font-weight:600; cursor: not-allowed; opacity: 0.4; background: #999;">
@@ -462,18 +486,21 @@
         fareShare,
         driverBonus,
         appFee,
+        isFirstRider,
       ) {
         currentSelectedRide = { rideId, price };
         document.getElementById("modalDriverName").textContent = driverName;
         document.getElementById("modalRoute").textContent = route;
         document.getElementById("modalPassengers").textContent =
-          passengers || "—";
+          isFirstRider ? "ပထမဆုံးခရီးသည် (သင်) 🎉" : (passengers || "—");
         document.getElementById("modalFareShare").textContent =
-          (fareShare || 0).toLocaleString() + " ကျပ်";
+          isFirstRider
+            ? price.toLocaleString() + " ကျပ် (ပုံမှန်)"
+            : (fareShare || 0).toLocaleString() + " ကျပ်";
         document.getElementById("modalDriverBonus").textContent =
-          "+" + (driverBonus || 0).toLocaleString() + " ကျပ်";
+          isFirstRider ? "— ကျပ်" : "+" + (driverBonus || 0).toLocaleString() + " ကျပ်";
         document.getElementById("modalAppFee").textContent =
-          "+" + (appFee || 0).toLocaleString() + " ကျပ်";
+          isFirstRider ? "— ကျပ်" : "+" + (appFee || 0).toLocaleString() + " ကျပ်";
         document.getElementById("modalPrice").textContent =
           price.toLocaleString() + " ကျပ်";
         document.getElementById("bookingModal").style.display = "flex";
