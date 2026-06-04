@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Driver Register - Innovix SmartRide</title>
     <link rel="stylesheet" href="/src/style.css" />
+
+    <script>
+      (function () {
+        const t = localStorage.getItem("smartride_theme") || "light";
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
   </head>
   <body>
     <div class="bg-grid"></div>

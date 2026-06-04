@@ -8,6 +8,13 @@
   <link rel="stylesheet" href="/src/style.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Prevent dark mode flash -->
+  <script>
+    (function () {
+      const t = localStorage.getItem("smartride_theme") || "light";
+      document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
 </head>
 
 <body>
@@ -34,6 +41,7 @@
         <a href="find-ride.html" class="nav-link nav-cta">ကားစီးမည်</a>
         <a href="offer-ride.html" class="nav-link">ကားမောင်းမည်</a>
         <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <button id="themeToggleBtn" class="theme-toggle" title="Dark Mode">🌙</button>
         <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
       </div>
       <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
@@ -178,6 +186,9 @@
     import { requireAuth, getCurrentUser, logout } from "../js/auth.js";
     import { db } from "../js/database.js";
     import { RideMap } from "../js/map.js";
+    import { toggleTheme } from "../js/theme.js";
+
+    document.getElementById("themeToggleBtn")?.addEventListener("click", toggleTheme);
 
     if (!requireAuth()) {
       // Redirection logic handled inside auth guard

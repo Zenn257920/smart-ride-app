@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Wallet - Innovix SmartRide</title>
     <link rel="stylesheet" href="/src/style.css" />
+    <!-- Prevent dark mode flash -->
+    <script>
+      (function () {
+        const t = localStorage.getItem("smartride_theme") || "light";
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
   </head>
   <body>
     <div class="bg-grid"></div>
@@ -37,8 +44,12 @@
           <a href="find-ride.html" class="nav-link">ကားစီးမည်</a>
           <a href="offer-ride.html" class="nav-link">ကားမောင်းမည်</a>
           <a href="dashboard.html" class="nav-link">Dashboard</a>
+          <button id="themeToggleBtn" class="theme-toggle" title="Dark Mode">🌙</button>
           <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
         </div>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
       </div>
     </nav>
     <div class="container" style="padding: 2rem">
@@ -222,6 +233,9 @@
     <script type="module">
       import { requireAuth, getCurrentUser, logout } from "../js/auth.js";
       import { db } from "../js/database.js";
+      import { toggleTheme } from "../js/theme.js";
+
+      document.getElementById("themeToggleBtn")?.addEventListener("click", toggleTheme);
       if (!requireAuth()) {
         /* redirect handled */
       } else {

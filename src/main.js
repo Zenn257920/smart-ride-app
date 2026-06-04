@@ -1,5 +1,6 @@
 // Main entry point
 import { isLoggedIn, getCurrentUser } from "./js/auth.js";
+import { toggleTheme } from "./js/theme.js";
 // Update navigation based on login state
 function updateNavigation() {
   const navLinks = document.querySelector(".nav-links");
@@ -32,6 +33,9 @@ function updateNavigation() {
 // Initialize when DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
   updateNavigation();
+
+  // Theme toggle
+  document.getElementById("themeToggleBtn")?.addEventListener("click", toggleTheme);
 
   // Mobile hamburger menu toggle
   const mobileMenuBtn = document.getElementById("mobileMenuBtn");

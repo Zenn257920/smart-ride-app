@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Innovix SmartRide Myanmar | AI Carpooling</title>
     <link rel="stylesheet" href="/src/style.css" />
+    <!-- Prevent dark mode flash -->
+    <script>
+      (function () {
+        const t = localStorage.getItem("smartride_theme") || "light";
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
   </head>
   <body>
     <!-- Animated Background -->
@@ -40,6 +47,9 @@
           <a href="/src/pages/find-ride.html" class="nav-link">ကားစီးမည်</a>
           <a href="/src/pages/offer-ride.html" class="nav-link">ကားမောင်းမည်</a>
           <a href="/src/pages/dashboard.html" class="nav-link">Dashboard</a>
+          <button id="themeToggleBtn" class="theme-toggle" title="Dark Mode">
+            🌙
+          </button>
           <a href="/src/pages/login.html" class="nav-link nav-cta"
             >အကောင့်ဝင်ရန်</a
           >
@@ -221,7 +231,7 @@
                 style="
                   width: 32px;
                   height: 32px;
-                  background: #e6f1fb;
+                  background: #3e91df;
                   border-radius: 50%;
                   display: flex;
                   align-items: center;
@@ -285,7 +295,7 @@
               position: absolute;
               top: -15px;
               right: 20px;
-              background: #fff;
+              background: #ffffffa6;
               border: 1px solid var(--green-light);
               border-radius: 12px;
               padding: 0.5rem 0.8rem;

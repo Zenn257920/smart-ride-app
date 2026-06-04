@@ -880,6 +880,100 @@ Do NOT include any text outside the JSON array.
   getRidesByDriver(driverId) {
     return this.getRides().filter((r) => r.driverId === driverId);
   }
+
+  cancelBooking(bookingId, passengerId) {
+    const bookings = this.getBookings();
+    const bookingIndex = bookings.findIndex(
+      (b) => b.id === bookingId && b.passengerId === passengerId,
+    );
+    if (bookingIndex === -1) {
+      throw new Error("ဤဘွတ်ကင်ကို ရှာမတွေ့ပါ။");
+    }
+
+    const booking = bookings[bookingIndex];
+    if (booking.status === "cancelled") {
+      throw new Error("ဤခရီးစဉ်ကို ဖျက်သိမ်းပြီးသားဖြစ်ပါသည်။");
+    }
+
+    // Mark booking as cancelled
+    bookings[bookingIndex].status = "cancelled";
+    bookings[bookingIndex].cancelledAt = new Date().toISOString();
+
+    // Refund passenger
+    const users = this.getUsers();
+    const passengerIndex = users.findIndex((u) => u.id === passengerId);
+    if (passengerIndex !== -1) {
+      users[passengerIndex].balance =
+        (users[passengerIndex].balance || 0) + booking.totalPrice;
+    }
+
+    // Reverse driver payment
+    const rides = this.getRides();
+    const rideIndex = rides.findIndex((r) => r.id === booking.rideId);
+    if (rideIndex !== -1) {
+      const driverId = rides[rideIndex].driverId;
+      const driverIndex = users.findIndex((u) => u.id === driverId);
+      const driverRefund = booking.driverPayment || booking.totalPrice;
+      if (driverIndex !== -1) {
+        users[driverIndex].balance =
+          (users[driverIndex].balance || 0) - driverRefund;
+      }
+
+      // Decrement booked seats
+      rides[rideIndex].bookedSeats = Math.max(
+        0,
+        (rides[rideIndex].bookedSeats || 1) - 1,
+      );
+
+      // Remove passenger from ride's passengers array
+      if (rides[rideIndex].passengers) {
+        rides[rideIndex].passengers = rides[rideIndex].passengers.filter(
+          (p) => p.id !== passengerId,
+        );
+      }
+    }
+
+    // Record refund transactions
+    const transactions = this.getTransactions();
+    transactions.push({
+      id: "tx-" + Math.random().toString(36).substr(2, 9),
+      userId: passengerId,
+      amount: booking.totalPrice,
+      type: "credit",
+      description: `ခရီးစဉ်ဖျက်သိမ်း ပြန်အမ်းငွေ ${booking.totalPrice.toLocaleString()} ကျပ်`,
+      createdAt: new Date().toISOString(),
+    });
+
+    if (rideIndex !== -1) {
+      const driverId = rides[rideIndex].driverId;
+      const driverRefund = booking.driverPayment || booking.totalPrice;
+      transactions.push({
+        id: "tx-" + Math.random().toString(36).substr(2, 9),
+        userId: driverId,
+        amount: -driverRefund,
+        type: "debit",
+        description: `ခရီးသည်ဖျက်သိမ်း ပြန်အမ်းငွေ ${driverRefund.toLocaleString()} ကျပ်`,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    // Save all changes
+    localStorage.setItem("smartride_bookings", JSON.stringify(bookings));
+    localStorage.setItem("smartride_users", JSON.stringify(users));
+    localStorage.setItem("smartride_rides", JSON.stringify(rides));
+    localStorage.setItem(
+      "smartride_transactions",
+      JSON.stringify(transactions),
+    );
+    if (passengerIndex !== -1) {
+      localStorage.setItem(
+        "smartride_currentUser",
+        JSON.stringify(users[passengerIndex]),
+      );
+    }
+
+    return booking.totalPrice;
+  }
 }
 
 export const db = new DatabaseManager();
