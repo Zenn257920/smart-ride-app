@@ -369,7 +369,9 @@
                   </p>
                   <p style="color: var(--gray); font-size: 0.8rem;">
                     🕒 ${new Date(ride.departureTime).toLocaleString("my-MM", { hour: "2-digit", minute: "2-digit", month: "short", day: "numeric" })}
-                    &nbsp;·&nbsp; 💺 ${seatsLeft} နေရာ လွတ်
+                    &nbsp;·&nbsp; ${seatsLeft > 0
+                  ? `💺 ${seatsLeft} နေရာ လွတ်`
+                  : `<span style="color: #ef4444; font-weight: 700;">🚫 နေရာ ပြည့်သွားပါပြီ</span>`}
                   </p>
                 </div>
 
@@ -395,9 +397,10 @@
                       <span style="font-size: 0.72rem; color: var(--gray); text-decoration: line-through; display: block;">
                         တစ်ကိုယ်စီးလျှင် ${(ride.price || 7500).toLocaleString()} ကျပ်
                       </span>
-                      <span style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 800; color: var(--green);">
-                        ${ride.discountedPrice.toLocaleString()} ကျပ်
+                      <span style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 800; color: ${seatsLeft > 0 ? 'var(--green)' : '#ef4444'};">
+                        ${seatsLeft > 0 ? ride.discountedPrice.toLocaleString() + ' ကျပ်' : 'ပြည့်သွားပါပြီ'}
                       </span>
+                      ${seatsLeft > 0 ? `
                       <span style="font-size: 0.7rem; color: var(--amber); font-weight: 600; display: block;">
                         💰 ${ride.savings.toLocaleString()} ကျပ် သက်သာ
                       </span>
@@ -405,10 +408,21 @@
                       <div style="margin-top: 0.4rem; font-size: 0.65rem; color: var(--gray); line-height: 1.5;">
                         ခရီးစဉ်ခ ${fareShare.toLocaleString()} + Bonus ${driverBonus.toLocaleString()} + ဝန်ဆောင်ခ ${appFee.toLocaleString()}
                       </div>
+                      ` : `
+                      <span style="font-size: 0.7rem; color: #ef4444; font-weight: 600; display: block;">
+                        🚫 နေရာလွတ် မရှိတော့ပါ
+                      </span>
+                      `}
                     </div>
+                    ${seatsLeft > 0 ? `
                     <button onclick="event.stopPropagation(); window.selectRide('${ride.id}', ${ride.discountedPrice}, '${ride.driverName}', '${ride.startLocation} → ${ride.endLocation}', '${(ride.passengers || []).map((p) => p.name).join(", ") || "သင်သာ"}', ${fareShare}, ${driverBonus}, ${appFee})" class="btn-primary" style="font-size: 0.82rem; padding: 0.65rem 1.3rem; border-radius: 10px; font-weight:600; cursor:pointer;">
                       အတူစီးမည် 🚗
                     </button>
+                    ` : `
+                    <button disabled class="btn-primary" style="font-size: 0.82rem; padding: 0.65rem 1.3rem; border-radius: 10px; font-weight:600; cursor: not-allowed; opacity: 0.4; background: #999;">
+                      ပြည့်ပါပြီ 🚫
+                    </button>
+                    `}
                   </div>
                 </div>
               </div>

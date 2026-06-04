@@ -6,7 +6,7 @@ class DatabaseManager {
     //  Gemini API Key — Replace with your valid key (starts with AIzaSy...)
     this.apiKey = "AIzaSyAQ-Ab8RN6ICmmw0YVmfI0xeyC78lLvzCO";
     // Pricing constants
-    this.DRIVER_BONUS_RATE = 0.10; // Driver earns 10% above base fare
+    this.DRIVER_BONUS_RATE = 0.1; // Driver earns 10% above base fare
     this.APP_COMMISSION_RATE = 0.05; // App takes 5% commission from each passenger
   }
 
@@ -159,7 +159,7 @@ class DatabaseManager {
           startLocation: "Hledan (လှည်းတန်း)",
           endLocation: "Sule (ဆူးလေ)",
           departureTime: setTime(9, 0),
-          availableSeats: 3,
+          availableSeats: 4,
           bookedSeats: 2,
           price: 6000,
           carModel: "Honda Shuttle",
@@ -177,7 +177,7 @@ class DatabaseManager {
           endLocation: "Hledan Centre",
           departureTime: setTime(7, 45),
           availableSeats: 4,
-          bookedSeats: 0,
+          bookedSeats: 2,
           price: 8000,
           carModel: "Suzuki Ertiga",
           carPlate: "YGN 5R/9988",
@@ -487,12 +487,18 @@ Do NOT include any text outside the JSON array.
       return results.map((ride) => {
         const basePrice = ride.price || 7500;
         const totalPassengers = (ride.bookedSeats || 0) + 1;
-        const fareShare = ride.fareShare || Math.floor(basePrice / totalPassengers);
+        const fareShare =
+          ride.fareShare || Math.floor(basePrice / totalPassengers);
         const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
-        const driverBonusPerPassenger = ride.driverBonusPerPassenger || Math.floor(driverBonusTotal / totalPassengers);
+        const driverBonusPerPassenger =
+          ride.driverBonusPerPassenger ||
+          Math.floor(driverBonusTotal / totalPassengers);
         const subtotal = fareShare + driverBonusPerPassenger;
-        const appCommissionPerPassenger = ride.appCommissionPerPassenger || Math.floor(subtotal * this.APP_COMMISSION_RATE);
-        const passengerPrice = fareShare + driverBonusPerPassenger + appCommissionPerPassenger;
+        const appCommissionPerPassenger =
+          ride.appCommissionPerPassenger ||
+          Math.floor(subtotal * this.APP_COMMISSION_RATE);
+        const passengerPrice =
+          fareShare + driverBonusPerPassenger + appCommissionPerPassenger;
 
         return {
           id: ride.id || "ride-unknown",
@@ -512,9 +518,11 @@ Do NOT include any text outside the JSON array.
           fareShare: fareShare,
           driverBonusPerPassenger: driverBonusPerPassenger,
           appCommissionPerPassenger: appCommissionPerPassenger,
-          driverEarnings: ride.driverEarnings || (basePrice + driverBonusTotal),
-          appCommissionTotal: ride.appCommissionTotal || (appCommissionPerPassenger * totalPassengers),
-          savings: ride.savings || (basePrice - passengerPrice),
+          driverEarnings: ride.driverEarnings || basePrice + driverBonusTotal,
+          appCommissionTotal:
+            ride.appCommissionTotal ||
+            appCommissionPerPassenger * totalPassengers,
+          savings: ride.savings || basePrice - passengerPrice,
         };
       });
     } catch (error) {
@@ -628,9 +636,13 @@ Do NOT include any text outside the JSON array.
       const basePrice = r.price || 7500;
       const fareShare = Math.floor(basePrice / totalPassengers);
       const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
-      const driverBonusPerPassenger = Math.floor(driverBonusTotal / totalPassengers);
+      const driverBonusPerPassenger = Math.floor(
+        driverBonusTotal / totalPassengers,
+      );
       const subtotal = fareShare + driverBonusPerPassenger;
-      const appCommissionPerPassenger = Math.floor(subtotal * this.APP_COMMISSION_RATE);
+      const appCommissionPerPassenger = Math.floor(
+        subtotal * this.APP_COMMISSION_RATE,
+      );
       const passengerPrice = subtotal + appCommissionPerPassenger;
       return {
         ...r,
@@ -649,6 +661,14 @@ Do NOT include any text outside the JSON array.
     const rides = this.getRides();
     const rideIndex = rides.findIndex((r) => r.id === rideId);
     if (rideIndex === -1) return false;
+
+    // Check if ride is full
+    const seatsLeft = (rides[rideIndex].availableSeats || 4) - (rides[rideIndex].bookedSeats || 0);
+    if (seatsLeft <= 0) {
+      throw new Error(
+        "ဤခရီးစဉ်တွင် နေရာလွတ် မရှိတော့ပါ။ အခြားခရီးစဉ်ကို ရွေးပေးပါ။",
+      );
+    }
 
     const users = this.getUsers();
     const passengerIndex = users.findIndex((u) => u.id === passengerId);
@@ -675,9 +695,13 @@ Do NOT include any text outside the JSON array.
     const totalPassengers = rides[rideIndex].bookedSeats;
     const fareShare = Math.floor(basePrice / totalPassengers);
     const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
-    const driverBonusPerPassenger = Math.floor(driverBonusTotal / totalPassengers);
+    const driverBonusPerPassenger = Math.floor(
+      driverBonusTotal / totalPassengers,
+    );
     const subtotal = fareShare + driverBonusPerPassenger;
-    const appCommissionPerPassenger = Math.floor(subtotal * this.APP_COMMISSION_RATE);
+    const appCommissionPerPassenger = Math.floor(
+      subtotal * this.APP_COMMISSION_RATE,
+    );
 
     // Deduct total price from passenger
     users[passengerIndex].balance -= totalPrice;
@@ -687,7 +711,8 @@ Do NOT include any text outside the JSON array.
     const driverId = rides[rideIndex].driverId;
     const driverIndex = users.findIndex((u) => u.id === driverId);
     if (driverIndex !== -1) {
-      users[driverIndex].balance = (users[driverIndex].balance || 0) + driverPayment;
+      users[driverIndex].balance =
+        (users[driverIndex].balance || 0) + driverPayment;
     }
 
     const bookings = this.getBookings();
