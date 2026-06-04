@@ -886,9 +886,22 @@
               <div class="value" id="earnPassengerCount">0</div>
             </div>
             <div class="earnings-row">
-              <div class="label">💵 ခန့်မှန်းဝင်ငွေ</div>
-              <div class="value positive" id="earnEstimated">0 ကျပ်</div>
+              <div class="label">💵 အခြေခံခရီးစဉ်ခ</div>
+              <div class="value" id="earnBaseFare">0 ကျပ်</div>
             </div>
+            <div class="earnings-row">
+              <div class="label">🎁 ဘိုနပ်စ်ငွေ (+10%)</div>
+              <div class="value positive" id="earnBonus">0 ကျပ်</div>
+            </div>
+            <div class="earnings-row"
+              style="border-top: 2px solid var(--green); padding-top: 0.85rem; margin-top: 0.25rem;">
+              <div class="label" style="font-weight: 700; color: var(--green-dark);">💰 စုစုပေါင်းဝင်ငွေ</div>
+              <div class="value positive" id="earnEstimated" style="font-size: 1.1rem;">0 ကျပ်</div>
+            </div>
+          </div>
+          <div id="bonusMessage"
+            style="margin-top: 0.75rem; padding: 0.6rem 0.85rem; background: linear-gradient(135deg, rgba(29,158,117,0.08), rgba(29,158,117,0.03)); border-radius: 10px; font-size: 0.72rem; color: var(--green); font-weight: 600; text-align: center;">
+            🚀 SmartRide ဖြင့် ပုံမှန်ခရီးစဉ်ခထက် 10% ပိုမိုရရှိပါသည်
           </div>
         </div>
       </div>
@@ -922,26 +935,36 @@
       // Get driver's rides
       const driverRides = db.getRidesByDriver(user.id) || [];
 
-      // Calculate stats
+      // Calculate stats with driver bonus
+      const DRIVER_BONUS_RATE = 0.10;
       let totalPassengers = 0;
       let totalAvailableSeats = 0;
-      let estimatedEarnings = 0;
+      let totalBaseFare = 0;
+      let totalBonus = 0;
 
       driverRides.forEach(ride => {
         const booked = ride.bookedSeats || 0;
+        const basePrice = ride.price || 7500;
         totalPassengers += booked;
         totalAvailableSeats += (ride.availableSeats || 4) - booked;
-        estimatedEarnings += (ride.price || 0) * booked;
+        if (booked > 0) {
+          totalBaseFare += basePrice;
+          totalBonus += Math.floor(basePrice * DRIVER_BONUS_RATE);
+        }
       });
+
+      const estimatedEarnings = totalBaseFare + totalBonus;
 
       document.getElementById('statActiveRides').textContent = driverRides.length;
       document.getElementById('statTotalPassengers').textContent = totalPassengers;
       document.getElementById('statTotalEarnings').textContent = estimatedEarnings.toLocaleString();
       document.getElementById('statAvailableSeats').textContent = totalAvailableSeats;
 
-      // Earnings summary
+      // Earnings summary with breakdown
       document.getElementById('earnRideCount').textContent = driverRides.length;
       document.getElementById('earnPassengerCount').textContent = totalPassengers;
+      document.getElementById('earnBaseFare').textContent = totalBaseFare.toLocaleString() + ' ကျပ်';
+      document.getElementById('earnBonus').textContent = '+' + totalBonus.toLocaleString() + ' ကျပ်';
       document.getElementById('earnEstimated').textContent = estimatedEarnings.toLocaleString() + ' ကျပ်';
 
       // ─── Initialize the ride map ───

@@ -2,10 +2,36 @@
 export class RouteMatcher {
   constructor() {
     this.baseTaxiPrice = 7500; // Base price in MMK
+    this.DRIVER_BONUS_RATE = 0.10; // Driver earns 10% above base fare
+    this.APP_COMMISSION_RATE = 0.05; // App takes 5% commission from each passenger
     this.weights = {
       startLocation: 0.4,
       endLocation: 0.4,
       timeMatch: 0.2,
+    };
+  }
+
+  // ─── Calculate price breakdown for carpooling ───
+  calculatePriceBreakdown(basePrice, passengerCount) {
+    const fareShare = Math.floor(basePrice / passengerCount);
+    const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
+    const driverBonusPerPassenger = Math.floor(driverBonusTotal / passengerCount);
+    const subtotal = fareShare + driverBonusPerPassenger;
+    const appCommissionPerPassenger = Math.floor(subtotal * this.APP_COMMISSION_RATE);
+    const passengerPrice = subtotal + appCommissionPerPassenger;
+    const driverEarnings = basePrice + driverBonusTotal;
+    const appCommissionTotal = appCommissionPerPassenger * passengerCount;
+
+    return {
+      fareShare,
+      driverBonusPerPassenger,
+      appCommissionPerPassenger,
+      passengerPrice,
+      driverEarnings,
+      driverBonusTotal,
+      appCommissionTotal,
+      savings: basePrice - passengerPrice,
+      savingsPercentage: Math.round(((basePrice - passengerPrice) / basePrice) * 100),
     };
   }
   // Calculate distance between two points using Haversine formula
@@ -16,9 +42,9 @@ export class RouteMatcher {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(this.toRad(lat1)) *
-        Math.cos(this.toRad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+      Math.cos(this.toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
@@ -73,18 +99,21 @@ export class RouteMatcher {
       .map((match) => {
         const currentPassengers = match.ride.bookedSeats || 0;
         const totalPassengers = currentPassengers + 1;
-        const discountedPrice = Math.floor(
-          this.baseTaxiPrice / (totalPassengers + 1),
-        );
-        const savings = this.baseTaxiPrice - discountedPrice;
+        const basePrice = match.ride.price || this.baseTaxiPrice;
+        const breakdown = this.calculatePriceBreakdown(basePrice, totalPassengers);
         return {
           ...match.ride,
           matchScore: match.score,
           matchPercentage: Math.round(match.score),
-          originalPrice: this.baseTaxiPrice,
-          discountedPrice: discountedPrice,
-          savings: savings,
-          savingsPercentage: Math.round((savings / this.baseTaxiPrice) * 100),
+          originalPrice: basePrice,
+          discountedPrice: breakdown.passengerPrice,
+          fareShare: breakdown.fareShare,
+          driverBonusPerPassenger: breakdown.driverBonusPerPassenger,
+          appCommissionPerPassenger: breakdown.appCommissionPerPassenger,
+          driverEarnings: breakdown.driverEarnings,
+          appCommissionTotal: breakdown.appCommissionTotal,
+          savings: breakdown.savings,
+          savingsPercentage: breakdown.savingsPercentage,
           totalPassengers: totalPassengers,
         };
       });
@@ -117,14 +146,16 @@ export class RouteMatcher {
         }
       }
       if (group.length > 1) {
-        const pricePerPerson = Math.floor(this.baseTaxiPrice / group.length);
+        const breakdown = this.calculatePriceBreakdown(this.baseTaxiPrice, group.length);
         groups.push({
           passengers: group,
           count: group.length,
-          pricePerPerson: pricePerPerson,
+          pricePerPerson: breakdown.passengerPrice,
           totalPrice: this.baseTaxiPrice,
-          savingsPerPerson: this.baseTaxiPrice - pricePerPerson,
-          totalSavings: (this.baseTaxiPrice - pricePerPerson) * group.length,
+          driverEarnings: breakdown.driverEarnings,
+          appCommissionTotal: breakdown.appCommissionTotal,
+          savingsPerPerson: breakdown.savings,
+          totalSavings: breakdown.savings * group.length,
         });
       }
     }
@@ -153,15 +184,15 @@ export class RouteMatcher {
   // Estimate price based on distance and passenger count
   estimatePrice(distanceKm, passengerCount) {
     const baseRate = 500; // 500 MMK per km
-    const basePrice = distanceKm * baseRate;
-    const discountedPrice = Math.floor(basePrice / (passengerCount + 1));
+    const basePrice = Math.floor(distanceKm * baseRate);
+    const breakdown = this.calculatePriceBreakdown(basePrice, passengerCount || 1);
     return {
-      basePrice: Math.floor(basePrice),
-      discountedPrice: discountedPrice,
-      savings: Math.floor(basePrice - discountedPrice),
-      savingsPercentage: Math.round(
-        ((basePrice - discountedPrice) / basePrice) * 100,
-      ),
+      basePrice: basePrice,
+      discountedPrice: breakdown.passengerPrice,
+      driverEarnings: breakdown.driverEarnings,
+      appCommissionTotal: breakdown.appCommissionTotal,
+      savings: breakdown.savings,
+      savingsPercentage: breakdown.savingsPercentage,
     };
   }
 }

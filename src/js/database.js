@@ -5,6 +5,9 @@ class DatabaseManager {
     this.initDatabase();
     //  Gemini API Key — Replace with your valid key (starts with AIzaSy...)
     this.apiKey = "AIzaSyAQ-Ab8RN6ICmmw0YVmfI0xeyC78lLvzCO";
+    // Pricing constants
+    this.DRIVER_BONUS_RATE = 0.10; // Driver earns 10% above base fare
+    this.APP_COMMISSION_RATE = 0.05; // App takes 5% commission from each passenger
   }
 
   initDatabase() {
@@ -369,6 +372,14 @@ Find rides where the start and end locations are geographically close or on the 
 For example: "သန်လျင်" matches "Thanlyin", "Thanlyin Star City"; "ဗဟန်း" matches "Bahan"; "ဆူးလေ" matches "Sule", "Downtown".
 Consider departure time proximity (within 2 hours is acceptable).
 
+PRICING MODEL:
+- Each passenger pays: (baseFare / passengerCount) + (baseFare * 0.10 / passengerCount) + 5% app commission
+- "discountedPrice" = the total price ONE passenger pays
+- "driverEarnings" = baseFare + (baseFare * 0.10) — driver earns 10% bonus
+- "appCommission" = 5% of (fareShare + driverBonusShare) per passenger × passengerCount
+- "savings" = originalPrice - discountedPrice (how much passenger saves vs riding alone)
+- passengerCount = bookedSeats + 1 (existing passengers + the new requesting passenger)
+
 INPUT DATA (JSON):
 1. Passenger Request: ${JSON.stringify(userInputJSON)}
 2. Available Driver Rides DB: ${JSON.stringify(databaseJSON)}
@@ -383,13 +394,18 @@ Return ONLY a JSON array of matching rides. Each ride object MUST have these exa
 - "departureTime": ISO 8601 timestamp
 - "availableSeats": total seats
 - "bookedSeats": currently booked seats count
-- "price": original price in MMK
+- "price": original base price in MMK
 - "carModel": vehicle model
 - "carPlate": license plate
 - "passengers": array of existing passenger objects [{id, name, pickup}]
 - "matchScore": integer 0-100 representing route match quality
-- "discountedPrice": price after carpool discount (split among passengers + new user)
-- "savings": amount saved vs original price
+- "discountedPrice": total price per passenger (fare share + driver bonus share + app commission)
+- "fareShare": base fare divided by passenger count
+- "driverBonusPerPassenger": driver bonus portion per passenger
+- "appCommissionPerPassenger": app commission per passenger
+- "driverEarnings": total driver earnings (base + 10% bonus)
+- "appCommissionTotal": total app commission from all passengers
+- "savings": amount saved vs original price per passenger
 
 Sort by matchScore descending. Return empty array [] if no matches found.
 Do NOT include any text outside the JSON array.
@@ -438,24 +454,39 @@ Do NOT include any text outside the JSON array.
       const results = JSON.parse(rawText);
 
       // Ensure each result has the required fields with defaults
-      return results.map((ride) => ({
-        id: ride.id || "ride-unknown",
-        driverId: ride.driverId || "",
-        driverName: ride.driverName || "Unknown Driver",
-        startLocation: ride.startLocation || "",
-        endLocation: ride.endLocation || "",
-        departureTime: ride.departureTime || new Date().toISOString(),
-        availableSeats: ride.availableSeats || 4,
-        bookedSeats: ride.bookedSeats || 0,
-        price: ride.price || 7500,
-        carModel: ride.carModel || "Unknown",
-        carPlate: ride.carPlate || "N/A",
-        passengers: ride.passengers || [],
-        matchScore: ride.matchScore || 70,
-        discountedPrice:
-          ride.discountedPrice || Math.round((ride.price || 7500) * 0.5),
-        savings: ride.savings || Math.round((ride.price || 7500) * 0.5),
-      }));
+      return results.map((ride) => {
+        const basePrice = ride.price || 7500;
+        const totalPassengers = (ride.bookedSeats || 0) + 1;
+        const fareShare = ride.fareShare || Math.floor(basePrice / totalPassengers);
+        const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
+        const driverBonusPerPassenger = ride.driverBonusPerPassenger || Math.floor(driverBonusTotal / totalPassengers);
+        const subtotal = fareShare + driverBonusPerPassenger;
+        const appCommissionPerPassenger = ride.appCommissionPerPassenger || Math.floor(subtotal * this.APP_COMMISSION_RATE);
+        const passengerPrice = fareShare + driverBonusPerPassenger + appCommissionPerPassenger;
+
+        return {
+          id: ride.id || "ride-unknown",
+          driverId: ride.driverId || "",
+          driverName: ride.driverName || "Unknown Driver",
+          startLocation: ride.startLocation || "",
+          endLocation: ride.endLocation || "",
+          departureTime: ride.departureTime || new Date().toISOString(),
+          availableSeats: ride.availableSeats || 4,
+          bookedSeats: ride.bookedSeats || 0,
+          price: basePrice,
+          carModel: ride.carModel || "Unknown",
+          carPlate: ride.carPlate || "N/A",
+          passengers: ride.passengers || [],
+          matchScore: ride.matchScore || 70,
+          discountedPrice: ride.discountedPrice || passengerPrice,
+          fareShare: fareShare,
+          driverBonusPerPassenger: driverBonusPerPassenger,
+          appCommissionPerPassenger: appCommissionPerPassenger,
+          driverEarnings: ride.driverEarnings || (basePrice + driverBonusTotal),
+          appCommissionTotal: ride.appCommissionTotal || (appCommissionPerPassenger * totalPassengers),
+          savings: ride.savings || (basePrice - passengerPrice),
+        };
+      });
     } catch (error) {
       console.warn(
         "⚠️ Gemini Engine failed, using local backup matcher:",
@@ -563,12 +594,23 @@ Do NOT include any text outside the JSON array.
       .sort((a, b) => b.matchScore - a.matchScore);
 
     return scored.map((r) => {
-      const totalPassengers = (r.bookedSeats || 0) + 1; // existing + new + driver
-      const discountedPrice = Math.round(r.price / totalPassengers);
+      const totalPassengers = (r.bookedSeats || 0) + 1;
+      const basePrice = r.price || 7500;
+      const fareShare = Math.floor(basePrice / totalPassengers);
+      const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
+      const driverBonusPerPassenger = Math.floor(driverBonusTotal / totalPassengers);
+      const subtotal = fareShare + driverBonusPerPassenger;
+      const appCommissionPerPassenger = Math.floor(subtotal * this.APP_COMMISSION_RATE);
+      const passengerPrice = subtotal + appCommissionPerPassenger;
       return {
         ...r,
-        discountedPrice,
-        savings: r.price - discountedPrice,
+        discountedPrice: passengerPrice,
+        fareShare: fareShare,
+        driverBonusPerPassenger: driverBonusPerPassenger,
+        appCommissionPerPassenger: appCommissionPerPassenger,
+        driverEarnings: basePrice + driverBonusTotal,
+        appCommissionTotal: appCommissionPerPassenger * totalPassengers,
+        savings: basePrice - passengerPrice,
       };
     });
   }
@@ -598,7 +640,25 @@ Do NOT include any text outside the JSON array.
       pickup: "Requested via app",
     });
 
+    // Calculate pricing breakdown
+    const basePrice = rides[rideIndex].price || 7500;
+    const totalPassengers = rides[rideIndex].bookedSeats;
+    const fareShare = Math.floor(basePrice / totalPassengers);
+    const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
+    const driverBonusPerPassenger = Math.floor(driverBonusTotal / totalPassengers);
+    const subtotal = fareShare + driverBonusPerPassenger;
+    const appCommissionPerPassenger = Math.floor(subtotal * this.APP_COMMISSION_RATE);
+
+    // Deduct total price from passenger
     users[passengerIndex].balance -= totalPrice;
+
+    // Credit driver with base fare share + bonus share (excluding app commission)
+    const driverPayment = fareShare + driverBonusPerPassenger;
+    const driverId = rides[rideIndex].driverId;
+    const driverIndex = users.findIndex((u) => u.id === driverId);
+    if (driverIndex !== -1) {
+      users[driverIndex].balance = (users[driverIndex].balance || 0) + driverPayment;
+    }
 
     const bookings = this.getBookings();
     const newBooking = {
@@ -606,18 +666,46 @@ Do NOT include any text outside the JSON array.
       rideId,
       passengerId,
       totalPrice,
+      fareShare,
+      driverBonusPerPassenger,
+      appCommission: appCommissionPerPassenger,
+      driverPayment,
       status: "confirmed",
       bookingTime: new Date().toISOString(),
     };
     bookings.push(newBooking);
 
     const transactions = this.getTransactions();
+
+    // Passenger payment transaction
     transactions.push({
       id: "tx-" + Math.random().toString(36).substr(2, 9),
       userId: passengerId,
       amount: -totalPrice,
       type: "debit",
-      description: `ခရီးစဉ်လမ်းကြောင်းတူစီးနင်းခကျသင့်ငွေ`,
+      description: `ခရီးစဉ်ခ ${fareShare.toLocaleString()} + ဘိုနပ်စ် ${driverBonusPerPassenger.toLocaleString()} + ဝန်ဆောင်ခ ${appCommissionPerPassenger.toLocaleString()} ကျပ်`,
+      createdAt: new Date().toISOString(),
+    });
+
+    // Driver earnings transaction
+    if (driverIndex !== -1) {
+      transactions.push({
+        id: "tx-" + Math.random().toString(36).substr(2, 9),
+        userId: driverId,
+        amount: driverPayment,
+        type: "credit",
+        description: `ခရီးသည်ခ ${fareShare.toLocaleString()} + ဘိုနပ်စ် ${driverBonusPerPassenger.toLocaleString()} ကျပ် ရရှိ`,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    // App commission transaction (recorded for tracking)
+    transactions.push({
+      id: "tx-" + Math.random().toString(36).substr(2, 9),
+      userId: "app-owner",
+      amount: appCommissionPerPassenger,
+      type: "credit",
+      description: `SmartRide ဝန်ဆောင်ခ - ခရီးစဉ် #${rideId}`,
       createdAt: new Date().toISOString(),
     });
 

@@ -81,6 +81,31 @@
             <label class="input-label">ခရီးသည်အရေအတွက် (အများဆုံး ၄ ဦး)</label>
             <input type="number" id="availableSeats" class="input-field" min="1" max="4" value="3" required />
           </div>
+          <!-- Earnings Preview -->
+          <div id="earningsPreview"
+            style="margin-bottom: 1rem; padding: 0.85rem; background: linear-gradient(135deg, rgba(29,158,117,0.08), rgba(29,158,117,0.03)); border-radius: 12px; border: 1px solid rgba(29,158,117,0.12);">
+            <div
+              style="font-size: 0.72rem; color: var(--green-dark); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">
+              💰 ခန့်မှန်းဝင်ငွေ</div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.2rem;">
+              <span style="color: var(--gray);">အခြေခံခရီးစဉ်ခ</span>
+              <span style="font-weight: 600;">7,500 ကျပ်</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.2rem;">
+              <span style="color: var(--gray);">ဘိုနပ်စ် (+10%)</span>
+              <span style="font-weight: 600; color: var(--green);">+750 ကျပ်</span>
+            </div>
+            <div
+              style="border-top: 1px dashed rgba(29,158,117,0.2); padding-top: 0.4rem; margin-top: 0.3rem; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 700; color: var(--green-dark); font-size: 0.85rem;">စုစုပေါင်း</span>
+              <span id="earningsTotal"
+                style="font-family: var(--font-heading); font-size: 1.2rem; font-weight: 800; color: var(--green);">8,250
+                ကျပ်</span>
+            </div>
+            <div style="font-size: 0.65rem; color: var(--green); margin-top: 0.4rem; text-align: center;">
+              🚀 ပုံမှန်ခရီးစဉ်ခထက် 10% ပိုမိုရရှိပါသည်!
+            </div>
+          </div>
           <button type="submit" class="btn-primary" style="width: 100%">
             ခရီးစဉ် ကမ်းလှမ်းမည်
           </button>
@@ -328,7 +353,7 @@
           db.offerRide(rideData);
 
           document.getElementById("successMessage").textContent =
-            `${startLocation} → ${endLocation} ခရီးစဉ်ကို အောင်မြင်စွာ ကမ်းလှမ်းပြီးပါပြီ။`;
+            `${startLocation} → ${endLocation} ခရီးစဉ်ကို အောင်မြင်စွာ ကမ်းလှမ်းပြီးပါပြီ။ ခရီးသည်ရှိပါက အခြေခံခရီးစဉ်ခ + 10% ဘိုနပ်စ် ရရှိမည်ဖြစ်ပါသည်။`;
           document.getElementById("successModal").style.display = "flex";
 
           document.getElementById("offerForm").reset();
