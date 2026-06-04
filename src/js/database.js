@@ -181,7 +181,10 @@ class DatabaseManager {
           price: 8000,
           carModel: "Suzuki Ertiga",
           carPlate: "YGN 5R/9988",
-          passengers: [],
+          passengers: [
+            { id: "u-6", name: "မမေဇင်", pickup: "Star City Gate" },
+            { id: "u-9", name: "မခင်ခင်", pickup: "Thanlyin Bridge" },
+          ],
         },
         {
           id: "ride-104",
