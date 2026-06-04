@@ -149,11 +149,11 @@
             <span id="modalFareShare" style="font-weight: 600; color: var(--text-primary);">-</span>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.25rem;">
-            <span style="color: var(--gray);">ယာဉ်မောင်း ဘိုနပ်စ်</span>
+            <span style="color: var(--gray);">ယာဉ်မောင်း Bonus</span>
             <span id="modalDriverBonus" style="font-weight: 600; color: var(--amber);">-</span>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.5rem;">
-            <span style="color: var(--gray);">အပ်ဝန်ဆောင်ခ (5%)</span>
+            <span style="color: var(--gray);">Appဝန်ဆောင်ခ (5%)</span>
             <span id="modalAppFee" style="font-weight: 600; color: var(--gray);">-</span>
           </div>
           <div
@@ -403,7 +403,7 @@
                       </span>
                       <!-- Mini breakdown -->
                       <div style="margin-top: 0.4rem; font-size: 0.65rem; color: var(--gray); line-height: 1.5;">
-                        ခရီးစဉ်ခ ${fareShare.toLocaleString()} + ဘိုနပ်စ် ${driverBonus.toLocaleString()} + ဝန်ဆောင်ခ ${appFee.toLocaleString()}
+                        ခရီးစဉ်ခ ${fareShare.toLocaleString()} + Bonus ${driverBonus.toLocaleString()} + ဝန်ဆောင်ခ ${appFee.toLocaleString()}
                       </div>
                     </div>
                     <button onclick="event.stopPropagation(); window.selectRide('${ride.id}', ${ride.discountedPrice}, '${ride.driverName}', '${ride.startLocation} → ${ride.endLocation}', '${(ride.passengers || []).map((p) => p.name).join(", ") || "သင်သာ"}', ${fareShare}, ${driverBonus}, ${appFee})" class="btn-primary" style="font-size: 0.82rem; padding: 0.65rem 1.3rem; border-radius: 10px; font-weight:600; cursor:pointer;">
