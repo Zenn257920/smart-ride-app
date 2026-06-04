@@ -334,6 +334,36 @@ class DatabaseManager {
     localStorage.removeItem("smartride_currentUser");
   }
 
+  registerUser({ name, email, phone, password, balance }) {
+    if (!name || !email || !phone || !password) {
+      throw new Error("အချက်အလက်များ အားလုံးဖြည့်ပေးပါ။");
+    }
+
+    const users = this.getUsers();
+
+    // Check for duplicate email
+    const existingUser = users.find((u) => u.email === email);
+    if (existingUser) {
+      throw new Error("ဤအီးမေးလ်ဖြင့် အကောင့်ရှိပြီးသားဖြစ်ပါသည်။");
+    }
+
+    const newUser = {
+      id: "u-" + Math.random().toString(36).substr(2, 9),
+      name,
+      email,
+      phone,
+      password,
+      balance: balance || 0,
+      userType: "passenger",
+      createdAt: new Date().toISOString(),
+    };
+
+    users.push(newUser);
+    localStorage.setItem("smartride_users", JSON.stringify(users));
+
+    return newUser;
+  }
+
   offerRide(rideData) {
     const rides = this.getRides();
     const newRide = {
