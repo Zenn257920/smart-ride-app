@@ -59,11 +59,19 @@
 }
 
 [data-theme="dark"] .bg-glow--1 {
-  background: radial-gradient(circle, rgba(29, 158, 117, 0.08), transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(29, 158, 117, 0.08),
+    transparent 70%
+  );
 }
 
 [data-theme="dark"] .bg-glow--2 {
-  background: radial-gradient(circle, rgba(186, 117, 23, 0.06), transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(186, 117, 23, 0.06),
+    transparent 70%
+  );
 }
 
 [data-theme="dark"] .nav-wrapper {
@@ -271,23 +279,26 @@ body {
 .bg-glow--1 {
   top: -200px;
   left: -100px;
-  background: radial-gradient(circle,
-      rgba(29, 158, 117, 0.12),
-      transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(29, 158, 117, 0.12),
+    transparent 70%
+  );
   animation: floatGlow1 12s ease-in-out infinite;
 }
 
 .bg-glow--2 {
   bottom: -250px;
   right: -150px;
-  background: radial-gradient(circle,
-      rgba(186, 117, 23, 0.08),
-      transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(186, 117, 23, 0.08),
+    transparent 70%
+  );
   animation: floatGlow2 15s ease-in-out infinite;
 }
 
 @keyframes floatGlow1 {
-
   0%,
   100% {
     transform: translate(0, 0) scale(1);
@@ -299,7 +310,6 @@ body {
 }
 
 @keyframes floatGlow2 {
-
   0%,
   100% {
     transform: translate(0, 0) scale(1);
@@ -349,7 +359,6 @@ body {
 
 /* ── Pulse Animation ── */
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 1;
@@ -721,19 +730,24 @@ body {
 .input-field.map-select-active {
   border-color: var(--green) !important;
   background: rgba(29, 158, 117, 0.06) !important;
-  box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.15), inset 0 0 0 1px var(--green) !important;
+  box-shadow:
+    0 0 0 3px rgba(29, 158, 117, 0.15),
+    inset 0 0 0 1px var(--green) !important;
   animation: inputMapPulse 1.5s ease-in-out infinite;
 }
 
 @keyframes inputMapPulse {
-
   0%,
   100% {
-    box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.15), inset 0 0 0 1px var(--green);
+    box-shadow:
+      0 0 0 3px rgba(29, 158, 117, 0.15),
+      inset 0 0 0 1px var(--green);
   }
 
   50% {
-    box-shadow: 0 0 0 6px rgba(29, 158, 117, 0.08), inset 0 0 0 1px var(--green);
+    box-shadow:
+      0 0 0 6px rgba(29, 158, 117, 0.08),
+      inset 0 0 0 1px var(--green);
   }
 }
 
@@ -1341,7 +1355,6 @@ footer ul a:hover {
 
 /* ── Responsive ── */
 @media (max-width: 1024px) {
-
   .steps-grid,
   .pricing-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1355,7 +1368,7 @@ footer ul a:hover {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .hero-section>div {
+  .hero-section > div {
     grid-template-columns: 1fr !important;
     gap: 2rem !important;
   }
@@ -1447,7 +1460,7 @@ footer ul a:hover {
   }
 
   /* Map page 2-column layout → single column on mobile */
-  .container>div[style*="grid-template-columns: 1fr 1fr"] {
+  .container > div[style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
 
@@ -1478,5 +1491,70 @@ footer ul a:hover {
 
   .map-container {
     height: 250px;
+  }
+}
+
+/* initial page */
+
+#splash-screen {
+  position: fixed;
+  inset: 0;
+  background: #050816;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.logoes-container {
+  text-align: center;
+}
+
+.logoes {
+  width: 120px;
+  animation: pulse 2s infinite;
+  filter: drop-shadow(0 0 20px #1ec98f);
+}
+
+.app-name {
+  color: #1ec98f;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 20px;
+  letter-spacing: 2px;
+}
+
+.loading-line {
+  width: 220px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 20px auto;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.loading-line span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: #1ec98f;
+  animation: load 2.5s forwards;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(0.9);
+  }
+}
+
+@keyframes load {
+  to {
+    width: 100%;
   }
 }
