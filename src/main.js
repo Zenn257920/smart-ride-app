@@ -69,3 +69,15 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 // Export to use other modules
 export { updateNavigation };
+
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    const splash = document.getElementById("splash-screen");
+
+    splash.style.opacity = "0";
+
+    setTimeout(() => {
+      splash.style.display = "none";
+    }, 800);
+  }, 2500);
+});
