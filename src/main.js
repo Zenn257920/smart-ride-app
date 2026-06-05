@@ -35,7 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
   updateNavigation();
 
   // Theme toggle
-  document.getElementById("themeToggleBtn")?.addEventListener("click", toggleTheme);
+  document
+    .getElementById("themeToggleBtn")
+    ?.addEventListener("click", toggleTheme);
 
   // Mobile hamburger menu toggle
   const mobileMenuBtn = document.getElementById("mobileMenuBtn");
@@ -65,5 +67,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
-// Export for use in other modules
+// Export to use other modules
 export { updateNavigation };

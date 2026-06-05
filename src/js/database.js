@@ -1,23 +1,23 @@
-// database.js - LocalStorage & Gemini AI Route Matcher Engine
+//LocalStorage & Gemini AI Route Matcher Engine
 
 class DatabaseManager {
   constructor() {
     this.initDatabase();
-    //  Gemini API Key — Replace with your valid key (starts with AIzaSy...)
+    //  Gemini API Key
     this.apiKey = "AIzaSyAQ-Ab8RN6ICmmw0YVmfI0xeyC78lLvzCO";
     // Pricing constants
-    this.DRIVER_BONUS_RATE = 0.1; // Driver earns 10% above base fare
-    this.APP_COMMISSION_RATE = 0.05; // App takes 5% commission from each passenger
+    this.DRIVER_BONUS_RATE = 0.1;
+    this.APP_COMMISSION_RATE = 0.05;
   }
 
   initDatabase() {
     if (!localStorage.getItem("smartride_users")) {
-      //  Sample Users JSON Data — Passengers & Drivers in Yangon
+      //  Sample Users JSON Data — Passengers & Drivers
       const sampleUsers = [
         {
           id: "u-1",
           name: "Demo Passenger",
-          email: "passenger@demo.mm",
+          email: "passenger@demo.com",
           password: "123456",
           phone: "09123456789",
           balance: 50000,
@@ -328,7 +328,7 @@ class DatabaseManager {
       (u) => u.email === email && u.password === password,
     );
     if (!user)
-      throw new Error("အီးမေးလ် သို့မဟုတ် ပတ်စ်ဝေါ့ဒ် မှားယွင်းနေပါသည်။");
+      throw new Error("Incorrect email or password. Please try again!");
     localStorage.setItem("smartride_currentUser", JSON.stringify(user));
     return user;
   }
@@ -339,7 +339,7 @@ class DatabaseManager {
 
   registerUser({ name, email, phone, password, balance }) {
     if (!name || !email || !phone || !password) {
-      throw new Error("အချက်အလက်များ အားလုံးဖြည့်ပေးပါ။");
+      throw new Error("Please fill in all required fields.");
     }
 
     const users = this.getUsers();
@@ -347,7 +347,7 @@ class DatabaseManager {
     // Check for duplicate email
     const existingUser = users.find((u) => u.email === email);
     if (existingUser) {
-      throw new Error("ဤအီးမေးလ်ဖြင့် အကောင့်ရှိပြီးသားဖြစ်ပါသည်။");
+      throw new Error("A user with this email already exists.");
     }
 
     const newUser = {
@@ -380,7 +380,7 @@ class DatabaseManager {
     return newRide;
   }
 
-  //Gemini AI Engine: Compares User Inputs & Sample Data via JSON
+  //Compares User Inputs & Sample Data via JSON
   async searchRidesWithGemini(startLocation, endLocation, departureTime) {
     const availableRides = this.getRides();
 
@@ -566,7 +566,7 @@ Do NOT include any text outside the JSON array.
         error,
       );
 
-      // 🛡️ Local Backup Matching — text-based location comparison
+      //  Local Backup Matching — text-based location comparison
       return this._fallbackMatch(
         startLocation,
         endLocation,
@@ -717,7 +717,9 @@ Do NOT include any text outside the JSON array.
     if (rideIndex === -1) return false;
 
     // Check if ride is full
-    const seatsLeft = (rides[rideIndex].availableSeats || 4) - (rides[rideIndex].bookedSeats || 0);
+    const seatsLeft =
+      (rides[rideIndex].availableSeats || 4) -
+      (rides[rideIndex].bookedSeats || 0);
     if (seatsLeft <= 0) {
       throw new Error(
         "ဤခရီးစဉ်တွင် နေရာလွတ် မရှိတော့ပါ။ အခြားခရီးစဉ်ကို ရွေးပေးပါ။",
@@ -730,7 +732,7 @@ Do NOT include any text outside the JSON array.
 
     if (users[passengerIndex].balance < totalPrice) {
       throw new Error(
-        "လက်ကျန်ငွေ မလုံလောက်ပါသဖြင့် ကျေးဇူးပြု၍ Wallet တွင် ငွေ အရင်ဖြည့်ပေးပါ။",
+        "လက်ကျန်ငွေ မလုံလောက်ပါသဖြင့် ကျေးဇူးပြု၍ Innovix-Wallet တွင် ငွေ အရင်ဖြည့်ပေးပါ။",
       );
     }
 
@@ -749,7 +751,10 @@ Do NOT include any text outside the JSON array.
     const totalPassengers = rides[rideIndex].bookedSeats;
     const isFirstRider = totalPassengers === 1;
 
-    let fareShare, driverBonusPerPassenger, appCommissionPerPassenger, driverPayment;
+    let fareShare,
+      driverBonusPerPassenger,
+      appCommissionPerPassenger,
+      driverPayment;
 
     if (isFirstRider) {
       // First rider: standard fare, no bonus markup
@@ -761,9 +766,7 @@ Do NOT include any text outside the JSON array.
       // Shared ride: split fare with bonus & commission
       fareShare = Math.floor(basePrice / totalPassengers);
       const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
-      driverBonusPerPassenger = Math.floor(
-        driverBonusTotal / totalPassengers,
-      );
+      driverBonusPerPassenger = Math.floor(driverBonusTotal / totalPassengers);
       const subtotal = fareShare + driverBonusPerPassenger;
       appCommissionPerPassenger = Math.floor(
         subtotal * this.APP_COMMISSION_RATE,
@@ -805,7 +808,7 @@ Do NOT include any text outside the JSON array.
       userId: passengerId,
       amount: -totalPrice,
       type: "debit",
-      description: `ခရီးစဉ်ခ ${fareShare.toLocaleString()} + ဘိုနပ်စ် ${driverBonusPerPassenger.toLocaleString()} + ဝန်ဆောင်ခ ${appCommissionPerPassenger.toLocaleString()} ကျပ်`,
+      description: `ခရီးစဉ်ခ ${fareShare.toLocaleString()} + Bonus ${driverBonusPerPassenger.toLocaleString()} + ဝန်ဆောင်ခ ${appCommissionPerPassenger.toLocaleString()} ကျပ်`,
       createdAt: new Date().toISOString(),
     });
 
@@ -816,7 +819,7 @@ Do NOT include any text outside the JSON array.
         userId: driverId,
         amount: driverPayment,
         type: "credit",
-        description: `ခရီးသည်ခ ${fareShare.toLocaleString()} + ဘိုနပ်စ် ${driverBonusPerPassenger.toLocaleString()} ကျပ် ရရှိ`,
+        description: `ခရီးသည်ခ ${fareShare.toLocaleString()} + Bonus ${driverBonusPerPassenger.toLocaleString()} ကျပ် ရရှိ`,
         createdAt: new Date().toISOString(),
       });
     }
