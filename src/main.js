@@ -69,9 +69,3 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 // Export to use other modules
 export { updateNavigation };
-
-window.addEventListener("load", () => {
-  setTimeout(() => {
-    document.getElementById("splash-screen").style.display = "none";
-  }, 2500);
-});
