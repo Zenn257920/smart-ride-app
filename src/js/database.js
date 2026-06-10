@@ -1,18 +1,18 @@
-//LocalStorage & Gemini AI Route Matcher Engine
+//LocalStorage & Gemini
 
 class DatabaseManager {
   constructor() {
     this.initDatabase();
-    //  Gemini API Key
+    //GeminiKey
     this.apiKey = "AIzaSyAQ-Ab8RN6ICmmw0YVmfI0xeyC78lLvzCO";
-    // Pricing constants
+    //Price constants
     this.DRIVER_BONUS_RATE = 0.1;
     this.APP_COMMISSION_RATE = 0.05;
   }
 
   initDatabase() {
     if (!localStorage.getItem("smartride_users")) {
-      //  Sample Users JSON Data — Passengers & Drivers
+      //Sample Users JSON Data / Passengers & Drivers
       const sampleUsers = [
         {
           id: "u-1",
@@ -890,7 +890,7 @@ Do NOT include any text outside the JSON array.
       (b) => b.id === bookingId && b.passengerId === passengerId,
     );
     if (bookingIndex === -1) {
-      throw new Error("ဤဘွတ်ကင်ကို ရှာမတွေ့ပါ။");
+      throw new Error("ဤBookingကို ရှာမတွေ့ပါ။");
     }
 
     const booking = bookings[bookingIndex];
