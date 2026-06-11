@@ -226,10 +226,27 @@
           <span id="mapClickHintText">မြေပုံပေါ်တွင် နှိပ်၍ နေရာရွေးပါ</span>
         </div>
         <div id="map" class="map-container" style="height: 400px"></div>
-        <div style="margin-top: 1rem">
-          <p style="font-size: 0.75rem; color: var(--gray); text-align: center">
-            💡 နေရာရွေးရန် input ကို နှိပ်ပြီး မြေပုံပေါ်တွင်
-            နေရာရွေးနိုင်ပါတယ်
+        <!-- GPS capture status -->
+        <div id="coordsStatus" style="
+              margin-top: 0.75rem;
+              padding: 0.55rem 1rem;
+              border-radius: 10px;
+              font-size: 0.75rem;
+              font-weight: 600;
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              background: rgba(239,68,68,0.08);
+              color: #ef4444;
+              border: 1px solid rgba(239,68,68,0.15);
+              transition: all 0.3s ease;
+            ">
+          <span id="coordsIcon">⚠️</span>
+          <span id="coordsText">မြေပုံပေါ်မှ နေရာ မရွေးရသေးပါ — corridor matching အတွက် မြေပုံပေါ် နှိပ်ပါ</span>
+        </div>
+        <div style="margin-top: 0.5rem">
+          <p style="font-size: 0.72rem; color: var(--gray); text-align: center">
+            💡 Input ကို focus ပေးပြီး မြေပုံပေါ်တွင် တိကျသော နေရာကို နှိပ်ပါ
           </p>
         </div>
       </div>
@@ -293,6 +310,35 @@
       const user = getCurrentUser();
       let rideMap;
 
+      // Helper: update GPS status badge
+      function updateCoordsStatus() {
+        const hasStart = rideMap && rideMap.startLocation;
+        const hasEnd = rideMap && rideMap.endLocation;
+        const status = document.getElementById("coordsStatus");
+        const icon = document.getElementById("coordsIcon");
+        const text = document.getElementById("coordsText");
+        if (!status) return;
+        if (hasStart && hasEnd) {
+          status.style.background = "rgba(29,158,117,0.08)";
+          status.style.color = "var(--green-dark)";
+          status.style.borderColor = "rgba(29,158,117,0.2)";
+          icon.textContent = "✅";
+          text.textContent = "GPS တည်နေရာ ရရှိပြီး — Corridor matching အသုံးပြုနိုင်ပါပြီ";
+        } else if (hasStart) {
+          status.style.background = "rgba(245,158,11,0.08)";
+          status.style.color = "#d97706";
+          status.style.borderColor = "rgba(245,158,11,0.2)";
+          icon.textContent = "⏳";
+          text.textContent = "ဦးတည်ရာ မြေပုံပေါ်တွင် ရွေးပါ (end point လိုအပ်သေးသည်)";
+        } else {
+          status.style.background = "rgba(239,68,68,0.08)";
+          status.style.color = "#ef4444";
+          status.style.borderColor = "rgba(239,68,68,0.15)";
+          icon.textContent = "⚠️";
+          text.textContent = "မြေပုံပေါ်မှ နေရာ မရွေးရသေးပါ — corridor matching အတွက် မြေပုံပေါ် နှိပ်ပါ";
+        }
+      }
+
       // Initialize the interactive map
       function initMap() {
         if (typeof L === "undefined") return;
@@ -301,6 +347,8 @@
             // Remove active class from inputs
             startInput.classList.remove("map-select-active");
             endInput.classList.remove("map-select-active");
+            // Update GPS status badge
+            updateCoordsStatus();
             // Trigger route preview if both are set
             tryShowRoute();
           },
@@ -430,12 +478,25 @@
         const departureTime = document.getElementById("departureTime").value;
         const carModel = document.getElementById("carModel").value;
         const carPlate = document.getElementById("carPlate").value;
-        const availableSeats =
-          parseInt(document.getElementById("availableSeats").value) || 3;
+        const availableSeats = parseInt(document.getElementById("availableSeats").value) || 3;
 
         if (!startLocation || !endLocation || !departureTime) {
           alert("Please fill in all required fields.");
           return;
+        }
+
+        // Read GPS coordinates captured by the map picker
+        const startCoords = rideMap?.startLocation ?? null;
+        const endCoords = rideMap?.endLocation ?? null;
+
+        if (!startCoords || !endCoords) {
+          const proceed = confirm(
+            "⚠️ မြေပုံမှ GPS တည်နေရာ ရွေးမထားသေးပါ။\n\n" +
+            "GPS မပါပဲ submit လုပ်ပါက corridor matching အသုံးပြုနိုင်မည်မဟုတ်ပါ " +
+            "(ကိုက်ညီမှု တိကျမှုနည်းပါမည်)။\n\n" +
+            "ဆက်လုပ်မည်လား?"
+          );
+          if (!proceed) return;
         }
 
         const rideData = {
@@ -443,6 +504,11 @@
           driverName: user.name || "Driver",
           startLocation,
           endLocation,
+          // GPS coordinates for P2S corridor matching
+          startLat: startCoords?.lat ?? null,
+          startLng: startCoords?.lng ?? null,
+          endLat: endCoords?.lat ?? null,
+          endLng: endCoords?.lng ?? null,
           departureTime,
           availableSeats,
           price: 7500,
@@ -452,21 +518,22 @@
 
         db.offerRide(rideData);
 
+        const coordsNote = (startCoords && endCoords)
+          ? " (GPS corridor matching enabled ✅)"
+          : " (GPS မပါ — text matching သာ အသုံးပြုမည်)";
         document.getElementById("successMessage").textContent =
-          `${startLocation} → ${endLocation} ခရီးစဉ်ကို အောင်မြင်စွာ ကမ်းလှမ်းပြီးပါပြီ။ ခရီးသည်ရှိပါက အခြေခံခရီးစဉ်ခ + 10% Bonus ရရှိမည်ဖြစ်ပါသည်။`;
+          `${startLocation} → ${endLocation} ခရီးစဉ်ကို အောင်မြင်စွာ ကမ်းလှမ်းပြီးပါပြီ။` + coordsNote;
         document.getElementById("successModal").style.display = "flex";
 
         document.getElementById("offerForm").reset();
-        if (rideMap) rideMap.clearAll();
+        if (rideMap) { rideMap.clearAll(); updateCoordsStatus(); }
         loadMyRides();
 
         // Reset departure time
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(8, 30, 0, 0);
-        document.getElementById("departureTime").value = tomorrow
-          .toISOString()
-          .slice(0, 16);
+        document.getElementById("departureTime").value = tomorrow.toISOString().slice(0, 16);
       });
 
       // Modal functions

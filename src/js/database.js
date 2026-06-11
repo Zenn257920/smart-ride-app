@@ -1,4 +1,5 @@
 //LocalStorage & Gemini
+import { RouteMatcher } from "./matching.js";
 
 class DatabaseManager {
   constructor() {
@@ -10,8 +11,19 @@ class DatabaseManager {
     this.APP_COMMISSION_RATE = 0.05;
   }
 
+  // Bump this version string whenever sample data schema changes.
+  // Forces re-seed in any browser that has an older version cached.
+  static get DATA_VERSION() { return 'v3-gps'; }
+
   initDatabase() {
-    if (!localStorage.getItem("smartride_users")) {
+    const storedVersion = localStorage.getItem('smartride_data_version');
+    if (!localStorage.getItem('smartride_users') || storedVersion !== DatabaseManager.DATA_VERSION) {
+      // Clear stale data so new GPS-enabled rides seed correctly
+      localStorage.removeItem('smartride_users');
+      localStorage.removeItem('smartride_rides');
+      localStorage.removeItem('smartride_bookings');
+      localStorage.removeItem('smartride_transactions');
+      localStorage.setItem('smartride_data_version', DatabaseManager.DATA_VERSION);
       //Sample Users JSON Data / Passengers & Drivers
       const sampleUsers = [
         {
@@ -135,6 +147,7 @@ class DatabaseManager {
       };
 
       //  Sample Rides — Covering major Yangon routes
+      //  All rides include real GPS coordinates for corridor matching
       const sampleRides = [
         {
           id: "ride-101",
@@ -142,6 +155,9 @@ class DatabaseManager {
           driverName: "ဦးလှမောင်",
           startLocation: "Thanlyin (သန်လျင်)",
           endLocation: "Bahan (ဗဟန်း)",
+          // Thanlyin → Bahan (south-east to center)
+          startLat: 16.7784, startLng: 96.2504,
+          endLat: 16.8275, endLng: 96.1623,
           departureTime: setTime(8, 30),
           availableSeats: 4,
           bookedSeats: 1,
@@ -158,6 +174,9 @@ class DatabaseManager {
           driverName: "ကိုကျော်စွာ",
           startLocation: "Hledan (လှည်းတန်း)",
           endLocation: "Sule (ဆူးလေ)",
+          // Hledan → Sule (west to downtown)
+          startLat: 16.8737, startLng: 96.1317,
+          endLat: 16.7747, endLng: 96.1561,
           departureTime: setTime(9, 0),
           availableSeats: 4,
           bookedSeats: 2,
@@ -175,6 +194,9 @@ class DatabaseManager {
           driverName: "ဒေါ်အေးအေး",
           startLocation: "Thanlyin Star City",
           endLocation: "Hledan Centre",
+          // Star City → Hledan (south → north-west)
+          startLat: 16.7634, startLng: 96.2812,
+          endLat: 16.8737, endLng: 96.1317,
           departureTime: setTime(7, 45),
           availableSeats: 4,
           bookedSeats: 2,
@@ -192,6 +214,9 @@ class DatabaseManager {
           driverName: "ကိုမင်းမင်း",
           startLocation: "North Dagon (မြောက်ဒဂုံ)",
           endLocation: "Botahtaung (ဗိုလ်တထောင်)",
+          // North Dagon → Botahtaung (north-east to downtown)
+          startLat: 16.9208, startLng: 96.2011,
+          endLat: 16.7793, endLng: 96.1681,
           departureTime: setTime(8, 0),
           availableSeats: 3,
           bookedSeats: 1,
@@ -206,6 +231,9 @@ class DatabaseManager {
           driverName: "ဦးထွန်းထွန်း",
           startLocation: "Insein (အင်းစိန်)",
           endLocation: "Kamayut (ကမာရွတ်)",
+          // Insein → Kamayut (north to center)
+          startLat: 16.9726, startLng: 96.1042,
+          endLat: 16.8532, endLng: 96.1170,
           departureTime: setTime(8, 15),
           availableSeats: 4,
           bookedSeats: 2,
@@ -223,6 +251,9 @@ class DatabaseManager {
           driverName: "ဦးလှမောင်",
           startLocation: "South Okkalapa (တောင်ဥက္ကလာပ)",
           endLocation: "Sanchaung (စမ်းချောင်း)",
+          // South Okkalapa → Sanchaung (east to west)
+          startLat: 16.8493, startLng: 96.2176,
+          endLat: 16.8392, endLng: 96.1226,
           departureTime: setTime(9, 30),
           availableSeats: 4,
           bookedSeats: 1,
@@ -239,6 +270,9 @@ class DatabaseManager {
           driverName: "ကိုကျော်စွာ",
           startLocation: "Mingalardon (မင်္ဂလာဒုံ)",
           endLocation: "Downtown (ဗဟန်း/လမ်းမတော်)",
+          // Mingalardon → Downtown (far north to center)
+          startLat: 17.0473, startLng: 96.1201,
+          endLat: 16.7951, endLng: 96.1484,
           departureTime: setTime(7, 30),
           availableSeats: 3,
           bookedSeats: 0,
@@ -253,6 +287,9 @@ class DatabaseManager {
           driverName: "U Kyaw Zaw",
           startLocation: "Thaketa (သာကေတ)",
           endLocation: "Tamwe (တာမွေ)",
+          // Thaketa → Tamwe (east to center)
+          startLat: 16.8198, startLng: 96.2268,
+          endLat: 16.8333, endLng: 96.1649,
           departureTime: setTime(8, 45),
           availableSeats: 4,
           bookedSeats: 1,
@@ -269,6 +306,9 @@ class DatabaseManager {
           driverName: "ကိုမင်းမင်း",
           startLocation: "Dagon Myothit (ဒဂုံမြို့သစ်)",
           endLocation: "Yankin (ရန်ကင်း)",
+          // Dagon Myothit → Yankin (east to center)
+          startLat: 16.8705, startLng: 96.2433,
+          endLat: 16.8438, endLng: 96.1783,
           departureTime: setTime(8, 30),
           availableSeats: 3,
           bookedSeats: 2,
@@ -286,6 +326,9 @@ class DatabaseManager {
           driverName: "ဦးထွန်းထွန်း",
           startLocation: "Shwepyithar (ရွှေပြည်သာ)",
           endLocation: "Sule (ဆူးလေ)",
+          // Shwepyithar → Sule (far north-west to downtown)
+          startLat: 17.0631, startLng: 96.0526,
+          endLat: 16.7747, endLng: 96.1561,
           departureTime: setTime(7, 0),
           availableSeats: 4,
           bookedSeats: 1,
@@ -372,7 +415,13 @@ class DatabaseManager {
     const rides = this.getRides();
     const newRide = {
       id: "ride-" + Math.random().toString(36).substr(2, 9),
+      // Spread ride data — must include startLat, startLng, endLat, endLng
+      // if captured from the map picker in offer-ride.html
       ...rideData,
+      startLat: rideData.startLat ?? null,
+      startLng: rideData.startLng ?? null,
+      endLat: rideData.endLat ?? null,
+      endLng: rideData.endLng ?? null,
       bookedSeats: 0,
       passengers: [],
     };
@@ -381,15 +430,23 @@ class DatabaseManager {
     return newRide;
   }
 
-  //Compares User Inputs & Sample Data via JSON
-  async searchRidesWithGemini(startLocation, endLocation, departureTime) {
+  // ─── Route Search: Local matcher always runs; Gemini supplements & re-ranks ───
+  // passengerCoords = { startLat, startLng, endLat, endLng } — optional, from map picker
+  async searchRidesWithGemini(startLocation, endLocation, departureTime, passengerCoords) {
     const availableRides = this.getRides();
+
+    // ── ALWAYS run the local matcher first (guaranteed, deterministic) ──
+    const localResults = this._fallbackMatch(
+      startLocation, endLocation, departureTime, availableRides, passengerCoords
+    );
 
     const userInputJSON = {
       passengerRequest: {
-        startLocation: startLocation,
-        endLocation: endLocation,
-        departureTime: departureTime,
+        startLocation,
+        endLocation,
+        departureTime,
+        // Include GPS coords when available so Gemini can use them
+        ...(passengerCoords ? passengerCoords : {}),
       },
     };
 
@@ -402,18 +459,21 @@ You are the core AI Route Matching Engine for Innovix SmartRide carpooling app i
 
 TASK:
 Compare the passenger request with the available driver rides database.
-Find rides where the start and end locations are geographically close or on the same route.
-For example: "သန်လျင်" matches "Thanlyin", "Thanlyin Star City"; "ဗဟန်း" matches "Bahan"; "ဆူးလေ" matches "Sule", "Downtown".
-Consider departure time proximity (within 2 hours is acceptable).
+Prioritise rides where:
+1. The passenger's start point is near the DRIVER'S ROUTE CORRIDOR (within ~2 km of the straight line between driver start→end).
+2. The passenger's destination falls along or near the driver's route (within ~2.5 km).
+3. Both are travelling in roughly the same compass direction (within 65°).
+4. Departure times are within 2 hours of each other.
+If GPS coordinates are present, use them for corridor proximity. Also match by location name:
+"သန်လျင်"=Thanlyin/Star City; "ဗဟန်း"=Bahan; "ဆူးလေ"=Sule/Downtown; "ဒဂုံ"=Dagon; "လှည်းတန်း"=Hledan.
 
 PRICING MODEL:
-- FIRST RIDER RULE: If bookedSeats is 0, the new passenger is the first rider. First rider pays ONLY the base price (no bonus, no commission). Set discountedPrice = price, fareShare = price, driverBonusPerPassenger = 0, appCommissionPerPassenger = 0, savings = 0.
+- FIRST RIDER RULE: If bookedSeats is 0, first rider pays ONLY the base price. Set discountedPrice = price, fareShare = price, driverBonusPerPassenger = 0, appCommissionPerPassenger = 0, savings = 0.
 - SHARED RIDE (bookedSeats >= 1): Each passenger pays: (baseFare / passengerCount) + (baseFare * 0.10 / passengerCount) + 5% app commission
-- "discountedPrice" = the total price ONE passenger pays
-- "driverEarnings" = baseFare + (baseFare * 0.10) — driver earns 10% bonus (only when shared)
-- "appCommission" = 5% of (fareShare + driverBonusShare) per passenger × passengerCount
-- "savings" = originalPrice - discountedPrice (how much passenger saves vs riding alone)
-- passengerCount = bookedSeats + 1 (existing passengers + the new requesting passenger)
+- "discountedPrice" = total price ONE passenger pays
+- "driverEarnings" = baseFare + (baseFare * 0.10)
+- "savings" = originalPrice - discountedPrice
+- passengerCount = bookedSeats + 1
 
 INPUT DATA (JSON):
 1. Passenger Request: ${JSON.stringify(userInputJSON)}
@@ -421,26 +481,13 @@ INPUT DATA (JSON):
 
 OUTPUT FORMAT:
 Return ONLY a JSON array of matching rides. Each ride object MUST have these exact fields:
-- "id": the ride id from database
-- "driverId": the driver's user id
-- "driverName": driver name (Myanmar/English)
-- "startLocation": pickup area
-- "endLocation": destination area
-- "departureTime": ISO 8601 timestamp
-- "availableSeats": total seats
-- "bookedSeats": currently booked seats count
-- "price": original base price in MMK
-- "carModel": vehicle model
-- "carPlate": license plate
-- "passengers": array of existing passenger objects [{id, name, pickup}]
-- "matchScore": integer 0-100 representing route match quality
-- "discountedPrice": total price per passenger (fare share + driver bonus share + app commission)
-- "fareShare": base fare divided by passenger count
-- "driverBonusPerPassenger": driver bonus portion per passenger
-- "appCommissionPerPassenger": app commission per passenger
-- "driverEarnings": total driver earnings (base + 10% bonus)
-- "appCommissionTotal": total app commission from all passengers
-- "savings": amount saved vs original price per passenger
+- "id", "driverId", "driverName", "startLocation", "endLocation"
+- "startLat", "startLng", "endLat", "endLng": copy GPS coords from the database ride (null if missing)
+- "departureTime", "availableSeats", "bookedSeats", "price", "carModel", "carPlate"
+- "passengers": array [{id, name, pickup}]
+- "matchScore": integer 0-100
+- "discountedPrice", "fareShare", "driverBonusPerPassenger", "appCommissionPerPassenger"
+- "driverEarnings", "appCommissionTotal", "savings"
 
 Sort by matchScore descending. Return empty array [] if no matches found.
 Do NOT include any text outside the JSON array.
@@ -501,6 +548,10 @@ Do NOT include any text outside the JSON array.
             driverName: ride.driverName || "Unknown Driver",
             startLocation: ride.startLocation || "",
             endLocation: ride.endLocation || "",
+            startLat: ride.startLat ?? null,
+            startLng: ride.startLng ?? null,
+            endLat: ride.endLat ?? null,
+            endLng: ride.endLng ?? null,
             departureTime: ride.departureTime || new Date().toISOString(),
             availableSeats: ride.availableSeats || 4,
             bookedSeats: 0,
@@ -541,6 +592,10 @@ Do NOT include any text outside the JSON array.
           driverName: ride.driverName || "Unknown Driver",
           startLocation: ride.startLocation || "",
           endLocation: ride.endLocation || "",
+          startLat: ride.startLat ?? null,
+          startLng: ride.startLng ?? null,
+          endLat: ride.endLat ?? null,
+          endLng: ride.endLng ?? null,
           departureTime: ride.departureTime || new Date().toISOString(),
           availableSeats: ride.availableSeats || 4,
           bookedSeats: ride.bookedSeats || 0,
@@ -561,47 +616,62 @@ Do NOT include any text outside the JSON array.
           savings: ride.savings || basePrice - passengerPrice,
         };
       });
-    } catch (error) {
-      console.warn(
-        "⚠️ Gemini Engine failed, using local backup matcher:",
-        error,
-      );
 
-      //  Local Backup Matching — text-based location comparison
-      return this._fallbackMatch(
-        startLocation,
-        endLocation,
-        departureTime,
-        availableRides,
-      );
+      // Merge Gemini results with the guaranteed local results.
+      // This means even if Gemini misses an obvious match (e.g. ride-102),
+      // the local matcher catches it and it still appears in results.
+      console.log(`✅ Gemini returned ${results.length} | Local returned ${localResults.length} → merging`);
+      return this._mergeResults(results, localResults);
+
+    } catch (error) {
+      console.warn('⚠️ Gemini failed — returning local corridor results:', error);
+      return localResults;
     }
   }
 
-  //  Fallback local matching when Gemini API is unavailable
-  _fallbackMatch(startLocation, endLocation, departureTime, availableRides) {
-    const normalize = (str) =>
-      str
-        .toLowerCase()
-        .replace(/[\(\)]/g, "")
-        .trim();
+  // ─── Merge Gemini results with local results ───
+  // Gemini results take priority (higher matchScore preserved).
+  // Local results fill any gaps Gemini missed.
+  _mergeResults(geminiResults, localResults) {
+    const merged = new Map();
+
+    // Add local first (baseline)
+    for (const ride of localResults) {
+      merged.set(ride.id, ride);
+    }
+
+    // Gemini results overwrite local where they exist (Gemini score takes priority)
+    for (const ride of geminiResults) {
+      const existing = merged.get(ride.id);
+      if (!existing || ride.matchScore >= existing.matchScore) {
+        merged.set(ride.id, ride);
+      }
+    }
+
+    // Sort by matchScore descending, return top 5
+    return Array.from(merged.values())
+      .sort((a, b) => b.matchScore - a.matchScore)
+      .slice(0, 5);
+  }
+
+  // ─── Fallback local matching when Gemini API is unavailable ───
+  // Uses corridor-based P2S algorithm when GPS coords are available,
+  // and gracefully degrades to text/alias matching when they are not.
+  _fallbackMatch(startLocation, endLocation, departureTime, availableRides, passengerCoords) {
+    const matcher = new RouteMatcher();
+
+    const normalize = (str) => str.toLowerCase().replace(/[()]/g, "").trim();
     const startNorm = normalize(startLocation);
     const endNorm = normalize(endLocation);
 
-    // Yangon area aliases for smarter local matching
+    // Yangon area aliases for text-based fallback
     const areaAliases = {
       thanlyin: ["သန်လျင်", "thanlyin", "star city", "thanlyin star city"],
       bahan: ["ဗဟန်း", "bahan"],
       sule: ["ဆူးလေ", "sule", "downtown"],
       hledan: ["လှည်းတန်း", "hledan", "hledan centre", "hledan center"],
       insein: ["အင်းစိန်", "insein"],
-      dagon: [
-        "ဒဂုံ",
-        "dagon",
-        "north dagon",
-        "မြောက်ဒဂုံ",
-        "dagon myothit",
-        "ဒဂုံမြို့သစ်",
-      ],
+      dagon: ["ဒဂုံ", "dagon", "north dagon", "မြောက်ဒဂုံ", "dagon myothit", "ဒဂုံမြို့သစ်"],
       kamayut: ["ကမာရွတ်", "kamayut"],
       sanchaung: ["စမ်းချောင်း", "sanchaung"],
       tamwe: ["တာမွေ", "tamwe"],
@@ -617,9 +687,7 @@ Do NOT include any text outside the JSON array.
     const findAreaKey = (text) => {
       const t = normalize(text);
       for (const [key, aliases] of Object.entries(areaAliases)) {
-        if (aliases.some((alias) => t.includes(alias) || alias.includes(t))) {
-          return key;
-        }
+        if (aliases.some((alias) => t.includes(alias) || alias.includes(t))) return key;
       }
       return null;
     };
@@ -627,43 +695,43 @@ Do NOT include any text outside the JSON array.
     const startArea = findAreaKey(startLocation);
     const endArea = findAreaKey(endLocation);
 
-    const scored = availableRides
-      .map((ride) => {
-        let score = 0;
-        const rideStartArea = findAreaKey(ride.startLocation);
-        const rideEndArea = findAreaKey(ride.endLocation);
+    const scored = availableRides.map((ride) => {
+      // ── Attempt corridor matching if GPS coords exist ──
+      if (
+        passengerCoords &&
+        passengerCoords.startLat != null &&
+        ride.startLat != null
+      ) {
+        const passengerRequest = {
+          startLat: passengerCoords.startLat,
+          startLng: passengerCoords.startLng,
+          endLat: passengerCoords.endLat,
+          endLng: passengerCoords.endLng,
+          departureTime,
+        };
+        const score = matcher.calculateMatchScore(passengerRequest, ride);
+        return { ...ride, matchScore: Math.min(score, 98), _usedCorridor: true };
+      }
 
-        // Start location matching
-        if (startArea && rideStartArea && startArea === rideStartArea) {
-          score += 45;
-        } else if (
-          normalize(ride.startLocation).includes(startNorm) ||
-          startNorm.includes(normalize(ride.startLocation))
-        ) {
-          score += 35;
-        }
+      // ── Text/alias fallback (no GPS coords) ──
+      let score = 0;
+      const rideStartArea = findAreaKey(ride.startLocation);
+      const rideEndArea = findAreaKey(ride.endLocation);
 
-        // End location matching
-        if (endArea && rideEndArea && endArea === rideEndArea) {
-          score += 45;
-        } else if (
-          normalize(ride.endLocation).includes(endNorm) ||
-          endNorm.includes(normalize(ride.endLocation))
-        ) {
-          score += 35;
-        }
+      if (startArea && rideStartArea && startArea === rideStartArea) score += 45;
+      else if (normalize(ride.startLocation).includes(startNorm) || startNorm.includes(normalize(ride.startLocation))) score += 35;
 
-        // Time proximity bonus
-        if (departureTime) {
-          const userTime = new Date(departureTime).getTime();
-          const rideTime = new Date(ride.departureTime).getTime();
-          const diffMin = Math.abs(userTime - rideTime) / (1000 * 60);
-          if (diffMin <= 30) score += 10;
-          else if (diffMin <= 60) score += 5;
-        }
+      if (endArea && rideEndArea && endArea === rideEndArea) score += 45;
+      else if (normalize(ride.endLocation).includes(endNorm) || endNorm.includes(normalize(ride.endLocation))) score += 35;
 
-        return { ...ride, matchScore: Math.min(score, 98) };
-      })
+      if (departureTime) {
+        const diffMin = Math.abs(new Date(departureTime) - new Date(ride.departureTime)) / 60000;
+        if (diffMin <= 30) score += 10;
+        else if (diffMin <= 60) score += 5;
+      }
+
+      return { ...ride, matchScore: Math.min(score, 98), _usedCorridor: false };
+    })
       .filter((r) => r.matchScore > 20)
       .sort((a, b) => b.matchScore - a.matchScore);
 
@@ -671,7 +739,6 @@ Do NOT include any text outside the JSON array.
       const basePrice = r.price || 7500;
       const isFirstRider = (r.bookedSeats || 0) === 0;
 
-      // First rider pays standard fare — no markup
       if (isFirstRider) {
         return {
           ...r,
@@ -686,25 +753,20 @@ Do NOT include any text outside the JSON array.
         };
       }
 
-      // Shared ride pricing
       const totalPassengers = (r.bookedSeats || 0) + 1;
       const fareShare = Math.floor(basePrice / totalPassengers);
       const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
-      const driverBonusPerPassenger = Math.floor(
-        driverBonusTotal / totalPassengers,
-      );
+      const driverBonusPerPassenger = Math.floor(driverBonusTotal / totalPassengers);
       const subtotal = fareShare + driverBonusPerPassenger;
-      const appCommissionPerPassenger = Math.floor(
-        subtotal * this.APP_COMMISSION_RATE,
-      );
+      const appCommissionPerPassenger = Math.floor(subtotal * this.APP_COMMISSION_RATE);
       const passengerPrice = subtotal + appCommissionPerPassenger;
       return {
         ...r,
         isFirstRider: false,
         discountedPrice: passengerPrice,
-        fareShare: fareShare,
-        driverBonusPerPassenger: driverBonusPerPassenger,
-        appCommissionPerPassenger: appCommissionPerPassenger,
+        fareShare,
+        driverBonusPerPassenger,
+        appCommissionPerPassenger,
         driverEarnings: basePrice + driverBonusTotal,
         appCommissionTotal: appCommissionPerPassenger * totalPassengers,
         savings: basePrice - passengerPrice,
