@@ -1,7 +1,7 @@
 import { db } from './database.js';
-export function login(email, password) {
+export function login(identifier, password) {
   try {
-    const user = db.loginUser(email, password);
+    const user = db.loginUser(identifier, password);
     return { success: true, user };
   } catch (error) {
     return { success: false, error: error.message };

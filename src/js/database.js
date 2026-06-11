@@ -322,13 +322,15 @@ class DatabaseManager {
     return JSON.parse(localStorage.getItem("smartride_currentUser"));
   }
 
-  loginUser(email, password) {
+  loginUser(identifier, password) {
     const users = this.getUsers();
+    const id = (identifier || "").trim();
     const user = users.find(
-      (u) => u.email === email && u.password === password,
+      (u) =>
+        (u.email === id || u.phone === id) && u.password === password,
     );
     if (!user)
-      throw new Error("Incorrect email or password. Please try again!");
+      throw new Error("အီးမေးလ် / ဖုန်းနံပါတ် သို့မဟုတ် စကားဝှက် မမှန်ကန်ပါ။");
     localStorage.setItem("smartride_currentUser", JSON.stringify(user));
     return user;
   }
@@ -711,7 +713,8 @@ Do NOT include any text outside the JSON array.
     });
   }
 
-  bookRide(rideId, passengerId, totalPrice) {
+  bookRide(rideId, passengerId, totalPrice, paymentMethod = "ewallet") {
+    const isCash = paymentMethod === "cash";
     const rides = this.getRides();
     const rideIndex = rides.findIndex((r) => r.id === rideId);
     if (rideIndex === -1) return false;
@@ -730,7 +733,8 @@ Do NOT include any text outside the JSON array.
     const passengerIndex = users.findIndex((u) => u.id === passengerId);
     if (passengerIndex === -1) return false;
 
-    if (users[passengerIndex].balance < totalPrice) {
+    // For e-wallet: check sufficient balance
+    if (!isCash && users[passengerIndex].balance < totalPrice) {
       throw new Error(
         "လက်ကျန်ငွေ မလုံလောက်ပါသဖြင့် ကျေးဇူးပြု၍ Innovix-Wallet တွင် ငွေ အရင်ဖြည့်ပေးပါ။",
       );
@@ -774,13 +778,15 @@ Do NOT include any text outside the JSON array.
       driverPayment = fareShare + driverBonusPerPassenger;
     }
 
-    // Deduct total price from passenger
-    users[passengerIndex].balance -= totalPrice;
+    // Deduct total price from passenger (e-wallet only)
+    if (!isCash) {
+      users[passengerIndex].balance -= totalPrice;
+    }
 
-    // Credit driver
+    // Credit driver (e-wallet only; cash handled in person)
     const driverId = rides[rideIndex].driverId;
     const driverIndex = users.findIndex((u) => u.id === driverId);
-    if (driverIndex !== -1) {
+    if (!isCash && driverIndex !== -1) {
       users[driverIndex].balance =
         (users[driverIndex].balance || 0) + driverPayment;
     }
@@ -795,6 +801,7 @@ Do NOT include any text outside the JSON array.
       driverBonusPerPassenger,
       appCommission: appCommissionPerPassenger,
       driverPayment,
+      paymentMethod: paymentMethod,
       status: "confirmed",
       bookingTime: new Date().toISOString(),
     };
@@ -806,20 +813,31 @@ Do NOT include any text outside the JSON array.
     transactions.push({
       id: "tx-" + Math.random().toString(36).substr(2, 9),
       userId: passengerId,
-      amount: -totalPrice,
-      type: "debit",
-      description: `ခရီးစဉ်ခ ${fareShare.toLocaleString()} + Bonus ${driverBonusPerPassenger.toLocaleString()} + ဝန်ဆောင်ခ ${appCommissionPerPassenger.toLocaleString()} ကျပ်`,
+      amount: isCash ? 0 : -totalPrice,
+      type: isCash ? "cash" : "debit",
+      description: isCash
+        ? `ငွေသား ${totalPrice.toLocaleString()} ကျပ် — ယာဉ်မောင်းနှင့် တွေ့မှ ပေးချေမည်`
+        : `ခရီးစဉ်ခ ${fareShare.toLocaleString()} + Bonus ${driverBonusPerPassenger.toLocaleString()} + ဝန်ဆောင်ခ ${appCommissionPerPassenger.toLocaleString()} ကျပ်`,
       createdAt: new Date().toISOString(),
     });
 
     // Driver earnings transaction
-    if (driverIndex !== -1) {
+    if (!isCash && driverIndex !== -1) {
       transactions.push({
         id: "tx-" + Math.random().toString(36).substr(2, 9),
         userId: driverId,
         amount: driverPayment,
         type: "credit",
         description: `ခရီးသည်ခ ${fareShare.toLocaleString()} + Bonus ${driverBonusPerPassenger.toLocaleString()} ကျပ် ရရှိ`,
+        createdAt: new Date().toISOString(),
+      });
+    } else if (isCash && driverIndex !== -1) {
+      transactions.push({
+        id: "tx-" + Math.random().toString(36).substr(2, 9),
+        userId: driverId,
+        amount: 0,
+        type: "cash-pending",
+        description: `ငွေသား ${totalPrice.toLocaleString()} ကျပ် — ခရီးသည်ထံမှ ပေးချေရမည် (pending)`,
         createdAt: new Date().toISOString(),
       });
     }

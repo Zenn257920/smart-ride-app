@@ -172,6 +172,48 @@
           </div>
         </div>
       </div>
+      <!-- Payment Method Selector -->
+      <div style="margin-bottom: 1.25rem;">
+        <div
+          style="font-size: 0.78rem; font-weight: 700; color: var(--green-dark); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.65rem;">
+          💳 ငွေပေးချေမည့်နည်းလမ်း</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;">
+          <!-- E-Wallet Option -->
+          <label id="payEwalletLabel" style="cursor: pointer;">
+            <input type="radio" name="paymentMethod" id="payEwallet" value="ewallet" checked style="display:none;" />
+            <div id="payEwalletCard" style="
+              display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+              padding: 0.85rem 0.5rem;
+              border-radius: 12px;
+              border: 2px solid var(--green);
+              background: var(--green-light);
+              transition: all 0.2s ease;
+              text-align: center;
+            ">
+              <span style="font-size: 1.5rem;">📱</span>
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--green-dark);">E-Wallet</span>
+              <span style="font-size: 0.65rem; color: var(--green); font-weight: 500;">Wallet ထဲမှ ဖြတ်</span>
+            </div>
+          </label>
+          <!-- Cash Option -->
+          <label id="payCashLabel" style="cursor: pointer;">
+            <input type="radio" name="paymentMethod" id="payCash" value="cash" style="display:none;" />
+            <div id="payCashCard" style="
+              display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+              padding: 0.85rem 0.5rem;
+              border-radius: 12px;
+              border: 2px solid var(--border-subtle);
+              background: transparent;
+              transition: all 0.2s ease;
+              text-align: center;
+            ">
+              <span style="font-size: 1.5rem;">💵</span>
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-primary);">Cash</span>
+              <span style="font-size: 0.65rem; color: var(--gray); font-weight: 500;">ငွေသားနှင့်ပေးချေမည်</span>
+            </div>
+          </label>
+        </div>
+      </div>
       <div class="modal-actions">
         <button onclick="confirmBooking()" class="btn-primary">
           အတည်ပြုမည်
@@ -487,6 +529,48 @@
         });
       };
 
+      // Payment method card toggle logic
+      function initPaymentToggle() {
+        const ewalletRadio = document.getElementById("payEwallet");
+        const cashRadio = document.getElementById("payCash");
+        const ewalletCard = document.getElementById("payEwalletCard");
+        const cashCard = document.getElementById("payCashCard");
+
+        function updateCards() {
+          if (ewalletRadio.checked) {
+            // E-Wallet selected — green
+            ewalletCard.style.borderColor = "var(--green)";
+            ewalletCard.style.background = "var(--green-light)";
+            document.querySelector("#payEwalletCard span:nth-child(2)").style.color = "var(--green-dark)";
+            document.querySelector("#payEwalletCard span:nth-child(3)").style.color = "var(--green)";
+            // Cash deselected — neutral
+            cashCard.style.borderColor = "var(--border-subtle)";
+            cashCard.style.background = "transparent";
+            document.querySelector("#payCashCard span:nth-child(2)").style.color = "var(--text-primary)";
+            document.querySelector("#payCashCard span:nth-child(3)").style.color = "var(--gray)";
+          } else {
+            // Cash selected — same green style
+            cashCard.style.borderColor = "var(--green)";
+            cashCard.style.background = "var(--green-light)";
+            document.querySelector("#payCashCard span:nth-child(2)").style.color = "var(--green-dark)";
+            document.querySelector("#payCashCard span:nth-child(3)").style.color = "var(--green)";
+            // E-Wallet deselected — neutral
+            ewalletCard.style.borderColor = "var(--border-subtle)";
+            ewalletCard.style.background = "transparent";
+            document.querySelector("#payEwalletCard span:nth-child(2)").style.color = "var(--text-primary)";
+            document.querySelector("#payEwalletCard span:nth-child(3)").style.color = "var(--gray)";
+          }
+        }
+
+        document.getElementById("payEwalletLabel").addEventListener("click", () => {
+          ewalletRadio.checked = true; updateCards();
+        });
+        document.getElementById("payCashLabel").addEventListener("click", () => {
+          cashRadio.checked = true; updateCards();
+        });
+      }
+      initPaymentToggle();
+
       // Trigger Confirm Booking Dialog Modal
       window.selectRide = function (
         rideId,
@@ -500,6 +584,21 @@
         isFirstRider,
       ) {
         currentSelectedRide = { rideId, price };
+
+        // Reset payment method to e-wallet each time modal opens
+        const ewalletRadio = document.getElementById("payEwallet");
+        const cashRadio = document.getElementById("payCash");
+        ewalletRadio.checked = true;
+        cashRadio.checked = false;
+        document.getElementById("payEwalletCard").style.borderColor = "var(--green)";
+        document.getElementById("payEwalletCard").style.background = "var(--green-light)";
+        document.querySelector("#payEwalletCard span:nth-child(2)").style.color = "var(--green-dark)";
+        document.querySelector("#payEwalletCard span:nth-child(3)").style.color = "var(--green)";
+        document.getElementById("payCashCard").style.borderColor = "var(--border-subtle)";
+        document.getElementById("payCashCard").style.background = "transparent";
+        document.querySelector("#payCashCard span:nth-child(2)").style.color = "var(--text-primary)";
+        document.querySelector("#payCashCard span:nth-child(3)").style.color = "var(--gray)";
+
         document.getElementById("modalDriverName").textContent = driverName;
         document.getElementById("modalRoute").textContent = route;
         document.getElementById("modalPassengers").textContent =
@@ -520,15 +619,23 @@
       // Complete Booking Process
       window.confirmBooking = function () {
         if (!currentSelectedRide) return;
+        const isCash = document.getElementById("payCash").checked;
         try {
           db.bookRide(
             currentSelectedRide.rideId,
             user.id,
             currentSelectedRide.price,
+            isCash ? "cash" : "ewallet",
           );
-          alert(
-            "✅ ကားစီးနင်းလိုက်ပါရန် အတည်ပြုချက် အောင်မြင်ပါသည်။ Wallet ထဲမှ ကျသင့်ငွေအား ဖြတ်တောက်ပြီးပါပြီ။",
-          );
+          if (isCash) {
+            alert(
+              "✅ ကားစီးနင်းလိုက်ပါရန် အတည်ပြုချက် အောင်မြင်ပါသည်။\n💵 ငွေသား " + currentSelectedRide.price.toLocaleString() + " ကျပ်အား ယာဉ်မောင်းနှင့် တွေ့သောအခါ ပေးချေပါ။",
+            );
+          } else {
+            alert(
+              "✅ ကားစီးနင်းလိုက်ပါရန် အတည်ပြုချက် အောင်မြင်ပါသည်။ Wallet ထဲမှ ကျသင့်ငွေအား ဖြတ်တောက်ပြီးပါပြီ။",
+            );
+          }
           window.location.href = "dashboard.html";
         } catch (err) {
           alert("❌ စာရင်းသွင်း၍မရပါ — " + err.message);
