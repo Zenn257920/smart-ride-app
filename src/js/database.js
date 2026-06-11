@@ -326,11 +326,10 @@ class DatabaseManager {
     const users = this.getUsers();
     const id = (identifier || "").trim();
     const user = users.find(
-      (u) =>
-        (u.email === id || u.phone === id) && u.password === password,
+      (u) => (u.email === id || u.phone === id) && u.password === password,
     );
     if (!user)
-      throw new Error("အီးမေးလ် / ဖုန်းနံပါတ် သို့မဟုတ် စကားဝှက် မမှန်ကန်ပါ။");
+      throw new Error("email / Ph number သို့မဟုတ် Password မမှန်ကန်ပါ။");
     localStorage.setItem("smartride_currentUser", JSON.stringify(user));
     return user;
   }
@@ -494,7 +493,7 @@ Do NOT include any text outside the JSON array.
         const basePrice = ride.price || 7500;
         const isFirstRider = (ride.bookedSeats || 0) === 0;
 
-        // First rider pays standard fare only — no bonus/commission markup
+        // First rider pays standard fare only — no bonus/commission
         if (isFirstRider) {
           return {
             id: ride.id || "ride-unknown",

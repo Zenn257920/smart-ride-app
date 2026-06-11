@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wallet - Innovix SmartRide</title>
+  <title>Wallet - Innovix SharedRide</title>
   <link rel="stylesheet" href="/src/style.css" />
   <!-- Prevent dark mode flash -->
   <script>
@@ -13,6 +13,409 @@
       document.documentElement.setAttribute("data-theme", t);
     })();
   </script>
+  <style>
+    /* ── Payment Method Cards ── */
+    .payment-methods {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+
+    .payment-card {
+      position: relative;
+      border: 2px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 1rem 0.75rem;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: rgba(255, 255, 255, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      text-align: center;
+      user-select: none;
+    }
+
+    .payment-card:hover {
+      border-color: rgba(29, 158, 117, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .payment-card.selected {
+      border-color: var(--green);
+      background: rgba(29, 158, 117, 0.06);
+      box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.15);
+    }
+
+    .payment-card.selected .payment-check {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .payment-check {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      width: 20px;
+      height: 20px;
+      background: var(--green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .payment-check svg {
+      width: 12px;
+      height: 12px;
+      stroke: #fff;
+      stroke-width: 2.5;
+    }
+
+    /* KPay logo */
+    .kpay-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .kpay-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Wave Pay logo */
+    .wave-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .wave-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .payment-name {
+      font-family: var(--font-heading);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .payment-subtitle {
+      font-size: 0.65rem;
+      color: var(--gray);
+    }
+
+    /* Phone input step */
+    .payment-step {
+      display: none;
+      animation: fadeInUp 0.35s ease-out both;
+    }
+
+    .payment-step.active {
+      display: block;
+    }
+
+    /* Processing overlay */
+    .processing-overlay {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 2rem 0;
+    }
+
+    .processing-overlay.active {
+      display: flex;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spinner-ring {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border-subtle);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    /* Success state */
+    .success-overlay {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 1.5rem 0;
+      text-align: center;
+    }
+
+    .success-overlay.active {
+      display: flex;
+    }
+
+    @keyframes successPop {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+
+      70% {
+        transform: scale(1.15);
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #1d9e75, #2bc48a);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      box-shadow: 0 8px 24px rgba(29, 158, 117, 0.4);
+    }
+
+    .success-icon svg {
+      width: 32px;
+      height: 32px;
+      stroke: #fff;
+      stroke-width: 2.5;
+    }
+
+    /* Step indicator */
+    .step-dots {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .step-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--border-subtle);
+      transition: all 0.3s ease;
+    }
+
+    .step-dot.active {
+      background: var(--green);
+      width: 20px;
+      border-radius: 4px;
+    }
+
+    /* Phone input with flag */
+    .phone-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    .phone-input-wrapper:focus-within {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.1);
+    }
+
+    .phone-prefix {
+      padding: 0.85rem 0.85rem;
+      background: rgba(0, 0, 0, 0.03);
+      border-right: 1px solid var(--border-subtle);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .phone-input-wrapper input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 0.85rem 1rem;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      outline: none;
+      color: var(--text-primary);
+      min-width: 0;
+    }
+
+    /* Amount quick select enhanced */
+    .amount-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      margin: 0.75rem 0;
+    }
+
+    .amount-chip {
+      padding: 0.5rem 0.25rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: transparent;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-align: center;
+    }
+
+    .amount-chip:hover {
+      border-color: var(--green);
+      color: var(--green);
+      background: rgba(29, 158, 117, 0.05);
+    }
+
+    .amount-chip.selected {
+      border-color: var(--green);
+      background: rgba(29, 158, 117, 0.1);
+      color: var(--green);
+    }
+
+    /* Modal header with back btn */
+    .modal-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .back-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .back-btn:hover {
+      border-color: var(--green);
+      background: rgba(29, 158, 117, 0.08);
+    }
+
+    .back-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--text-secondary);
+      stroke-width: 2;
+    }
+
+    /* Withdraw account input */
+    .withdraw-account-info {
+      background: var(--green-light);
+      border: 1px solid rgba(29, 158, 117, 0.2);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      margin: 0.75rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .withdraw-account-icon {
+      font-size: 1.2rem;
+    }
+
+    .withdraw-account-text {
+      font-size: 0.78rem;
+      color: var(--green-dark);
+    }
+
+    .withdraw-account-text strong {
+      display: block;
+      font-weight: 700;
+    }
+
+    /* Dark mode adjustments */
+    [data-theme="dark"] .payment-card {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    [data-theme="dark"] .payment-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    [data-theme="dark"] .payment-card.selected {
+      background: rgba(29, 158, 117, 0.1);
+      border-color: var(--green);
+    }
+
+    [data-theme="dark"] .phone-input-wrapper {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    [data-theme="dark"] .phone-prefix {
+      background: rgba(255, 255, 255, 0.04);
+      border-right-color: rgba(255, 255, 255, 0.08);
+      color: var(--gray);
+    }
+
+    [data-theme="dark"] .phone-input-wrapper input {
+      color: var(--text-primary);
+    }
+
+    [data-theme="dark"] .phone-input-wrapper input::placeholder {
+      color: rgba(232, 232, 232, 0.3);
+    }
+
+    [data-theme="dark"] .withdraw-account-info {
+      background: rgba(29, 158, 117, 0.1);
+      border-color: rgba(29, 158, 117, 0.25);
+    }
+
+    [data-theme="dark"] .amount-chip {
+      border-color: rgba(255, 255, 255, 0.1);
+      color: var(--text-secondary);
+    }
+
+    [data-theme="dark"] .back-btn svg {
+      stroke: var(--gray);
+    }
+  </style>
 </head>
 
 <body>
@@ -31,7 +434,7 @@
           </svg>
         </div>
         <div>
-          <span class="logo-text">Innovix SmartRide</span>
+          <span class="logo-text">Innovix SharedRide</span>
           <span class="logo-sub">Myanmar</span>
         </div>
       </a>
@@ -85,7 +488,7 @@
               color: var(--green-dark);
               margin-bottom: 1rem;
             ">
-          ⚡ အမြန်လုပ်ဆောင်ချက်များ
+          Quick StartUp
         </h3>
         <div style="display: flex; flex-direction: column; gap: 0.75rem">
           <a href="find-ride.html" class="btn-outline" style="text-align: center">🔍 ခရီးစဉ်ရှာမည်</a>
@@ -106,70 +509,387 @@
       <div id="transactionsList"></div>
     </div>
   </div>
-  <!-- Topup Modal -->
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- TOPUP MODAL -->
+  <!-- ══════════════════════════════════════════ -->
   <div id="topupModal" class="modal">
     <div class="modal-content">
-      <h3 style="color: var(--green); margin-bottom: 1rem">💰 ငွေဖြည့်မည်</h3>
-      <div class="input-group">
-        <label class="input-label">ငွေပမာဏ (ကျပ်)</label>
-        <input type="number" id="topupAmount" class="input-field" placeholder="e.g. 10000" min="1000" step="1000" />
+
+      <!-- Step dots -->
+      <div class="step-dots">
+        <div class="step-dot active" id="topup-dot-1"></div>
+        <div class="step-dot" id="topup-dot-2"></div>
+        <div class="step-dot" id="topup-dot-3"></div>
       </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 1rem 0">
-        <button onclick="setAmount(10000)" class="btn-outline" style="font-size: 0.85rem; padding: 0.5rem 0.25rem;">
-          10,000
-        </button>
-        <button onclick="setAmount(25000)" class="btn-outline" style="font-size: 0.85rem; padding: 0.5rem 0.25rem;">
-          25,000
-        </button>
-        <button onclick="setAmount(50000)" class="btn-outline" style="font-size: 0.85rem; padding: 0.5rem 0.25rem;">
-          50,000
-        </button>
-        <button onclick="setAmount(100000)" class="btn-outline" style="font-size: 0.85rem; padding: 0.5rem 0.25rem;">
-          100,000
-        </button>
+
+      <!-- STEP 1: Choose payment method -->
+      <div class="payment-step active" id="topup-step-1">
+        <div class="modal-header">
+          <h3 style="color: var(--green); font-family: var(--font-heading); font-size: 1.1rem;">
+            💳 ငွေဖြည့်မည်
+          </h3>
+        </div>
+
+        <p style="font-size: 0.8rem; color: var(--gray); margin-bottom: 0.25rem;">ငွေပေးချေမှုနည်းလမ်းကို ရွေးချယ်ပါ</p>
+
+        <div class="payment-methods">
+          <!-- KPay -->
+          <div class="payment-card" id="topup-kpay" onclick="selectTopupMethod('kpay')" role="button" tabindex="0"
+            aria-label="KPay ရွေးချယ်ရန်">
+            <div class="payment-check">
+              <svg viewBox="0 0 24 24" fill="none">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div class="kpay-logo">
+              <img src="/src/assets/kpay.png" alt="KPay logo" draggable="false" />
+            </div>
+            <span class="payment-name">KPay</span>
+            <span class="payment-subtitle">KBZ Bank</span>
+          </div>
+          <!-- Wave Pay -->
+          <div class="payment-card" id="topup-wave" onclick="selectTopupMethod('wave')" role="button" tabindex="0"
+            aria-label="Wave Pay ရွေးချယ်ရန်">
+            <div class="payment-check">
+              <svg viewBox="0 0 24 24" fill="none">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div class="wave-logo">
+              <img src="/src/assets/wave.jpg" alt="Wave Pay logo" draggable="false" />
+            </div>
+            <span class="payment-name">Wave Pay</span>
+            <span class="payment-subtitle">Wave Money</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">ငွေပမာဏ (ကျပ်)</label>
+          <input type="number" id="topupAmount" class="input-field" placeholder="e.g. 10,000" min="1000" step="1000" />
+        </div>
+
+        <div class="amount-grid">
+          <button onclick="setAmount(5000,'topup')" class="amount-chip" data-amount="5000"
+            data-type="topup">5,000</button>
+          <button onclick="setAmount(10000,'topup')" class="amount-chip" data-amount="10000"
+            data-type="topup">10,000</button>
+          <button onclick="setAmount(25000,'topup')" class="amount-chip" data-amount="25000"
+            data-type="topup">25,000</button>
+          <button onclick="setAmount(50000,'topup')" class="amount-chip" data-amount="50000"
+            data-type="topup">50,000</button>
+          <button onclick="setAmount(100000,'topup')" class="amount-chip" data-amount="100000"
+            data-type="topup">100,000</button>
+          <button onclick="setAmount(200000,'topup')" class="amount-chip" data-amount="200000"
+            data-type="topup">200,000</button>
+          <button onclick="setAmount(500000,'topup')" class="amount-chip" data-amount="500000"
+            data-type="topup">500,000</button>
+          <button onclick="setAmount(1000000,'topup')" class="amount-chip" data-amount="1000000"
+            data-type="topup">1,000,000</button>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 1rem;">
+          <button onclick="goTopupStep2()" class="btn-primary" style="flex: 1" id="topup-next-btn">
+            Continue
+          </button>
+          <button onclick="closeTopupModal()" class="btn-outline" style="flex: 1">
+            ပိတ်ရန်
+          </button>
+        </div>
       </div>
-      <div class="modal-actions">
-        <button onclick="confirmTopup()" class="btn-primary" style="flex: 1">
-          အတည်ပြုမည်
-        </button>
-        <button onclick="closeTopupModal()" class="btn-outline" style="flex: 1">
-          ပိတ်ရန်
-        </button>
+
+      <!-- STEP 2: Enter phone number -->
+      <div class="payment-step" id="topup-step-2">
+        <div class="modal-header">
+          <button class="back-btn" onclick="goTopupStep1()" aria-label="နောက်သို့">
+            <svg viewBox="0 0 24 24" fill="none">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <h3 style="font-family: var(--font-heading); font-size: 1rem; color: var(--text-primary);"
+            id="topup-step2-title">
+            📱 KPay ဖုန်းနံပါတ်
+          </h3>
+        </div>
+
+        <!-- Payment logo banner -->
+        <div id="topup-payment-banner" style="
+          border-radius: 12px;
+          padding: 1rem;
+          margin-bottom: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.85rem;
+          border: 1px solid rgba(0,0,0,0.06);
+        ">
+          <div id="topup-banner-logo" style="flex-shrink:0;"></div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);" id="topup-banner-name"></div>
+            <div style="font-size: 0.72rem; color: var(--gray);" id="topup-banner-amount"></div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Kpay ph number</label>
+          <div class="phone-input-wrapper">
+            <div class="phone-prefix">🇲🇲 +95</div>
+            <input type="tel" id="topupPhone" placeholder="09 xxx xxx xxx" maxlength="12" inputmode="numeric" />
+          </div>
+        </div>
+
+        <div style="
+          background: rgba(245,158,11,0.08);
+          border: 1px solid rgba(245,158,11,0.2);
+          border-radius: 10px;
+          padding: 0.65rem 0.85rem;
+          margin-bottom: 1rem;
+          display: flex;
+          gap: 0.5rem;
+          align-items: flex-start;
+        ">
+          <span style="font-size: 0.9rem; flex-shrink:0;">⚠️</span>
+          <p style="font-size: 0.72rem; color: var(--amber); line-height: 1.5;">
+            ဖုန်းနံပါတ်မှတ်မှန်ကြောင်းစစ်ဆေးပြီး သင်၏ <strong id="topup-method-name-warn">KPay</strong> အကောင့်မှ
+            ငွေလွှဲပါ။ ငွေပေးချေမှုပြီးသောအခါ
+            အလိုအလျောက် balance ဖြည့်ပေးမည်။
+          </p>
+        </div>
+
+        <div class="modal-actions">
+          <button onclick="goTopupStep3()" class="btn-primary" style="flex: 1">
+            ငွေပေးချေမည်
+          </button>
+          <button onclick="goTopupStep1()" class="btn-outline" style="flex: 1">
+            Back
+          </button>
+        </div>
       </div>
+
+      <!-- STEP 3: Processing → Success -->
+      <div class="payment-step" id="topup-step-3">
+        <div class="processing-overlay" id="topup-processing">
+          <div class="spinner-ring"></div>
+          <div style="text-align: center;">
+            <p style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">စစ်ဆေးနေသည်…</p>
+            <p style="font-size: 0.78rem; color: var(--gray);" id="topup-processing-label">KPay မှ ငွေလွှဲမှုကို
+              စစ်ဆေးနေသည်</p>
+          </div>
+        </div>
+        <div class="success-overlay" id="topup-success">
+          <div class="success-icon">
+            <svg viewBox="0 0 24 24" fill="none">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <div>
+            <p
+              style="font-family: var(--font-heading); font-weight: 800; font-size: 1.15rem; color: var(--text-primary); text-align: center;">
+              ငွေဖြည့်ပြီးပါပြီ!</p>
+            <p style="font-size: 0.8rem; color: var(--gray); text-align: center; margin-top: 0.25rem;"
+              id="topup-success-msg"></p>
+          </div>
+          <button onclick="closeTopupModal()" class="btn-primary" style="width: 100%; margin-top: 0.5rem;">
+            ပိတ်ရန်
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
-  <!-- Withdraw Modal -->
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- WITHDRAW MODAL -->
+  <!-- ══════════════════════════════════════════ -->
   <div id="withdrawModal" class="modal">
     <div class="modal-content">
-      <h3 style="color: var(--amber); margin-bottom: 1rem">💸 ငွေထုတ်မည်</h3>
-      <div class="input-group">
-        <label class="input-label">ငွေပမာဏ (ကျပ်)</label>
-        <input type="number" id="withdrawAmount" class="input-field" placeholder="e.g. 5000" min="1000" step="1000" />
+
+      <!-- Step dots -->
+      <div class="step-dots">
+        <div class="step-dot active" id="wd-dot-1"></div>
+        <div class="step-dot" id="wd-dot-2"></div>
+        <div class="step-dot" id="wd-dot-3"></div>
       </div>
-      <div class="modal-actions">
-        <button onclick="confirmWithdraw()" class="btn-primary" style="flex: 1">
-          အတည်ပြုမည်
-        </button>
-        <button onclick="closeWithdrawModal()" class="btn-outline" style="flex: 1">
-          ပိတ်ရန်
-        </button>
+
+      <!-- STEP 1: Choose payment method + amount -->
+      <div class="payment-step active" id="wd-step-1">
+        <div class="modal-header">
+          <h3 style="color: var(--amber); font-family: var(--font-heading); font-size: 1.1rem;">
+            ငွေထုတ်မည်
+          </h3>
+        </div>
+
+        <p style="font-size: 0.8rem; color: var(--gray); margin-bottom: 0.25rem;">ငွေလက်ခံမည့် Method ရွေးချယ်ပါ
+        </p>
+
+        <div class="payment-methods">
+          <!-- KPay -->
+          <div class="payment-card" id="wd-kpay" onclick="selectWdMethod('kpay')" role="button" tabindex="0">
+            <div class="payment-check">
+              <svg viewBox="0 0 24 24" fill="none">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div class="kpay-logo">
+              <img src="/src/assets/kpay.png" alt="KPay logo" draggable="false" />
+            </div>
+            <span class="payment-name">KPay</span>
+            <span class="payment-subtitle">KBZ Bank</span>
+          </div>
+          <!-- Wave Pay -->
+          <div class="payment-card" id="wd-wave" onclick="selectWdMethod('wave')" role="button" tabindex="0">
+            <div class="payment-check">
+              <svg viewBox="0 0 24 24" fill="none">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div class="wave-logo">
+              <img src="/src/assets/wave.jpg" alt="Wave Pay logo" draggable="false" />
+            </div>
+            <span class="payment-name">Wave Pay</span>
+            <span class="payment-subtitle">Wave Money</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">ထုတ်မည့် ငွေပမာဏ (ကျပ်)</label>
+          <input type="number" id="withdrawAmount" class="input-field" placeholder="e.g. 5,000" min="1000"
+            step="1000" />
+          <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--gray);">
+            လက်ကျန်ငွေ: <strong id="wd-balance-display" style="color: var(--green);"></strong> ကျပ်
+          </div>
+        </div>
+
+        <div class="amount-grid">
+          <button onclick="setAmount(5000,'wd')" class="amount-chip" data-amount="5000" data-type="wd">5,000</button>
+          <button onclick="setAmount(10000,'wd')" class="amount-chip" data-amount="10000" data-type="wd">10,000</button>
+          <button onclick="setAmount(25000,'wd')" class="amount-chip" data-amount="25000" data-type="wd">25,000</button>
+          <button onclick="setAmount(50000,'wd')" class="amount-chip" data-amount="50000" data-type="wd">50,000</button>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 1rem;">
+          <button onclick="goWdStep2()" class="btn-primary" style="flex: 1" id="topup-next-btn">
+            Continue
+          </button>
+          <button onclick="closeWithdrawModal()" class="btn-outline" style="flex: 1">
+            ပိတ်ရန်
+          </button>
+        </div>
       </div>
+
+      <!-- STEP 2: Enter receiving phone -->
+      <div class="payment-step" id="wd-step-2">
+        <div class="modal-header">
+          <button class="back-btn" onclick="goWdStep1()" aria-label="နောက်သို့">
+            <svg viewBox="0 0 24 24" fill="none">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <h3 style="font-family: var(--font-heading); font-size: 1rem; color: var(--text-primary);"
+            id="wd-step2-title">
+            📱 KPay လက်ခံမည့် နံပါတ်
+          </h3>
+        </div>
+
+        <!-- Selected method summary -->
+        <div id="wd-payment-banner" style="
+          border-radius: 12px;
+          padding: 1rem;
+          margin-bottom: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.85rem;
+          border: 1px solid rgba(0,0,0,0.06);
+        ">
+          <div id="wd-banner-logo" style="flex-shrink:0;"></div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);" id="wd-banner-name"></div>
+            <div style="font-size: 0.72rem; color: var(--gray);" id="wd-banner-amount"></div>
+          </div>
+        </div>
+
+        <div class="withdraw-account-info">
+          <span class="withdraw-account-icon">ℹ️</span>
+          <div class="withdraw-account-text">
+            <strong id="wd-method-label">KPay</strong> ဖုန်းနံပါတ်ကို ထည့်ပါ
+            <span style="font-weight: 400;"> ၃-၅ မိနစ်အတွင်းငွေ လက်ခံရရှိမည်</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">ဖုန်းနံပါတ် (လက်ခံမည့်သူ)</label>
+          <div class="phone-input-wrapper">
+            <div class="phone-prefix">🇲🇲 +95</div>
+            <input type="tel" id="withdrawPhone" placeholder="09 xxx xxx xxx" maxlength="12" inputmode="numeric" />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button onclick="goWdStep3()" class="btn-primary" style="flex: 1" id="topup-next-btn">
+            ငွေထုတ်မည်
+          </button>
+          <button onclick="goWdStep1()" class="btn-outline" style="flex: 1">
+            နောက်သို့
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Processing → Success -->
+      <div class="payment-step" id="wd-step-3">
+        <div class="processing-overlay" id="wd-processing">
+          <div class="spinner-ring" style="border-top-color: var(--amber);"></div>
+          <div style="text-align: center;">
+            <p style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">စစ်ဆေးနေသည်…</p>
+            <p style="font-size: 0.78rem; color: var(--gray);" id="wd-processing-label">ငွေလွှဲမှုကို ဆောင်ရွက်နေသည်</p>
+          </div>
+        </div>
+        <div class="success-overlay" id="wd-success">
+          <div class="success-icon"
+            style="background: linear-gradient(135deg, #ba7517, #f59e0b); box-shadow: 0 8px 24px rgba(186,117,23,0.4);">
+            <svg viewBox="0 0 24 24" fill="none">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <div>
+            <p
+              style="font-family: var(--font-heading); font-weight: 800; font-size: 1.15rem; color: var(--text-primary); text-align: center;">
+              ငွေထုတ်ပြီးပါပြီ! ✅</p>
+            <p style="font-size: 0.8rem; color: var(--gray); text-align: center; margin-top: 0.25rem;"
+              id="wd-success-msg"></p>
+          </div>
+          <button onclick="closeWithdrawModal()" class="btn-primary" style="width: 100%; margin-top: 0.5rem; ">
+            ပိတ်ရန်
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
+
   <script type="module">
     import { requireAuth, getCurrentUser, logout } from "../js/auth.js";
     import { db } from "../js/database.js";
     import { toggleTheme } from "../js/theme.js";
 
     document.getElementById("themeToggleBtn")?.addEventListener("click", toggleTheme);
+
     if (!requireAuth()) {
       /* redirect handled */
     } else {
       let currentUser = getCurrentUser();
+
+      // ── State ──
+      let topupMethod = null;
+      let wdMethod = null;
+
+      // ── UI Update ──
       function updateUI() {
         document.getElementById("balance").textContent =
           currentUser.balance?.toLocaleString() || "0";
+        const wdDisplay = document.getElementById("wd-balance-display");
+        if (wdDisplay) wdDisplay.textContent = currentUser.balance?.toLocaleString() || "0";
       }
+
+      // ── Transactions ──
       function loadTransactions() {
         const transactions = db.getTransactionsByUser(currentUser.id);
         if (transactions.length === 0) {
@@ -203,71 +923,250 @@
           )
           .join("");
       }
-      window.setAmount = function (amount) {
-        document.getElementById("topupAmount").value = amount;
+
+      // ── Amount chip helpers ──
+      window.setAmount = function (amount, type) {
+        if (type === "topup") {
+          document.getElementById("topupAmount").value = amount;
+        } else {
+          document.getElementById("withdrawAmount").value = amount;
+        }
+        // Highlight chip
+        document.querySelectorAll(`.amount-chip[data-type="${type}"]`).forEach(btn => {
+          btn.classList.toggle("selected", parseInt(btn.dataset.amount) === amount);
+        });
       };
-      window.confirmTopup = function () {
+
+      // ════════════════════════════════════
+      // TOPUP FLOW
+      // ════════════════════════════════════
+      function setTopupStepDots(step) {
+        for (let i = 1; i <= 3; i++) {
+          document.getElementById(`topup-dot-${i}`).classList.toggle("active", i <= step);
+        }
+      }
+      function showTopupStep(step) {
+        document.querySelectorAll("#topupModal .payment-step").forEach(el => el.classList.remove("active"));
+        document.getElementById(`topup-step-${step}`).classList.add("active");
+        setTopupStepDots(step);
+      }
+
+      window.selectTopupMethod = function (method) {
+        topupMethod = method;
+        document.getElementById("topup-kpay").classList.toggle("selected", method === "kpay");
+        document.getElementById("topup-wave").classList.toggle("selected", method === "wave");
+      };
+
+      window.goTopupStep2 = function () {
         const amount = parseInt(document.getElementById("topupAmount").value);
         if (!amount || amount < 1000) {
           alert("ကျေးဇူးပြု၍ အနည်းဆုံး 1,000 ကျပ် ထည့်ပါ");
           return;
         }
-        const newBalance = db.updateBalance(
-          currentUser.id,
-          amount,
-          `ငွေသွင်း ${amount.toLocaleString()} ကျပ်`,
-        );
-        currentUser = getCurrentUser();
-        updateUI();
-        loadTransactions();
-        closeTopupModal();
-        alert(
-          `✅ ငွေသွင်းပြီးပါပြီ။\nလက်ကျန်ငွေ: ${newBalance.toLocaleString()} ကျပ်`,
-        );
+        if (!topupMethod) {
+          alert("ကျေးဇူးပြု၍ ငွေပေးချေမှုနည်းလမ်းကို ရွေးချယ်ပါ");
+          return;
+        }
+        // Build banner
+        const isKpay = topupMethod === "kpay";
+        const methodName = isKpay ? "KPay" : "Wave Pay";
+        const bannerBg = isKpay
+          ? "linear-gradient(135deg, rgba(245,34,45,0.08), rgba(255,77,79,0.04))"
+          : "linear-gradient(135deg, rgba(108,43,217,0.08), rgba(159,92,240,0.04))";
+        const borderColor = isKpay ? "rgba(245,34,45,0.2)" : "rgba(108,43,217,0.2)";
+
+        const banner = document.getElementById("topup-payment-banner");
+        banner.style.background = bannerBg;
+        banner.style.borderColor = borderColor;
+
+        document.getElementById("topup-banner-logo").innerHTML = isKpay
+          ? `<div class="kpay-logo"><img src="/src/assets/kpay.png" alt="KPay" /></div>`
+          : `<div class="wave-logo"><img src="/src/assets/wave.jpg" alt="Wave Pay" /></div>`;
+        document.getElementById("topup-banner-name").textContent = methodName;
+        document.getElementById("topup-banner-amount").textContent =
+          `${amount.toLocaleString()} ကျပ် ဖြည့်မည်`;
+        document.getElementById("topup-step2-title").textContent =
+          `📱 ${methodName} ဖုန်းနံပါတ်`;
+        document.getElementById("topup-method-name-warn").textContent = methodName;
+
+        showTopupStep(2);
       };
-      window.confirmWithdraw = function () {
-        const amount = parseInt(
-          document.getElementById("withdrawAmount").value,
-        );
+
+      window.goTopupStep1 = function () {
+        showTopupStep(1);
+      };
+
+      window.goTopupStep3 = function () {
+        const phone = document.getElementById("topupPhone").value.trim();
+        if (!phone || phone.length < 9) {
+          alert("ကျေးဇူးပြု၍ မှန်ကန်သော ဖုန်းနံပါတ်ထည့်ပါ");
+          return;
+        }
+        const amount = parseInt(document.getElementById("topupAmount").value);
+        const methodName = topupMethod === "kpay" ? "KPay" : "Wave Pay";
+
+        showTopupStep(3);
+        document.getElementById("topup-processing").classList.add("active");
+        document.getElementById("topup-success").classList.remove("active");
+        document.getElementById("topup-processing-label").textContent =
+          `${methodName} မှ ငွေလွှဲမှုကို စစ်ဆေးနေသည်`;
+
+        // Simulate processing
+        setTimeout(() => {
+          const newBalance = db.updateBalance(
+            currentUser.id,
+            amount,
+            `ငွေသွင်း (${methodName}) ${amount.toLocaleString()} ကျပ်`,
+          );
+          currentUser = getCurrentUser();
+          updateUI();
+          loadTransactions();
+
+          document.getElementById("topup-processing").classList.remove("active");
+          document.getElementById("topup-success").classList.add("active");
+          document.getElementById("topup-success-msg").textContent =
+            `${methodName} မှ ${amount.toLocaleString()} ကျပ် ဖြည့်ပြီးပါပြီ\nလက်ကျန်ငွေ: ${newBalance.toLocaleString()} ကျပ်`;
+        }, 2200);
+      };
+
+      window.closeTopupModal = function () {
+        document.getElementById("topupModal").style.display = "none";
+        document.getElementById("topupAmount").value = "";
+        document.getElementById("topupPhone").value = "";
+        topupMethod = null;
+        document.querySelectorAll("#topupModal .payment-card").forEach(c => c.classList.remove("selected"));
+        document.querySelectorAll("#topupModal .amount-chip").forEach(c => c.classList.remove("selected"));
+        showTopupStep(1);
+      };
+
+      // ════════════════════════════════════
+      // WITHDRAW FLOW
+      // ════════════════════════════════════
+      function setWdStepDots(step) {
+        for (let i = 1; i <= 3; i++) {
+          document.getElementById(`wd-dot-${i}`).classList.toggle("active", i <= step);
+        }
+      }
+      function showWdStep(step) {
+        document.querySelectorAll("#withdrawModal .payment-step").forEach(el => el.classList.remove("active"));
+        document.getElementById(`wd-step-${step}`).classList.add("active");
+        setWdStepDots(step);
+      }
+
+      window.selectWdMethod = function (method) {
+        wdMethod = method;
+        document.getElementById("wd-kpay").classList.toggle("selected", method === "kpay");
+        document.getElementById("wd-wave").classList.toggle("selected", method === "wave");
+      };
+
+      window.goWdStep2 = function () {
+        const amount = parseInt(document.getElementById("withdrawAmount").value);
         if (!amount || amount < 1000) {
           alert("ကျေးဇူးပြု၍ အနည်းဆုံး 1,000 ကျပ် ထည့်ပါ");
+          return;
+        }
+        if (!wdMethod) {
+          alert("ကျေးဇူးပြု၍ ငွေလက်ခံမည့် နည်းလမ်းကို ရွေးချယ်ပါ");
           return;
         }
         if (amount > currentUser.balance) {
           alert("လက်ကျန်ငွေ မလုံလောက်ပါ");
           return;
         }
-        const newBalance = db.updateBalance(
-          currentUser.id,
-          -amount,
-          `ငွေထုတ် ${amount.toLocaleString()} ကျပ်`,
-        );
-        currentUser = getCurrentUser();
-        updateUI();
-        loadTransactions();
-        closeWithdrawModal();
-        alert(
-          `✅ ငွေထုတ်ပြီးပါပြီ။\nလက်ကျန်ငွေ: ${newBalance.toLocaleString()} ကျပ်`,
-        );
+        const isKpay = wdMethod === "kpay";
+        const methodName = isKpay ? "KPay" : "Wave Pay";
+        const bannerBg = isKpay
+          ? "linear-gradient(135deg, rgba(245,34,45,0.08), rgba(255,77,79,0.04))"
+          : "linear-gradient(135deg, rgba(108,43,217,0.08), rgba(159,92,240,0.04))";
+        const borderColor = isKpay ? "rgba(245,34,45,0.2)" : "rgba(108,43,217,0.2)";
+
+        const banner = document.getElementById("wd-payment-banner");
+        banner.style.background = bannerBg;
+        banner.style.borderColor = borderColor;
+        document.getElementById("wd-banner-logo").innerHTML = isKpay
+          ? `<div class="kpay-logo"><img src="/src/assets/kpay.png" alt="KPay" /></div>`
+          : `<div class="wave-logo"><img src="/src/assets/wave.jpg" alt="Wave Pay" /></div>`;
+        document.getElementById("wd-banner-name").textContent = methodName;
+        document.getElementById("wd-banner-amount").textContent =
+          `${amount.toLocaleString()} ကျပ် ထုတ်မည်`;
+        document.getElementById("wd-step2-title").textContent =
+          `📱 ${methodName} လက်ခံမည့် နံပါတ်`;
+        document.getElementById("wd-method-label").textContent = methodName;
+
+        showWdStep(2);
       };
-      window.closeTopupModal = function () {
-        document.getElementById("topupModal").style.display = "none";
-        document.getElementById("topupAmount").value = "";
+
+      window.goWdStep1 = function () {
+        showWdStep(1);
       };
+
+      window.goWdStep3 = function () {
+        const phone = document.getElementById("withdrawPhone").value.trim();
+        if (!phone || phone.length < 9) {
+          alert("ကျေးဇူးပြု၍ မှန်ကန်သော ဖုန်းနံပါတ်ထည့်ပါ");
+          return;
+        }
+        const amount = parseInt(document.getElementById("withdrawAmount").value);
+        const methodName = wdMethod === "kpay" ? "KPay" : "Wave Pay";
+
+        showWdStep(3);
+        document.getElementById("wd-processing").classList.add("active");
+        document.getElementById("wd-success").classList.remove("active");
+        document.getElementById("wd-processing-label").textContent =
+          `${methodName} သို့ ငွေလွှဲမှုကို ဆောင်ရွက်နေသည်`;
+
+        setTimeout(() => {
+          const newBalance = db.updateBalance(
+            currentUser.id,
+            -amount,
+            `ငွေထုတ် (${methodName}) ${amount.toLocaleString()} ကျပ်`,
+          );
+          currentUser = getCurrentUser();
+          updateUI();
+          loadTransactions();
+
+          document.getElementById("wd-processing").classList.remove("active");
+          document.getElementById("wd-success").classList.add("active");
+          document.getElementById("wd-success-msg").textContent =
+            `${methodName} သို့ ${amount.toLocaleString()} ကျပ် ထုတ်ပြီးပါပြီ\nလက်ကျန်ငွေ: ${newBalance.toLocaleString()} ကျပ်`;
+        }, 2500);
+      };
+
       window.closeWithdrawModal = function () {
         document.getElementById("withdrawModal").style.display = "none";
         document.getElementById("withdrawAmount").value = "";
+        document.getElementById("withdrawPhone").value = "";
+        wdMethod = null;
+        document.querySelectorAll("#withdrawModal .payment-card").forEach(c => c.classList.remove("selected"));
+        document.querySelectorAll("#withdrawModal .amount-chip").forEach(c => c.classList.remove("selected"));
+        showWdStep(1);
       };
+
+      // ── Open modals ──
       document.getElementById("topupBtn").addEventListener("click", () => {
+        document.getElementById("wd-balance-display").textContent =
+          currentUser.balance?.toLocaleString() || "0";
         document.getElementById("topupModal").style.display = "flex";
       });
       document.getElementById("withdrawBtn").addEventListener("click", () => {
+        document.getElementById("wd-balance-display").textContent =
+          currentUser.balance?.toLocaleString() || "0";
         document.getElementById("withdrawModal").style.display = "flex";
       });
+
+      // Close modals on backdrop click
+      document.getElementById("topupModal").addEventListener("click", function (e) {
+        if (e.target === this) closeTopupModal();
+      });
+      document.getElementById("withdrawModal").addEventListener("click", function (e) {
+        if (e.target === this) closeWithdrawModal();
+      });
+
       document.getElementById("logoutBtn")?.addEventListener("click", (e) => {
         e.preventDefault();
         logout();
       });
+
       // Initialize
       updateUI();
       loadTransactions();

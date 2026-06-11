@@ -1,1033 +1,989 @@
 <!doctype html>
 <html lang="my">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Driver Dashboard - Innovix SmartRide</title>
-    <link rel="stylesheet" href="/src/style.css" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-      (function () {
-        const t = localStorage.getItem("smartride_theme") || "light";
-        document.documentElement.setAttribute("data-theme", t);
-      })();
-    </script>
-    <style>
-      /* Driver Dashboard Specific Styles */
-      .driver-hero {
-        background: linear-gradient(
-          135deg,
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Driver Dashboard - Innovix SharedRide</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    (function () {
+      const t = localStorage.getItem("smartride_theme") || "light";
+      document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
+  <style>
+    /* Driver Dashboard Specific Styles */
+    .driver-hero {
+      background: linear-gradient(135deg,
           var(--green-dark) 0%,
           var(--green) 50%,
-          #2bc48a 100%
-        );
-        border-radius: 24px;
-        padding: 2rem 2.5rem;
-        color: #fff;
-        position: relative;
-        overflow: hidden;
-        margin-bottom: 2rem;
-      }
+          #2bc48a 100%);
+      border-radius: 24px;
+      padding: 2rem 2.5rem;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
 
-      .driver-hero::before {
-        content: "";
-        position: absolute;
-        top: -50%;
-        right: -20%;
-        width: 400px;
-        height: 400px;
-        background: radial-gradient(
-          circle,
+    .driver-hero::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle,
           rgba(255, 255, 255, 0.08) 0%,
-          transparent 70%
-        );
-        border-radius: 50%;
-        pointer-events: none;
+          transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .driver-hero::after {
+      content: "";
+      position: absolute;
+      bottom: -30%;
+      left: -10%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle,
+          rgba(255, 255, 255, 0.05) 0%,
+          transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .driver-hero-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .driver-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      flex-shrink: 0;
+    }
+
+    .driver-info h2 {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+    }
+
+    .driver-info p {
+      opacity: 0.85;
+      font-size: 0.85rem;
+    }
+
+    .driver-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(6px);
+      padding: 0.35rem 0.85rem;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      margin-top: 0.5rem;
+    }
+
+    .driver-badge .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #4ade80;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .driver-balance-card {
+      text-align: right;
+    }
+
+    .driver-balance-card .label {
+      font-size: 0.75rem;
+      opacity: 0.7;
+      margin-bottom: 0.25rem;
+    }
+
+    .driver-balance-card .amount {
+      font-family: var(--font-heading);
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .driver-balance-card .currency {
+      font-size: 0.75rem;
+      opacity: 0.7;
+      margin-top: 0.15rem;
+    }
+
+    /* Stats Grid */
+    .driver-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .driver-stat-card {
+      position: relative;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 1.25rem;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+
+    .driver-stat-card:hover {
+      border-color: rgba(29, 158, 117, 0.2);
+      background: rgba(255, 255, 255, 0.85);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(29, 158, 117, 0.08);
+    }
+
+    .driver-stat-card .stat-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .driver-stat-card .stat-value {
+      font-family: var(--font-heading);
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--green);
+      line-height: 1;
+    }
+
+    .driver-stat-card .stat-label {
+      font-size: 0.72rem;
+      color: var(--gray);
+      margin-top: 0.35rem;
+      font-weight: 500;
+    }
+
+    .driver-stat-card .stat-trend {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      background: var(--green-light);
+      color: var(--green);
+    }
+
+    /* Main Content Grid */
+    .driver-content-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Active Rides Section */
+    .ride-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 0.75rem;
+      transition: all 0.3s ease;
+    }
+
+    .ride-item:hover {
+      border-color: rgba(29, 158, 117, 0.2);
+      transform: translateX(4px);
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .ride-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .ride-route-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--green-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .ride-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .ride-route {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--green-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ride-meta {
+      font-size: 0.72rem;
+      color: var(--gray);
+      margin-top: 0.2rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .ride-passengers-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 8px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--green-light);
+      color: var(--green);
+      flex-shrink: 0;
+    }
+
+    /* Passenger List */
+    .passenger-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .passenger-item:hover {
+      background: rgba(255, 255, 255, 0.85);
+      border-color: rgba(29, 158, 117, 0.15);
+    }
+
+    .passenger-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--green-light), #d1f5e8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+      border: 1px solid rgba(29, 158, 117, 0.15);
+    }
+
+    .passenger-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--green-dark);
+    }
+
+    .passenger-pickup {
+      font-size: 0.68rem;
+      color: var(--gray);
+      margin-top: 0.1rem;
+    }
+
+    /* Quick Actions */
+    .quick-action-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .quick-action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1.25rem 0.75rem;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--border-subtle);
+      text-decoration: none;
+      color: var(--green-dark);
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .quick-action-btn:hover {
+      border-color: rgba(29, 158, 117, 0.25);
+      background: rgba(255, 255, 255, 0.85);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(29, 158, 117, 0.1);
+    }
+
+    .quick-action-btn .action-icon {
+      font-size: 1.5rem;
+    }
+
+    .quick-action-btn .action-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    /* Vehicle Info Card */
+    .vehicle-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: linear-gradient(135deg,
+          rgba(29, 158, 117, 0.06),
+          rgba(29, 158, 117, 0.02));
+      border-radius: 14px;
+      border: 1px solid rgba(29, 158, 117, 0.1);
+    }
+
+    .vehicle-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: var(--green-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .vehicle-details h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--green-dark);
+    }
+
+    .vehicle-details p {
+      font-size: 0.75rem;
+      color: var(--gray);
+      margin-top: 0.15rem;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--gray);
+    }
+
+    .empty-state .empty-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      opacity: 0.5;
+    }
+
+    .empty-state p {
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    /* Section Header */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .section-header h3 {
+      font-family: var(--font-heading);
+      color: var(--green-dark);
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .section-header a {
+      font-size: 0.75rem;
+      color: var(--green);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .section-header a:hover {
+      color: var(--green-dark);
+    }
+
+    /* Earnings breakdown */
+    .earnings-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .earnings-row:last-child {
+      border-bottom: none;
+    }
+
+    .earnings-row .label {
+      font-size: 0.8rem;
+      color: var(--gray);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .earnings-row .value {
+      font-family: var(--font-heading);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--green-dark);
+    }
+
+    .earnings-row .value.positive {
+      color: var(--green);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .driver-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
 
-      .driver-hero::after {
-        content: "";
-        position: absolute;
-        bottom: -30%;
-        left: -10%;
-        width: 300px;
-        height: 300px;
-        background: radial-gradient(
-          circle,
-          rgba(255, 255, 255, 0.05) 0%,
-          transparent 70%
-        );
-        border-radius: 50%;
-        pointer-events: none;
+      .driver-content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .driver-hero {
+        padding: 1.25rem;
+        border-radius: 18px;
       }
 
       .driver-hero-content {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        justify-content: space-between;
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+      }
+
+      .driver-hero-content>div:first-child {
+        flex-direction: column;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 1.5rem;
       }
 
       .driver-avatar {
-        width: 64px;
-        height: 64px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(10px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.8rem;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        flex-shrink: 0;
+        width: 52px;
+        height: 52px;
+        font-size: 1.4rem;
+      }
+
+      .driver-info {
+        text-align: center;
       }
 
       .driver-info h2 {
-        font-family: var(--font-heading);
-        font-size: 1.5rem;
-        font-weight: 800;
-        margin-bottom: 0.25rem;
+        font-size: 1.2rem;
       }
 
       .driver-info p {
-        opacity: 0.85;
-        font-size: 0.85rem;
-      }
-
-      .driver-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(6px);
-        padding: 0.35rem 0.85rem;
-        border-radius: 100px;
-        font-size: 0.72rem;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        margin-top: 0.5rem;
-      }
-
-      .driver-badge .dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #4ade80;
-        animation: pulse 2s ease-in-out infinite;
+        font-size: 0.78rem;
       }
 
       .driver-balance-card {
-        text-align: right;
-      }
-
-      .driver-balance-card .label {
-        font-size: 0.75rem;
-        opacity: 0.7;
-        margin-bottom: 0.25rem;
+        text-align: center;
       }
 
       .driver-balance-card .amount {
-        font-family: var(--font-heading);
-        font-size: 2.2rem;
-        font-weight: 800;
-        line-height: 1;
-      }
-
-      .driver-balance-card .currency {
-        font-size: 0.75rem;
-        opacity: 0.7;
-        margin-top: 0.15rem;
-      }
-
-      /* Stats Grid */
-      .driver-stats-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1rem;
-        margin-bottom: 2rem;
-      }
-
-      .driver-stat-card {
-        position: relative;
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid var(--border-subtle);
-        border-radius: 18px;
-        padding: 1.25rem;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow: hidden;
-      }
-
-      .driver-stat-card:hover {
-        border-color: rgba(29, 158, 117, 0.2);
-        background: rgba(255, 255, 255, 0.85);
-        transform: translateY(-3px);
-        box-shadow: 0 12px 30px rgba(29, 158, 117, 0.08);
-      }
-
-      .driver-stat-card .stat-icon {
-        font-size: 1.5rem;
-        margin-bottom: 0.75rem;
-      }
-
-      .driver-stat-card .stat-value {
-        font-family: var(--font-heading);
         font-size: 1.75rem;
-        font-weight: 800;
-        color: var(--green);
-        line-height: 1;
       }
 
-      .driver-stat-card .stat-label {
-        font-size: 0.72rem;
-        color: var(--gray);
-        margin-top: 0.35rem;
-        font-weight: 500;
-      }
-
-      .driver-stat-card .stat-trend {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-        font-size: 0.65rem;
-        font-weight: 700;
-        padding: 0.2rem 0.5rem;
-        border-radius: 6px;
-        background: var(--green-light);
-        color: var(--green);
-      }
-
-      /* Main Content Grid */
-      .driver-content-grid {
-        display: grid;
-        grid-template-columns: 1.2fr 0.8fr;
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-      }
-
-      /* Active Rides Section */
-      .ride-item {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 1rem;
-        background: rgba(255, 255, 255, 0.7);
-        border-radius: 14px;
-        border: 1px solid var(--border-subtle);
-        margin-bottom: 0.75rem;
-        transition: all 0.3s ease;
-      }
-
-      .ride-item:hover {
-        border-color: rgba(29, 158, 117, 0.2);
-        transform: translateX(4px);
-        background: rgba(255, 255, 255, 0.85);
-      }
-
-      .ride-item:last-child {
-        margin-bottom: 0;
-      }
-
-      .ride-route-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
-        background: var(--green-light);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-        flex-shrink: 0;
-      }
-
-      .ride-details {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .ride-route {
-        font-size: 0.82rem;
-        font-weight: 600;
-        color: var(--green-dark);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .ride-meta {
-        font-size: 0.72rem;
-        color: var(--gray);
-        margin-top: 0.2rem;
-        display: flex;
-        gap: 0.75rem;
-        align-items: center;
-      }
-
-      .ride-passengers-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
-        padding: 0.2rem 0.6rem;
-        border-radius: 8px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        background: var(--green-light);
-        color: var(--green);
-        flex-shrink: 0;
-      }
-
-      /* Passenger List */
-      .passenger-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.85rem;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.7);
-        border: 1px solid var(--border-subtle);
-        margin-bottom: 0.5rem;
-        transition: all 0.3s ease;
-      }
-
-      .passenger-item:hover {
-        background: rgba(255, 255, 255, 0.85);
-        border-color: rgba(29, 158, 117, 0.15);
-      }
-
-      .passenger-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--green-light), #d1f5e8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.85rem;
-        flex-shrink: 0;
-        border: 1px solid rgba(29, 158, 117, 0.15);
-      }
-
-      .passenger-name {
-        font-size: 0.82rem;
-        font-weight: 600;
-        color: var(--green-dark);
-      }
-
-      .passenger-pickup {
-        font-size: 0.68rem;
-        color: var(--gray);
-        margin-top: 0.1rem;
-      }
-
-      /* Quick Actions */
-      .quick-action-grid {
-        display: grid;
+      .driver-stats-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 0.75rem;
       }
 
-      .quick-action-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 1.25rem 0.75rem;
-        border-radius: 16px;
-        background: rgba(255, 255, 255, 0.7);
-        border: 1px solid var(--border-subtle);
-        text-decoration: none;
-        color: var(--green-dark);
-        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        cursor: pointer;
+      .driver-stat-card {
+        padding: 1rem;
+        border-radius: 14px;
       }
 
-      .quick-action-btn:hover {
-        border-color: rgba(29, 158, 117, 0.25);
-        background: rgba(255, 255, 255, 0.85);
-        transform: translateY(-3px);
-        box-shadow: 0 8px 24px rgba(29, 158, 117, 0.1);
+      .driver-stat-card .stat-value {
+        font-size: 1.4rem;
+      }
+
+      .driver-stat-card .stat-label {
+        font-size: 0.65rem;
+      }
+
+      .driver-stat-card .stat-trend {
+        font-size: 0.58rem;
+        padding: 0.15rem 0.4rem;
+        top: 0.65rem;
+        right: 0.65rem;
+      }
+
+      .driver-content-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .ride-item {
+        padding: 0.85rem;
+        gap: 0.75rem;
+        border-radius: 12px;
+      }
+
+      .ride-route {
+        font-size: 0.75rem;
+        white-space: normal;
+        word-break: break-word;
+      }
+
+      .ride-meta {
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        font-size: 0.65rem;
+      }
+
+      .ride-route-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        font-size: 1rem;
+      }
+
+      .ride-passengers-badge {
+        font-size: 0.62rem;
+        padding: 0.15rem 0.45rem;
+      }
+
+      .passenger-item {
+        padding: 0.7rem;
+        gap: 0.6rem;
+      }
+
+      .passenger-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+      }
+
+      .passenger-name {
+        font-size: 0.75rem;
+      }
+
+      .passenger-pickup {
+        font-size: 0.62rem;
+      }
+
+      .quick-action-btn {
+        padding: 1rem 0.5rem;
+        border-radius: 14px;
       }
 
       .quick-action-btn .action-icon {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
       }
 
       .quick-action-btn .action-label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-align: center;
-      }
-
-      /* Vehicle Info Card */
-      .vehicle-info {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 1rem;
-        background: linear-gradient(
-          135deg,
-          rgba(29, 158, 117, 0.06),
-          rgba(29, 158, 117, 0.02)
-        );
-        border-radius: 14px;
-        border: 1px solid rgba(29, 158, 117, 0.1);
-      }
-
-      .vehicle-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
-        background: var(--green-light);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        flex-shrink: 0;
-      }
-
-      .vehicle-details h4 {
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: var(--green-dark);
-      }
-
-      .vehicle-details p {
-        font-size: 0.75rem;
-        color: var(--gray);
-        margin-top: 0.15rem;
-      }
-
-      /* Empty State */
-      .empty-state {
-        text-align: center;
-        padding: 2rem 1rem;
-        color: var(--gray);
-      }
-
-      .empty-state .empty-icon {
-        font-size: 2.5rem;
-        margin-bottom: 0.75rem;
-        opacity: 0.5;
-      }
-
-      .empty-state p {
-        font-size: 0.82rem;
-        line-height: 1.5;
-      }
-
-      /* Section Header */
-      .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
+        font-size: 0.68rem;
       }
 
       .section-header h3 {
-        font-family: var(--font-heading);
-        color: var(--green-dark);
-        font-size: 1rem;
-        font-weight: 700;
+        font-size: 0.88rem;
       }
 
       .section-header a {
-        font-size: 0.75rem;
-        color: var(--green);
-        text-decoration: none;
-        font-weight: 600;
-        transition: color 0.2s;
+        font-size: 0.68rem;
       }
 
-      .section-header a:hover {
-        color: var(--green-dark);
+      .vehicle-info {
+        padding: 0.85rem;
+        gap: 0.75rem;
       }
 
-      /* Earnings breakdown */
-      .earnings-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.7rem 0;
-        border-bottom: 1px solid var(--border-subtle);
+      .vehicle-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        font-size: 1.2rem;
       }
 
-      .earnings-row:last-child {
-        border-bottom: none;
+      .vehicle-details h4 {
+        font-size: 0.82rem;
+      }
+
+      .vehicle-details p {
+        font-size: 0.68rem;
       }
 
       .earnings-row .label {
-        font-size: 0.8rem;
-        color: var(--gray);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
+        font-size: 0.72rem;
+        gap: 0.35rem;
       }
 
       .earnings-row .value {
-        font-family: var(--font-heading);
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: var(--green-dark);
+        font-size: 0.8rem;
       }
 
-      .earnings-row .value.positive {
-        color: var(--green);
+      .glass-card {
+        padding: 1.15rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .driver-stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
       }
 
-      /* Responsive */
-      @media (max-width: 1024px) {
-        .driver-stats-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .driver-content-grid {
-          grid-template-columns: 1fr;
-        }
+      .driver-stat-card {
+        padding: 0.85rem;
       }
 
-      @media (max-width: 768px) {
-        .driver-hero {
-          padding: 1.25rem;
-          border-radius: 18px;
-        }
-
-        .driver-hero-content {
-          flex-direction: column;
-          text-align: center;
-          gap: 1rem;
-        }
-
-        .driver-hero-content > div:first-child {
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .driver-avatar {
-          width: 52px;
-          height: 52px;
-          font-size: 1.4rem;
-        }
-
-        .driver-info {
-          text-align: center;
-        }
-
-        .driver-info h2 {
-          font-size: 1.2rem;
-        }
-
-        .driver-info p {
-          font-size: 0.78rem;
-        }
-
-        .driver-balance-card {
-          text-align: center;
-        }
-
-        .driver-balance-card .amount {
-          font-size: 1.75rem;
-        }
-
-        .driver-stats-grid {
-          grid-template-columns: repeat(2, 1fr);
-          gap: 0.75rem;
-        }
-
-        .driver-stat-card {
-          padding: 1rem;
-          border-radius: 14px;
-        }
-
-        .driver-stat-card .stat-value {
-          font-size: 1.4rem;
-        }
-
-        .driver-stat-card .stat-label {
-          font-size: 0.65rem;
-        }
-
-        .driver-stat-card .stat-trend {
-          font-size: 0.58rem;
-          padding: 0.15rem 0.4rem;
-          top: 0.65rem;
-          right: 0.65rem;
-        }
-
-        .driver-content-grid {
-          grid-template-columns: 1fr;
-          gap: 1rem;
-        }
-
-        .ride-item {
-          padding: 0.85rem;
-          gap: 0.75rem;
-          border-radius: 12px;
-        }
-
-        .ride-route {
-          font-size: 0.75rem;
-          white-space: normal;
-          word-break: break-word;
-        }
-
-        .ride-meta {
-          flex-wrap: wrap;
-          gap: 0.4rem;
-          font-size: 0.65rem;
-        }
-
-        .ride-route-icon {
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          font-size: 1rem;
-        }
-
-        .ride-passengers-badge {
-          font-size: 0.62rem;
-          padding: 0.15rem 0.45rem;
-        }
-
-        .passenger-item {
-          padding: 0.7rem;
-          gap: 0.6rem;
-        }
-
-        .passenger-avatar {
-          width: 32px;
-          height: 32px;
-          font-size: 0.75rem;
-        }
-
-        .passenger-name {
-          font-size: 0.75rem;
-        }
-
-        .passenger-pickup {
-          font-size: 0.62rem;
-        }
-
-        .quick-action-btn {
-          padding: 1rem 0.5rem;
-          border-radius: 14px;
-        }
-
-        .quick-action-btn .action-icon {
-          font-size: 1.3rem;
-        }
-
-        .quick-action-btn .action-label {
-          font-size: 0.68rem;
-        }
-
-        .section-header h3 {
-          font-size: 0.88rem;
-        }
-
-        .section-header a {
-          font-size: 0.68rem;
-        }
-
-        .vehicle-info {
-          padding: 0.85rem;
-          gap: 0.75rem;
-        }
-
-        .vehicle-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
-          font-size: 1.2rem;
-        }
-
-        .vehicle-details h4 {
-          font-size: 0.82rem;
-        }
-
-        .vehicle-details p {
-          font-size: 0.68rem;
-        }
-
-        .earnings-row .label {
-          font-size: 0.72rem;
-          gap: 0.35rem;
-        }
-
-        .earnings-row .value {
-          font-size: 0.8rem;
-        }
-
-        .glass-card {
-          padding: 1.15rem;
-        }
+      .driver-stat-card .stat-icon {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
       }
 
-      @media (max-width: 480px) {
-        .driver-stats-grid {
-          grid-template-columns: 1fr 1fr;
-          gap: 0.6rem;
-        }
-
-        .driver-stat-card {
-          padding: 0.85rem;
-        }
-
-        .driver-stat-card .stat-icon {
-          font-size: 1.2rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .driver-stat-card .stat-value {
-          font-size: 1.2rem;
-        }
-
-        .quick-action-grid {
-          grid-template-columns: 1fr 1fr;
-          gap: 0.6rem;
-        }
-
-        .quick-action-btn {
-          padding: 0.85rem 0.4rem;
-        }
-
-        .quick-action-btn .action-icon {
-          font-size: 1.1rem;
-        }
-
-        .quick-action-btn .action-label {
-          font-size: 0.62rem;
-        }
-
-        .driver-hero {
-          padding: 1rem;
-          border-radius: 16px;
-        }
-
-        .driver-balance-card .amount {
-          font-size: 1.5rem;
-        }
-
-        .driver-info h2 {
-          font-size: 1.05rem;
-        }
-
-        .ride-meta span {
-          font-size: 0.6rem;
-        }
-      }
-      /* ── Dark Mode overrides for driver-specific elements ── */
-      /* Exactly matches [data-theme="dark"] .glass-card from style.css */
-      [data-theme="dark"] .driver-stat-card {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.08);
+      .driver-stat-card .stat-value {
+        font-size: 1.2rem;
       }
 
-      [data-theme="dark"] .driver-stat-card:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(29, 158, 117, 0.25);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+      .quick-action-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
       }
 
-      [data-theme="dark"] .ride-item {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.08);
+      .quick-action-btn {
+        padding: 0.85rem 0.4rem;
       }
 
-      [data-theme="dark"] .ride-item:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(29, 158, 117, 0.25);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+      .quick-action-btn .action-icon {
+        font-size: 1.1rem;
       }
 
-      [data-theme="dark"] .passenger-item {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.08);
+      .quick-action-btn .action-label {
+        font-size: 0.62rem;
       }
 
-      [data-theme="dark"] .passenger-item:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(29, 158, 117, 0.25);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+      .driver-hero {
+        padding: 1rem;
+        border-radius: 16px;
       }
 
-      [data-theme="dark"] .quick-action-btn {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.08);
-        color: var(--green-dark);
+      .driver-balance-card .amount {
+        font-size: 1.5rem;
       }
 
-      [data-theme="dark"] .quick-action-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(29, 158, 117, 0.25);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+      .driver-info h2 {
+        font-size: 1.05rem;
       }
 
-      [data-theme="dark"] .vehicle-info {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.08);
+      .ride-meta span {
+        font-size: 0.6rem;
       }
-    </style>
-  </head>
+    }
 
-  <body>
-    <div class="bg-grid"></div>
-    <div class="bg-glow bg-glow--1"></div>
-    <div class="bg-glow bg-glow--2"></div>
+    /* ── Dark Mode overrides for driver-specific elements ── */
+    /* Exactly matches [data-theme="dark"] .glass-card from style.css */
+    [data-theme="dark"] .driver-stat-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
 
-    <nav class="nav-wrapper">
-      <div class="nav-inner">
-        <a href="/" class="logo">
-          <div class="logo-icon">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#fff"
-              stroke-width="2"
-            >
-              <rect x="1" y="3" width="15" height="13" rx="2" />
-              <path d="M16 8h4l3 4v4h-7V8z" />
-              <circle cx="5.5" cy="18.5" r="2.5" />
-              <circle cx="18.5" cy="18.5" r="2.5" />
-            </svg>
-          </div>
-          <div>
-            <span class="logo-text">Innovix SmartRide</span>
-            <span class="logo-sub">Myanmar</span>
-          </div>
-        </a>
-        <div class="nav-links">
-          <a href="offer-ride.html" class="nav-link">ခရီးစဉ်ကမ်းလှမ်းမည်</a>
-          <a href="my-rides.html" class="nav-link">ခရီးစဉ်များ</a>
-          <a href="wallet.html" class="nav-link">ပိုက်ဆံအိတ်</a>
-          <a href="driver-dashboard.html" class="nav-link nav-cta"
-            >Driver Dashboard</a
-          >
-          <button id="themeToggleBtn" class="theme-toggle" title="Dark Mode">
-            🌙
-          </button>
-          <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
+    [data-theme="dark"] .driver-stat-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(29, 158, 117, 0.25);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-theme="dark"] .ride-item {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    [data-theme="dark"] .ride-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(29, 158, 117, 0.25);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-theme="dark"] .passenger-item {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    [data-theme="dark"] .passenger-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(29, 158, 117, 0.25);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-theme="dark"] .quick-action-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.08);
+      color: var(--green-dark);
+    }
+
+    [data-theme="dark"] .quick-action-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(29, 158, 117, 0.25);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-theme="dark"] .vehicle-info {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow bg-glow--1"></div>
+  <div class="bg-glow bg-glow--2"></div>
+
+  <nav class="nav-wrapper">
+    <div class="nav-inner">
+      <a href="/" class="logo">
+        <div class="logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <rect x="1" y="3" width="15" height="13" rx="2" />
+            <path d="M16 8h4l3 4v4h-7V8z" />
+            <circle cx="5.5" cy="18.5" r="2.5" />
+            <circle cx="18.5" cy="18.5" r="2.5" />
+          </svg>
         </div>
-        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
-          <span></span><span></span><span></span>
+        <div>
+          <span class="logo-text">Innovix SharedRide</span>
+          <span class="logo-sub">Myanmar</span>
+        </div>
+      </a>
+      <div class="nav-links">
+        <a href="offer-ride.html" class="nav-link">ခရီးစဉ်ကမ်းလှမ်းမည်</a>
+        <a href="my-rides.html" class="nav-link">ခရီးစဉ်များ</a>
+        <a href="wallet.html" class="nav-link">ပိုက်ဆံအိတ်</a>
+        <a href="driver-dashboard.html" class="nav-link nav-cta">Driver Dashboard</a>
+        <button id="themeToggleBtn" class="theme-toggle" title="Dark Mode">
+          🌙
         </button>
+        <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
       </div>
-    </nav>
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
 
-    <div class="container" style="padding: 2rem">
-      <!-- Driver Hero Banner -->
-      <div class="driver-hero animate-fade-in-up" id="driverHero">
-        <div class="driver-hero-content">
-          <div style="display: flex; align-items: center; gap: 1rem">
-            <div class="driver-avatar">🚗</div>
-            <div class="driver-info">
-              <h2 id="driverName">Loading...</h2>
-              <p id="driverEmail">loading...</p>
-              <div class="driver-badge">
-                <span class="dot"></span>
-                <span>Verified Driver</span>
-              </div>
+  <div class="container" style="padding: 2rem">
+    <!-- Driver Hero Banner -->
+    <div class="driver-hero animate-fade-in-up" id="driverHero">
+      <div class="driver-hero-content">
+        <div style="display: flex; align-items: center; gap: 1rem">
+          <div class="driver-avatar">🚗</div>
+          <div class="driver-info">
+            <h2 id="driverName">Loading...</h2>
+            <p id="driverEmail">loading...</p>
+            <div class="driver-badge">
+              <span class="dot"></span>
+              <span>Verified Driver</span>
             </div>
           </div>
-          <div class="driver-balance-card">
-            <div class="label">လက်ကျန်ငွေ</div>
-            <div class="amount" id="driverBalance">0</div>
-            <div class="currency">ကျပ် (MMK)</div>
-          </div>
+        </div>
+        <div class="driver-balance-card">
+          <div class="label">လက်ကျန်ငွေ</div>
+          <div class="amount" id="driverBalance">0</div>
+          <div class="currency">ကျပ် (MMK)</div>
         </div>
       </div>
+    </div>
 
-      <!-- Stats Grid -->
-      <div class="driver-stats-grid">
-        <div class="driver-stat-card animate-fade-in-up animate-delay-1">
-          <div class="stat-icon">🚙</div>
-          <div class="stat-value" id="statActiveRides">0</div>
-          <div class="stat-label">လက်ရှိခရီးစဉ်</div>
-          <div class="stat-trend">Active</div>
-        </div>
-        <div class="driver-stat-card animate-fade-in-up animate-delay-2">
-          <div class="stat-icon">👥</div>
-          <div class="stat-value" id="statTotalPassengers">0</div>
-          <div class="stat-label">ခရီးသည်စုစုပေါင်း</div>
-        </div>
-        <div class="driver-stat-card animate-fade-in-up animate-delay-3">
-          <div class="stat-icon">💰</div>
-          <div class="stat-value" id="statTotalEarnings">0</div>
-          <div class="stat-label">ရရှိခဲ့သောဝင်ငွေ</div>
-        </div>
-        <div class="driver-stat-card animate-fade-in-up animate-delay-4">
-          <div class="stat-icon">⭐</div>
-          <div class="stat-value" id="statAvailableSeats">0</div>
-          <div class="stat-label">လွတ်နေသောနေရာ</div>
-        </div>
+    <!-- Stats Grid -->
+    <div class="driver-stats-grid">
+      <div class="driver-stat-card animate-fade-in-up animate-delay-1">
+        <div class="stat-icon">🚙</div>
+        <div class="stat-value" id="statActiveRides">0</div>
+        <div class="stat-label">လက်ရှိခရီးစဉ်</div>
+        <div class="stat-trend">Active</div>
       </div>
+      <div class="driver-stat-card animate-fade-in-up animate-delay-2">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value" id="statTotalPassengers">0</div>
+        <div class="stat-label">Total Passenger</div>
+      </div>
+      <div class="driver-stat-card animate-fade-in-up animate-delay-3">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value" id="statTotalEarnings">0</div>
+        <div class="stat-label">Income received</div>
+      </div>
+      <div class="driver-stat-card animate-fade-in-up animate-delay-4">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-value" id="statAvailableSeats">0</div>
+        <div class="stat-label">availableSeats</div>
+      </div>
+    </div>
 
-      <!-- Ride Map Section -->
-      <div class="glass-card animate-fade-in-up ride-map-section">
-        <div class="section-header">
-          <h3>📍 ခရီးစဉ်မြေပုံ</h3>
-          <a href="#" id="resetMapView" style="font-size: 0.72rem"
-            >အားလုံးပြမည် ↻</a
-          >
-        </div>
-        <div id="driverMap" class="map-container" style="height: 350px"></div>
-        <div id="mapLegend" class="ride-map-legend"></div>
-        <div
-          id="mapEmptyState"
-          style="
+    <!-- Ride Map Section -->
+    <div class="glass-card animate-fade-in-up ride-map-section">
+      <div class="section-header">
+        <h3>📍 ခရီးစဉ်မြေပုံ</h3>
+        <a href="#" id="resetMapView" style="font-size: 0.72rem">အားလုံးပြမည် ↻</a>
+      </div>
+      <div id="driverMap" class="map-container" style="height: 350px"></div>
+      <div id="mapLegend" class="ride-map-legend"></div>
+      <div id="mapEmptyState" style="
             display: none;
             text-align: center;
             padding: 1.5rem;
             color: var(--gray);
-          "
-        >
-          <p style="font-size: 0.82rem">
-            🗺️ ခရီးစဉ် ကမ်းလှမ်းပြီးမှ မြေပုံပေါ်တွင် ပြသပါမည်
-          </p>
+          ">
+        <p style="font-size: 0.82rem">
+          🗺️ ခရီးစဉ် ကမ်းလှမ်းပြီးမှ မြေပုံပေါ်တွင် ပြသပါမည်
+        </p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="driver-content-grid">
+      <!-- Left Column: Active Rides -->
+      <div>
+        <!-- Active Rides Card -->
+        <div class="glass-card animate-fade-in-up" style="margin-bottom: 1.5rem">
+          <div class="section-header">
+            <h3>📋 ကမ်းလှမ်းထားသော ခရီးစဉ်များ</h3>
+            <a href="offer-ride.html">ခရီးစဉ်အသစ် +</a>
+          </div>
+          <div id="activeRidesList">
+            <div class="empty-state">
+              <div class="empty-icon">🚗</div>
+              <p>ကမ်းလှမ်းထားသော ခရီးစဉ်မရှိသေးပါ</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Passengers Card -->
+        <div class="glass-card animate-fade-in-up animate-delay-2">
+          <div class="section-header">
+            <h3>👥 လက်ရှိခရီးသည်များ</h3>
+          </div>
+          <div id="passengersList">
+            <div class="empty-state">
+              <div class="empty-icon">👤</div>
+              <p>ခရီးသည်မရှိသေးပါ</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Main Content -->
-      <div class="driver-content-grid">
-        <!-- Left Column: Active Rides -->
-        <div>
-          <!-- Active Rides Card -->
-          <div
-            class="glass-card animate-fade-in-up"
-            style="margin-bottom: 1.5rem"
-          >
-            <div class="section-header">
-              <h3>📋 ကမ်းလှမ်းထားသော ခရီးစဉ်များ</h3>
-              <a href="offer-ride.html">ခရီးစဉ်အသစ် +</a>
-            </div>
-            <div id="activeRidesList">
-              <div class="empty-state">
-                <div class="empty-icon">🚗</div>
-                <p>ကမ်းလှမ်းထားသော ခရီးစဉ်မရှိသေးပါ</p>
-              </div>
-            </div>
+      <!-- Right Column: Quick Actions, Vehicle, Earnings -->
+      <div>
+        <!-- Quick Actions -->
+        <div class="glass-card animate-fade-in-up animate-delay-1" style="margin-bottom: 1.5rem">
+          <div class="section-header">
+            <h3>⚡ အမြန်လုပ်ဆောင်ချက်များ</h3>
           </div>
+          <div class="quick-action-grid">
+            <a href="offer-ride.html" class="quick-action-btn">
+              <span class="action-icon">🚙</span>
+              <span class="action-label">ခရီးစဉ်အသစ်<br />ကမ်းလှမ်းမည်</span>
+            </a>
+            <a href="wallet.html" class="quick-action-btn">
+              <span class="action-icon">💰</span>
+              <span class="action-label">ပိုက်ဆံအိတ်<br />ငွေသွင်း/ထုတ်</span>
+            </a>
+            <a href="my-rides.html" class="quick-action-btn">
+              <span class="action-icon">📋</span>
+              <span class="action-label">ခရီးစဉ်<br />မှတ်တမ်းများ</span>
+            </a>
+            <a href="driver-register.html" class="quick-action-btn">
+              <span class="action-icon">⚙️</span>
+              <span class="action-label">ယာဉ်အချက်<br />အလက်ပြင်ရန်</span>
+            </a>
+          </div>
+        </div>
 
-          <!-- Passengers Card -->
-          <div class="glass-card animate-fade-in-up animate-delay-2">
-            <div class="section-header">
-              <h3>👥 လက်ရှိခရီးသည်များ</h3>
-            </div>
-            <div id="passengersList">
-              <div class="empty-state">
-                <div class="empty-icon">👤</div>
-                <p>ခရီးသည်မရှိသေးပါ</p>
-              </div>
+        <!-- Vehicle Info -->
+        <div class="glass-card animate-fade-in-up animate-delay-2" style="margin-bottom: 1.5rem">
+          <div class="section-header">
+            <h3>🚘 ကားအချက်အလက်</h3>
+          </div>
+          <div class="vehicle-info" id="vehicleInfo">
+            <div class="vehicle-icon">🚗</div>
+            <div class="vehicle-details">
+              <h4 id="vehicleModel">—</h4>
+              <p id="vehiclePlate">—</p>
             </div>
           </div>
         </div>
 
-        <!-- Right Column: Quick Actions, Vehicle, Earnings -->
-        <div>
-          <!-- Quick Actions -->
-          <div
-            class="glass-card animate-fade-in-up animate-delay-1"
-            style="margin-bottom: 1.5rem"
-          >
-            <div class="section-header">
-              <h3>⚡ အမြန်လုပ်ဆောင်ချက်များ</h3>
-            </div>
-            <div class="quick-action-grid">
-              <a href="offer-ride.html" class="quick-action-btn">
-                <span class="action-icon">🚙</span>
-                <span class="action-label">ခရီးစဉ်အသစ်<br />ကမ်းလှမ်းမည်</span>
-              </a>
-              <a href="wallet.html" class="quick-action-btn">
-                <span class="action-icon">💰</span>
-                <span class="action-label">ပိုက်ဆံအိတ်<br />ငွေသွင်း/ထုတ်</span>
-              </a>
-              <a href="my-rides.html" class="quick-action-btn">
-                <span class="action-icon">📋</span>
-                <span class="action-label">ခရီးစဉ်<br />မှတ်တမ်းများ</span>
-              </a>
-              <a href="driver-register.html" class="quick-action-btn">
-                <span class="action-icon">⚙️</span>
-                <span class="action-label">ယာဉ်အချက်<br />အလက်ပြင်ရန်</span>
-              </a>
-            </div>
+        <!-- Earnings Summary -->
+        <div class="glass-card animate-fade-in-up animate-delay-3">
+          <div class="section-header">
+            <h3>📊 ဝင်ငွေအနှစ်ချုပ်</h3>
           </div>
-
-          <!-- Vehicle Info -->
-          <div
-            class="glass-card animate-fade-in-up animate-delay-2"
-            style="margin-bottom: 1.5rem"
-          >
-            <div class="section-header">
-              <h3>🚘 ကားအချက်အလက်</h3>
+          <div id="earningsSummary">
+            <div class="earnings-row">
+              <div class="label">🚙 ခရီးစဉ်အရေအတွက်</div>
+              <div class="value" id="earnRideCount">0</div>
             </div>
-            <div class="vehicle-info" id="vehicleInfo">
-              <div class="vehicle-icon">🚗</div>
-              <div class="vehicle-details">
-                <h4 id="vehicleModel">—</h4>
-                <p id="vehiclePlate">—</p>
-              </div>
+            <div class="earnings-row">
+              <div class="label">👥 ခရီးသည်စုစုပေါင်း</div>
+              <div class="value" id="earnPassengerCount">0</div>
             </div>
-          </div>
-
-          <!-- Earnings Summary -->
-          <div class="glass-card animate-fade-in-up animate-delay-3">
-            <div class="section-header">
-              <h3>📊 ဝင်ငွေအနှစ်ချုပ်</h3>
+            <div class="earnings-row">
+              <div class="label">💵 အခြေခံခရီးစဉ်ခ</div>
+              <div class="value" id="earnBaseFare">0 ကျပ်</div>
             </div>
-            <div id="earningsSummary">
-              <div class="earnings-row">
-                <div class="label">🚙 ခရီးစဉ်အရေအတွက်</div>
-                <div class="value" id="earnRideCount">0</div>
-              </div>
-              <div class="earnings-row">
-                <div class="label">👥 ခရီးသည်စုစုပေါင်း</div>
-                <div class="value" id="earnPassengerCount">0</div>
-              </div>
-              <div class="earnings-row">
-                <div class="label">💵 အခြေခံခရီးစဉ်ခ</div>
-                <div class="value" id="earnBaseFare">0 ကျပ်</div>
-              </div>
-              <div class="earnings-row">
-                <div class="label">🎁 ဘိုနပ်စ်ငွေ (+10%)</div>
-                <div class="value positive" id="earnBonus">0 ကျပ်</div>
-              </div>
-              <div
-                class="earnings-row"
-                style="
+            <div class="earnings-row">
+              <div class="label">🎁 ဘိုနပ်စ်ငွေ (+10%)</div>
+              <div class="value positive" id="earnBonus">0 ကျပ်</div>
+            </div>
+            <div class="earnings-row" style="
                   border-top: 2px solid var(--green);
                   padding-top: 0.85rem;
                   margin-top: 0.25rem;
-                "
-              >
-                <div
-                  class="label"
-                  style="font-weight: 700; color: var(--green-dark)"
-                >
-                  💰 စုစုပေါင်းဝင်ငွေ
-                </div>
-                <div
-                  class="value positive"
-                  id="earnEstimated"
-                  style="font-size: 1.1rem"
-                >
-                  0 ကျပ်
-                </div>
+                ">
+              <div class="label" style="font-weight: 700; color: var(--green-dark)">
+                💰 စုစုပေါင်းဝင်ငွေ
+              </div>
+              <div class="value positive" id="earnEstimated" style="font-size: 1.1rem">
+                0 ကျပ်
               </div>
             </div>
-            <div
-              id="bonusMessage"
-              style="
+          </div>
+          <div id="bonusMessage" style="
                 margin-top: 0.75rem;
                 padding: 0.6rem 0.85rem;
                 background: linear-gradient(
@@ -1040,201 +996,200 @@
                 color: var(--green);
                 font-weight: 600;
                 text-align: center;
-              "
-            >
-              🚀 SmartRide ဖြင့် ပုံမှန်ခရီးစဉ်ခထက် 10% ပိုမိုရရှိပါသည်
-            </div>
+              ">
+            🚀 SmartRide ဖြင့် ပုံမှန်ခရီးစဉ်ခထက် 10% ပိုမိုရရှိပါသည်
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <script type="module">
-      import { requireAuth, getCurrentUser, logout } from "../js/auth.js";
-      import { db } from "../js/database.js";
-      import { RideMap } from "../js/map.js";
-      import { toggleTheme } from "../js/theme.js";
+  <script type="module">
+    import { requireAuth, getCurrentUser, logout } from "../js/auth.js";
+    import { db } from "../js/database.js";
+    import { RideMap } from "../js/map.js";
+    import { toggleTheme } from "../js/theme.js";
 
-      // Wire up the dark/light mode toggle button
-      document
-        .getElementById("themeToggleBtn")
-        ?.addEventListener("click", toggleTheme);
+    // Wire up the dark/light mode toggle button
+    document
+      .getElementById("themeToggleBtn")
+      ?.addEventListener("click", toggleTheme);
 
-      if (!requireAuth()) {
-        // Redirect handled in requireAuth
-      } else {
-        const user = db.getCurrentUser() || getCurrentUser();
+    if (!requireAuth()) {
+      // Redirect handled in requireAuth
+    } else {
+      const user = db.getCurrentUser() || getCurrentUser();
 
-        // If not a driver, redirect to passenger dashboard
-        if (user.userType !== "driver") {
-          window.location.href = "/src/pages/dashboard.html";
+      // If not a driver, redirect to passenger dashboard
+      if (user.userType !== "driver") {
+        window.location.href = "/src/pages/dashboard.html";
+      }
+
+      // Populate driver info
+      document.getElementById("driverName").textContent =
+        user.name || user.email;
+      document.getElementById("driverEmail").textContent = user.email;
+      document.getElementById("driverBalance").textContent =
+        user.balance?.toLocaleString() || "0";
+
+      // Vehicle info
+      document.getElementById("vehicleModel").textContent =
+        user.carModel || "မမှတ်ပုံတင်ရသေးပါ";
+      document.getElementById("vehiclePlate").textContent =
+        user.carPlate || "—";
+
+      // Get driver's rides
+      const driverRides = db.getRidesByDriver(user.id) || [];
+
+      // Calculate stats with driver bonus
+      const DRIVER_BONUS_RATE = 0.1;
+      let totalPassengers = 0;
+      let totalAvailableSeats = 0;
+      let totalBaseFare = 0;
+      let totalBonus = 0;
+
+      driverRides.forEach((ride) => {
+        const booked = ride.bookedSeats || 0;
+        const basePrice = ride.price || 7500;
+        totalPassengers += booked;
+        totalAvailableSeats += (ride.availableSeats || 4) - booked;
+        if (booked > 0) {
+          totalBaseFare += basePrice;
+          totalBonus += Math.floor(basePrice * DRIVER_BONUS_RATE);
+        }
+      });
+
+      const estimatedEarnings = totalBaseFare + totalBonus;
+
+      document.getElementById("statActiveRides").textContent =
+        driverRides.length;
+      document.getElementById("statTotalPassengers").textContent =
+        totalPassengers;
+      document.getElementById("statTotalEarnings").textContent =
+        estimatedEarnings.toLocaleString();
+      document.getElementById("statAvailableSeats").textContent =
+        totalAvailableSeats;
+
+      // Earnings summary with breakdown
+      document.getElementById("earnRideCount").textContent =
+        driverRides.length;
+      document.getElementById("earnPassengerCount").textContent =
+        totalPassengers;
+      document.getElementById("earnBaseFare").textContent =
+        totalBaseFare.toLocaleString() + " ကျပ်";
+      document.getElementById("earnBonus").textContent =
+        "+" + totalBonus.toLocaleString() + " ကျပ်";
+      document.getElementById("earnEstimated").textContent =
+        estimatedEarnings.toLocaleString() + " ကျပ်";
+
+      // ─── Initialize the ride map ───
+      let rideMap = null;
+      const routeColors = [
+        "#1d9e75",
+        "#3498db",
+        "#e67e22",
+        "#9b59b6",
+        "#e74c3c",
+        "#1abc9c",
+      ];
+
+      async function initDriverMap() {
+        if (typeof L === "undefined") return;
+
+        const mapContainer = document.getElementById("driverMap");
+        const mapEmptyState = document.getElementById("mapEmptyState");
+        const mapLegend = document.getElementById("mapLegend");
+
+        if (driverRides.length === 0) {
+          mapContainer.style.display = "none";
+          mapEmptyState.style.display = "block";
+          return;
         }
 
-        // Populate driver info
-        document.getElementById("driverName").textContent =
-          user.name || user.email;
-        document.getElementById("driverEmail").textContent = user.email;
-        document.getElementById("driverBalance").textContent =
-          user.balance?.toLocaleString() || "0";
+        rideMap = new RideMap("driverMap");
 
-        // Vehicle info
-        document.getElementById("vehicleModel").textContent =
-          user.carModel || "မမှတ်ပုံတင်ရသေးပါ";
-        document.getElementById("vehiclePlate").textContent =
-          user.carPlate || "—";
+        // Add each ride route to the map
+        for (let i = 0; i < driverRides.length; i++) {
+          const ride = driverRides[i];
+          await rideMap.addRideRoute(
+            ride,
+            routeColors[i % routeColors.length],
+            i,
+          );
+        }
 
-        // Get driver's rides
-        const driverRides = db.getRidesByDriver(user.id) || [];
+        // Fit map to show all routes
+        rideMap.fitAllRoutes();
 
-        // Calculate stats with driver bonus
-        const DRIVER_BONUS_RATE = 0.1;
-        let totalPassengers = 0;
-        let totalAvailableSeats = 0;
-        let totalBaseFare = 0;
-        let totalBonus = 0;
-
-        driverRides.forEach((ride) => {
-          const booked = ride.bookedSeats || 0;
-          const basePrice = ride.price || 7500;
-          totalPassengers += booked;
-          totalAvailableSeats += (ride.availableSeats || 4) - booked;
-          if (booked > 0) {
-            totalBaseFare += basePrice;
-            totalBonus += Math.floor(basePrice * DRIVER_BONUS_RATE);
-          }
-        });
-
-        const estimatedEarnings = totalBaseFare + totalBonus;
-
-        document.getElementById("statActiveRides").textContent =
-          driverRides.length;
-        document.getElementById("statTotalPassengers").textContent =
-          totalPassengers;
-        document.getElementById("statTotalEarnings").textContent =
-          estimatedEarnings.toLocaleString();
-        document.getElementById("statAvailableSeats").textContent =
-          totalAvailableSeats;
-
-        // Earnings summary with breakdown
-        document.getElementById("earnRideCount").textContent =
-          driverRides.length;
-        document.getElementById("earnPassengerCount").textContent =
-          totalPassengers;
-        document.getElementById("earnBaseFare").textContent =
-          totalBaseFare.toLocaleString() + " ကျပ်";
-        document.getElementById("earnBonus").textContent =
-          "+" + totalBonus.toLocaleString() + " ကျပ်";
-        document.getElementById("earnEstimated").textContent =
-          estimatedEarnings.toLocaleString() + " ကျပ်";
-
-        // ─── Initialize the ride map ───
-        let rideMap = null;
-        const routeColors = [
-          "#1d9e75",
-          "#3498db",
-          "#e67e22",
-          "#9b59b6",
-          "#e74c3c",
-          "#1abc9c",
-        ];
-
-        async function initDriverMap() {
-          if (typeof L === "undefined") return;
-
-          const mapContainer = document.getElementById("driverMap");
-          const mapEmptyState = document.getElementById("mapEmptyState");
-          const mapLegend = document.getElementById("mapLegend");
-
-          if (driverRides.length === 0) {
-            mapContainer.style.display = "none";
-            mapEmptyState.style.display = "block";
-            return;
-          }
-
-          rideMap = new RideMap("driverMap");
-
-          // Add each ride route to the map
-          for (let i = 0; i < driverRides.length; i++) {
-            const ride = driverRides[i];
-            await rideMap.addRideRoute(
-              ride,
-              routeColors[i % routeColors.length],
-              i,
-            );
-          }
-
-          // Fit map to show all routes
-          rideMap.fitAllRoutes();
-
-          // Build legend
-          mapLegend.innerHTML = driverRides
-            .map((ride, i) => {
-              const color = routeColors[i % routeColors.length];
-              const shortRoute = `${ride.startLocation.split("(")[0].trim()} → ${ride.endLocation.split("(")[0].trim()}`;
-              return `
+        // Build legend
+        mapLegend.innerHTML = driverRides
+          .map((ride, i) => {
+            const color = routeColors[i % routeColors.length];
+            const shortRoute = `${ride.startLocation.split("(")[0].trim()} → ${ride.endLocation.split("(")[0].trim()}`;
+            return `
             <div class="ride-map-legend-item" data-ride-index="${i}" onclick="window.highlightRide(${i})">
               <div class="ride-map-legend-dot" style="background: ${color};"></div>
               <span>${shortRoute}</span>
             </div>
           `;
-            })
-            .join("");
-        }
+          })
+          .join("");
+      }
 
-        // Highlight a ride on the map
-        let activeHighlight = -1;
-        window.highlightRide = function (index) {
-          if (!rideMap) return;
+      // Highlight a ride on the map
+      let activeHighlight = -1;
+      window.highlightRide = function (index) {
+        if (!rideMap) return;
 
-          const legendItems = document.querySelectorAll(
-            ".ride-map-legend-item",
-          );
+        const legendItems = document.querySelectorAll(
+          ".ride-map-legend-item",
+        );
 
-          if (activeHighlight === index) {
-            // Toggle off — show all
-            rideMap.resetHighlights();
-            activeHighlight = -1;
-            legendItems.forEach((item) => item.classList.remove("active"));
-          } else {
-            // Highlight selected
-            rideMap.highlightRide(index);
-            activeHighlight = index;
-            legendItems.forEach((item, i) => {
-              item.classList.toggle("active", i === index);
-            });
-          }
-        };
-
-        // Reset map view button
-        document
-          .getElementById("resetMapView")
-          ?.addEventListener("click", (e) => {
-            e.preventDefault();
-            if (!rideMap) return;
-            rideMap.resetHighlights();
-            activeHighlight = -1;
-            document
-              .querySelectorAll(".ride-map-legend-item")
-              .forEach((item) => item.classList.remove("active"));
+        if (activeHighlight === index) {
+          // Toggle off — show all
+          rideMap.resetHighlights();
+          activeHighlight = -1;
+          legendItems.forEach((item) => item.classList.remove("active"));
+        } else {
+          // Highlight selected
+          rideMap.highlightRide(index);
+          activeHighlight = index;
+          legendItems.forEach((item, i) => {
+            item.classList.toggle("active", i === index);
           });
+        }
+      };
 
-        // Render active rides (with map interaction)
-        const activeRidesList = document.getElementById("activeRidesList");
-        if (driverRides.length > 0) {
-          activeRidesList.innerHTML = driverRides
-            .map((ride, idx) => {
-              const time = new Date(ride.departureTime).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-              const date = new Date(ride.departureTime).toLocaleDateString(
-                "my-MM",
-                { month: "short", day: "numeric" },
-              );
-              const booked = ride.bookedSeats || 0;
-              const total = ride.availableSeats || 4;
-              const color = routeColors[idx % routeColors.length];
-              return `
+      // Reset map view button
+      document
+        .getElementById("resetMapView")
+        ?.addEventListener("click", (e) => {
+          e.preventDefault();
+          if (!rideMap) return;
+          rideMap.resetHighlights();
+          activeHighlight = -1;
+          document
+            .querySelectorAll(".ride-map-legend-item")
+            .forEach((item) => item.classList.remove("active"));
+        });
+
+      // Render active rides (with map interaction)
+      const activeRidesList = document.getElementById("activeRidesList");
+      if (driverRides.length > 0) {
+        activeRidesList.innerHTML = driverRides
+          .map((ride, idx) => {
+            const time = new Date(ride.departureTime).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            const date = new Date(ride.departureTime).toLocaleDateString(
+              "my-MM",
+              { month: "short", day: "numeric" },
+            );
+            const booked = ride.bookedSeats || 0;
+            const total = ride.availableSeats || 4;
+            const color = routeColors[idx % routeColors.length];
+            return `
             <div class="ride-item" style="cursor: pointer; border-left: 3px solid ${color};" onclick="window.highlightRide(${idx})">
               <div class="ride-route-icon" style="background: ${color}15; color: ${color};">🛣️</div>
               <div class="ride-details">
@@ -1248,29 +1203,29 @@
               <div class="ride-passengers-badge">${booked}/${total} ဦး</div>
             </div>
           `;
-            })
-            .join("");
-        }
+          })
+          .join("");
+      }
 
-        // Render passengers (collect from all rides)
-        const passengersList = document.getElementById("passengersList");
-        const allPassengers = [];
-        driverRides.forEach((ride) => {
-          if (ride.passengers && ride.passengers.length > 0) {
-            ride.passengers.forEach((p) => {
-              allPassengers.push({
-                ...p,
-                route: `${ride.startLocation} → ${ride.endLocation}`,
-              });
+      // Render passengers (collect from all rides)
+      const passengersList = document.getElementById("passengersList");
+      const allPassengers = [];
+      driverRides.forEach((ride) => {
+        if (ride.passengers && ride.passengers.length > 0) {
+          ride.passengers.forEach((p) => {
+            allPassengers.push({
+              ...p,
+              route: `${ride.startLocation} → ${ride.endLocation}`,
             });
-          }
-        });
+          });
+        }
+      });
 
-        if (allPassengers.length > 0) {
-          passengersList.innerHTML = allPassengers
-            .map((p, i) => {
-              const avatarEmoji = ["👤", "👩", "👨", "🧑", "👦", "👧"][i % 6];
-              return `
+      if (allPassengers.length > 0) {
+        passengersList.innerHTML = allPassengers
+          .map((p, i) => {
+            const avatarEmoji = ["👤", "👩", "👨", "🧑", "👦", "👧"][i % 6];
+            return `
             <div class="passenger-item">
               <div class="passenger-avatar">${avatarEmoji}</div>
               <div>
@@ -1279,38 +1234,39 @@
               </div>
             </div>
           `;
-            })
-            .join("");
-        }
+          })
+          .join("");
+      }
 
-        // Initialize map after page loads
-        initDriverMap();
+      // Initialize map after page loads
+      initDriverMap();
 
-        // Logout
-        document.getElementById("logoutBtn")?.addEventListener("click", (e) => {
-          e.preventDefault();
-          logout();
+      // Logout
+      document.getElementById("logoutBtn")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        logout();
+      });
+    }
+  </script>
+  <script>
+    // Mobile hamburger menu toggle
+    (function () {
+      const btn = document.getElementById("mobileMenuBtn");
+      const nav = document.querySelector(".nav-links");
+      if (btn && nav) {
+        btn.addEventListener("click", function () {
+          nav.classList.toggle("active");
+          btn.classList.toggle("active");
+        });
+        nav.querySelectorAll("a").forEach(function (link) {
+          link.addEventListener("click", function () {
+            nav.classList.remove("active");
+            btn.classList.remove("active");
+          });
         });
       }
-    </script>
-    <script>
-      // Mobile hamburger menu toggle
-      (function () {
-        const btn = document.getElementById("mobileMenuBtn");
-        const nav = document.querySelector(".nav-links");
-        if (btn && nav) {
-          btn.addEventListener("click", function () {
-            nav.classList.toggle("active");
-            btn.classList.toggle("active");
-          });
-          nav.querySelectorAll("a").forEach(function (link) {
-            link.addEventListener("click", function () {
-              nav.classList.remove("active");
-              btn.classList.remove("active");
-            });
-          });
-        }
-      })();
-    </script>
-  </body>
+    })();
+  </script>
+</body>
+
 </html>
