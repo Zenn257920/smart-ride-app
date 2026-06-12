@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
       navLinks.classList.toggle("active");
       mobileMenuBtn.classList.toggle("active");
     });
-    // Close menu when a nav link is clicked
+    // Close menu when a nav link is clickedddd
     navLinks.querySelectorAll("a").forEach((link) => {
       link.addEventListener("click", () => {
         navLinks.classList.remove("active");
