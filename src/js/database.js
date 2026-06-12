@@ -21,7 +21,7 @@ class DatabaseManager {
 
   // Bump this version string whenever sample data schema changes.
   // Forces re-seed in any browser that has an older version cached.
-  static get DATA_VERSION() { return 'v4-distance-pricing'; }
+  static get DATA_VERSION() { return 'v5-ride-requests'; }
 
   initDatabase() {
     const storedVersion = localStorage.getItem('smartride_data_version');
@@ -31,6 +31,8 @@ class DatabaseManager {
       localStorage.removeItem('smartride_rides');
       localStorage.removeItem('smartride_bookings');
       localStorage.removeItem('smartride_transactions');
+      localStorage.removeItem('smartride_ride_requests');
+      localStorage.removeItem('smartride_notifications');
       localStorage.setItem('smartride_data_version', DatabaseManager.DATA_VERSION);
       //Sample Users JSON Data / Passengers & Drivers
       const sampleUsers = [
@@ -364,10 +366,85 @@ class DatabaseManager {
         }
       });
 
+      // ── Sample Ride Requests (passengers requesting rides) ──
+      const sampleRideRequests = [
+        {
+          id: "req-1",
+          passengerId: "u-5",
+          passengerName: "မောင်ဇော်ဇော်",
+          passengerPhone: "09789456123",
+          startLocation: "Thanlyin (သန်လျင်)",
+          endLocation: "Sule (ဆူးလေ)",
+          startLat: 16.7784, startLng: 96.2504,
+          endLat: 16.7747, endLng: 96.1561,
+          departureTime: setTime(9, 0),
+          estimatedPrice: null,
+          status: "pending",
+          joinedPassengers: [
+            { id: "u-7", name: "ကိုသန့်ဇင်", phone: "09112233445", joinedAt: new Date().toISOString() }
+          ],
+          acceptedDriverId: null,
+          rejectedByDrivers: [],
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: "req-2",
+          passengerId: "u-6",
+          passengerName: "မမေဇင်",
+          passengerPhone: "09654321789",
+          startLocation: "Hledan (လှည်းတန်း)",
+          endLocation: "Botahtaung (ဗိုလ်တထောင်)",
+          startLat: 16.8737, startLng: 96.1317,
+          endLat: 16.7793, endLng: 96.1681,
+          departureTime: setTime(8, 0),
+          estimatedPrice: null,
+          status: "pending",
+          joinedPassengers: [],
+          acceptedDriverId: null,
+          rejectedByDrivers: [],
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: "req-3",
+          passengerId: "u-9",
+          passengerName: "မခင်ခင်",
+          passengerPhone: "09887766554",
+          startLocation: "North Dagon (မြောက်ဒဂုံ)",
+          endLocation: "Tamwe (တာမွေ)",
+          startLat: 16.9208, startLng: 96.2011,
+          endLat: 16.8333, endLng: 96.1649,
+          departureTime: setTime(7, 30),
+          estimatedPrice: null,
+          status: "pending",
+          joinedPassengers: [
+            { id: "u-1", name: "Demo Passenger", phone: "09123456789", joinedAt: new Date().toISOString() }
+          ],
+          acceptedDriverId: null,
+          rejectedByDrivers: [],
+          createdAt: new Date().toISOString(),
+        },
+      ];
+
+      // Auto-calculate estimated prices for ride requests
+      sampleRideRequests.forEach(req => {
+        if (req.startLat != null && req.endLat != null) {
+          const result = priceMatcher.calculatePriceFromCoords(
+            req.startLat, req.startLng, req.endLat, req.endLng
+          );
+          req.estimatedPrice = result.price;
+          req.distanceKm = result.distanceKm;
+        } else {
+          req.estimatedPrice = priceMatcher.DEFAULT_PRICE;
+          req.distanceKm = 0;
+        }
+      });
+
       localStorage.setItem("smartride_users", JSON.stringify(sampleUsers));
       localStorage.setItem("smartride_rides", JSON.stringify(sampleRides));
       localStorage.setItem("smartride_bookings", JSON.stringify([]));
       localStorage.setItem("smartride_transactions", JSON.stringify([]));
+      localStorage.setItem("smartride_ride_requests", JSON.stringify(sampleRideRequests));
+      localStorage.setItem("smartride_notifications", JSON.stringify([]));
     }
   }
 
@@ -1183,6 +1260,289 @@ Do NOT include any text outside the JSON array.
     }
 
     return booking.totalPrice;
+  }
+  // ═══════════════════════════════════════════════════════
+  // ──── RIDE REQUEST SYSTEM ────
+  // ═══════════════════════════════════════════════════════
+
+  getRideRequests() {
+    return JSON.parse(localStorage.getItem('smartride_ride_requests')) || [];
+  }
+
+  getNotifications(userId) {
+    const all = JSON.parse(localStorage.getItem('smartride_notifications')) || [];
+    return all.filter(n => n.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  getUnreadNotificationCount(userId) {
+    return this.getNotifications(userId).filter(n => !n.read).length;
+  }
+
+  addNotification(userId, message, type = 'info') {
+    const notifications = JSON.parse(localStorage.getItem('smartride_notifications')) || [];
+    const notif = {
+      id: 'notif-' + Math.random().toString(36).substr(2, 9),
+      userId,
+      message,
+      type, // 'accepted', 'joined', 'info'
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+    notifications.push(notif);
+    localStorage.setItem('smartride_notifications', JSON.stringify(notifications));
+    return notif;
+  }
+
+  markNotificationRead(notificationId) {
+    const notifications = JSON.parse(localStorage.getItem('smartride_notifications')) || [];
+    const idx = notifications.findIndex(n => n.id === notificationId);
+    if (idx !== -1) {
+      notifications[idx].read = true;
+      localStorage.setItem('smartride_notifications', JSON.stringify(notifications));
+    }
+  }
+
+  markAllNotificationsRead(userId) {
+    const notifications = JSON.parse(localStorage.getItem('smartride_notifications')) || [];
+    notifications.forEach(n => {
+      if (n.userId === userId) n.read = true;
+    });
+    localStorage.setItem('smartride_notifications', JSON.stringify(notifications));
+  }
+
+  // ── Passenger creates a new ride request ──
+  createRideRequest(data) {
+    const requests = this.getRideRequests();
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('Login လိုအပ်ပါသည်။');
+
+    // Auto-calculate price from GPS
+    let estimatedPrice = 0;
+    let distanceKm = 0;
+    if (data.startLat != null && data.endLat != null) {
+      const result = this._matcher.calculatePriceFromCoords(
+        data.startLat, data.startLng, data.endLat, data.endLng
+      );
+      estimatedPrice = result.price;
+      distanceKm = result.distanceKm;
+    } else {
+      estimatedPrice = this._matcher.DEFAULT_PRICE;
+    }
+
+    const newRequest = {
+      id: 'req-' + Math.random().toString(36).substr(2, 9),
+      passengerId: user.id,
+      passengerName: user.name || 'Passenger',
+      passengerPhone: user.phone || '',
+      startLocation: data.startLocation,
+      endLocation: data.endLocation,
+      startLat: data.startLat ?? null,
+      startLng: data.startLng ?? null,
+      endLat: data.endLat ?? null,
+      endLng: data.endLng ?? null,
+      departureTime: data.departureTime,
+      estimatedPrice,
+      distanceKm,
+      status: 'pending',
+      joinedPassengers: [],
+      acceptedDriverId: null,
+      rejectedByDrivers: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    requests.push(newRequest);
+    localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
+    return newRequest;
+  }
+
+  // ── Another passenger joins an existing request ──
+  joinRideRequest(requestId, passengerId) {
+    const requests = this.getRideRequests();
+    const idx = requests.findIndex(r => r.id === requestId);
+    if (idx === -1) throw new Error('Ride Request ရှာမတွေ့ပါ။');
+
+    const req = requests[idx];
+    if (req.status !== 'pending') throw new Error('ဤ Request ကို လက်ခံပြီးသား/ပယ်ဖျက်ပြီးသား ဖြစ်ပါသည်။');
+    if (req.passengerId === passengerId) throw new Error('ကိုယ့် Request ကိုယ် ပါဝင်၍ မရပါ။');
+    if (req.joinedPassengers.some(p => p.id === passengerId)) throw new Error('ပါဝင်ပြီးသား ဖြစ်ပါသည်။');
+
+    const users = this.getUsers();
+    const passenger = users.find(u => u.id === passengerId);
+    if (!passenger) throw new Error('User ရှာမတွေ့ပါ။');
+
+    req.joinedPassengers.push({
+      id: passengerId,
+      name: passenger.name,
+      phone: passenger.phone || '',
+      joinedAt: new Date().toISOString(),
+    });
+
+    localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
+
+    // Notify the request owner
+    this.addNotification(
+      req.passengerId,
+      `${passenger.name} သည် သင်၏ "${req.startLocation} → ${req.endLocation}" ခရီးစဉ် Request တွင် ပါဝင်လာပါသည်။`,
+      'joined'
+    );
+
+    return req;
+  }
+
+  // ── A passenger leaves a request they joined ──
+  leaveRideRequest(requestId, passengerId) {
+    const requests = this.getRideRequests();
+    const idx = requests.findIndex(r => r.id === requestId);
+    if (idx === -1) throw new Error('Ride Request ရှာမတွေ့ပါ။');
+
+    const req = requests[idx];
+    if (req.status !== 'pending') throw new Error('ဤ Request ကို ပြင်ဆင်၍ မရတော့ပါ။');
+
+    req.joinedPassengers = req.joinedPassengers.filter(p => p.id !== passengerId);
+    localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
+    return req;
+  }
+
+  // ── Driver accepts a ride request → creates a real ride ──
+  acceptRideRequest(requestId, driverId) {
+    const requests = this.getRideRequests();
+    const idx = requests.findIndex(r => r.id === requestId);
+    if (idx === -1) throw new Error('Ride Request ရှာမတွေ့ပါ။');
+
+    const req = requests[idx];
+    if (req.status !== 'pending') throw new Error('ဤ Request ကို လက်ခံပြီးသား/ပယ်ဖျက်ပြီးသား ဖြစ်ပါသည်။');
+
+    const users = this.getUsers();
+    const driver = users.find(u => u.id === driverId);
+    if (!driver) throw new Error('Driver ရှာမတွေ့ပါ။');
+
+    // Mark request as accepted
+    req.status = 'accepted';
+    req.acceptedDriverId = driverId;
+    req.acceptedAt = new Date().toISOString();
+    localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
+
+    // Create a real ride from this request
+    const allPassengers = [
+      { id: req.passengerId, name: req.passengerName, pickup: req.startLocation },
+      ...req.joinedPassengers.map(p => ({ id: p.id, name: p.name, pickup: req.startLocation })),
+    ];
+
+    const rideData = {
+      driverId,
+      driverName: driver.name || 'Driver',
+      startLocation: req.startLocation,
+      endLocation: req.endLocation,
+      startLat: req.startLat,
+      startLng: req.startLng,
+      endLat: req.endLat,
+      endLng: req.endLng,
+      departureTime: req.departureTime,
+      availableSeats: 4,
+      carModel: driver.carModel || 'Unknown',
+      carPlate: driver.carPlate || 'N/A',
+    };
+
+    const newRide = this.offerRide(rideData);
+
+    // Add passengers to the ride
+    const rides = this.getRides();
+    const rideIdx = rides.findIndex(r => r.id === newRide.id);
+    if (rideIdx !== -1) {
+      rides[rideIdx].passengers = allPassengers;
+      rides[rideIdx].bookedSeats = allPassengers.length;
+      rides[rideIdx].fromRequest = requestId;
+      localStorage.setItem('smartride_rides', JSON.stringify(rides));
+    }
+
+    // Notify the original requester
+    this.addNotification(
+      req.passengerId,
+      `🎉 ${driver.name} (${driver.carModel || ''} - ${driver.carPlate || ''}) သည် သင်၏ "${req.startLocation} → ${req.endLocation}" ခရီးစဉ်ကို လက်ခံပါသည်!`,
+      'accepted'
+    );
+
+    // Notify joined passengers
+    req.joinedPassengers.forEach(p => {
+      this.addNotification(
+        p.id,
+        `🎉 ${driver.name} (${driver.carModel || ''} - ${driver.carPlate || ''}) သည် "${req.startLocation} → ${req.endLocation}" ခရီးစဉ်ကို လက်ခံပါသည်!`,
+        'accepted'
+      );
+    });
+
+    return { request: req, ride: newRide };
+  }
+
+  // ── Driver rejects/skips a ride request ──
+  rejectRideRequest(requestId, driverId) {
+    const requests = this.getRideRequests();
+    const idx = requests.findIndex(r => r.id === requestId);
+    if (idx === -1) throw new Error('Ride Request ရှာမတွေ့ပါ။');
+
+    if (!requests[idx].rejectedByDrivers) requests[idx].rejectedByDrivers = [];
+    if (!requests[idx].rejectedByDrivers.includes(driverId)) {
+      requests[idx].rejectedByDrivers.push(driverId);
+    }
+    localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
+    return requests[idx];
+  }
+
+  // ── Original requester cancels their request ──
+  cancelRideRequest(requestId, passengerId) {
+    const requests = this.getRideRequests();
+    const idx = requests.findIndex(r => r.id === requestId);
+    if (idx === -1) throw new Error('Ride Request ရှာမတွေ့ပါ။');
+
+    const req = requests[idx];
+    if (req.passengerId !== passengerId) throw new Error('ဤ Request ကို ဖျက်သိမ်းခွင့် မရှိပါ။');
+    if (req.status !== 'pending') throw new Error('ဤ Request ကို ဖျက်သိမ်း၍ မရတော့ပါ။');
+
+    req.status = 'cancelled';
+    req.cancelledAt = new Date().toISOString();
+    localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
+
+    // Notify joined passengers
+    req.joinedPassengers.forEach(p => {
+      this.addNotification(
+        p.id,
+        `"${req.startLocation} → ${req.endLocation}" ခရီးစဉ် Request ကို ${req.passengerName} မှ ပယ်ဖျက်ပါသည်။`,
+        'info'
+      );
+    });
+
+    return req;
+  }
+
+  // ── Get pending requests for drivers (excluding rejected ones) ──
+  getPendingRequestsForDriver(driverId) {
+    const requests = this.getRideRequests();
+    const now = new Date();
+    return requests.filter(r => {
+      if (r.status !== 'pending') return false;
+      // Exclude expired requests
+      if (new Date(r.departureTime) < now) return false;
+      // Exclude requests this driver rejected
+      if (r.rejectedByDrivers && r.rejectedByDrivers.includes(driverId)) return false;
+      return true;
+    }).sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
+  }
+
+  // ── Get requests by a specific passenger ──
+  getRideRequestsByPassenger(passengerId) {
+    return this.getRideRequests().filter(
+      r => r.passengerId === passengerId || r.joinedPassengers.some(p => p.id === passengerId)
+    );
+  }
+
+  // ── Get all active (pending) requests for browsing ──
+  getActivePendingRequests() {
+    const now = new Date();
+    return this.getRideRequests().filter(r => {
+      if (r.status !== 'pending') return false;
+      if (new Date(r.departureTime) < now) return false;
+      return true;
+    }).sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
   }
 }
 

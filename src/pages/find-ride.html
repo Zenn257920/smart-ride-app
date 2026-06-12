@@ -39,7 +39,7 @@
       </a>
       <div class="nav-links">
         <a href="find-ride.html" class="nav-link nav-cta">ကားစီးမည်</a>
-
+        <a href="ride-requests.html" class="nav-link">🙋 Ride Requests</a>
         <a href="dashboard.html" class="nav-link">Dashboard</a>
         <button id="themeToggleBtn" class="theme-toggle" title="Dark Mode">🌙</button>
         <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
@@ -380,7 +380,13 @@
               <div class="glass-card" style="text-align:center; padding:3rem; color:var(--gray);">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
                 <p style="font-weight: 600; color: var(--green-dark); margin-bottom: 0.5rem;">ကိုက်ညီသော ခရီးစဉ် မရှိသေးပါ</p>
-                <p style="font-size: 0.85rem;">လက်ရှိအချိန်တွင် "${startLocation}" မှ "${endLocation}" သို့ လမ်းကြုံယာဉ်မောင်း မရှိသေးပါ။ နောက်မှ ထပ်ကြိုးစားပါ။</p>
+                <p style="font-size: 0.85rem; margin-bottom: 1.5rem;">လက်ရှိအချိန်တွင် "${startLocation}" မှ "${endLocation}" သို့ လမ်းကြုံယာဉ်မောင်း မရှိသေးပါ။</p>
+                <div style="border-top:1px solid var(--border-subtle); padding-top:1.5rem;">
+                  <p style="font-size:0.82rem; color:var(--gray); margin-bottom:1rem;">💡 Ride Request ပို့ပြီး ယာဉ်မောင်း ရှာနိုင်ပါသည်!</p>
+                  <a href="ride-requests.html?start=${encodeURIComponent(startLocation)}&end=${encodeURIComponent(endLocation)}" class="btn-primary" style="display:inline-flex; align-items:center; gap:0.5rem; text-decoration:none;">
+                    🙋 Ride Request ဖန်တီးမည်
+                  </a>
+                </div>
               </div>
             `;
             return;
