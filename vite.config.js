@@ -14,7 +14,8 @@ export default defineConfig({
         myRides: resolve(__dirname, 'src/pages/my-rides.html'),
         wallet: resolve(__dirname, 'src/pages/wallet.html'),
         driverRegister: resolve(__dirname, 'src/pages/driver-register.html'),
-        driverDashboard: resolve(__dirname, 'src/pages/driver-dashboard.html')
+        driverDashboard: resolve(__dirname, 'src/pages/driver-dashboard.html'),
+        rideRequests: resolve(__dirname, 'src/pages/ride-requests.html')
       }
     }
   },
