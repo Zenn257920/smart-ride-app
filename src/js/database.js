@@ -9,11 +9,19 @@ class DatabaseManager {
     //Price constants
     this.DRIVER_BONUS_RATE = 0.1;
     this.APP_COMMISSION_RATE = 0.05;
+    // Shared matcher for distance-based pricing
+    this._matcher = new RouteMatcher();
+  }
+
+  // ─── Calculate ride price from GPS coordinates ───
+  _calcPriceFromCoords(startLat, startLng, endLat, endLng) {
+    const result = this._matcher.calculatePriceFromCoords(startLat, startLng, endLat, endLng);
+    return result ? result.price : this._matcher.DEFAULT_PRICE;
   }
 
   // Bump this version string whenever sample data schema changes.
   // Forces re-seed in any browser that has an older version cached.
-  static get DATA_VERSION() { return 'v3-gps'; }
+  static get DATA_VERSION() { return 'v4-distance-pricing'; }
 
   initDatabase() {
     const storedVersion = localStorage.getItem('smartride_data_version');
@@ -161,7 +169,7 @@ class DatabaseManager {
           departureTime: setTime(8, 30),
           availableSeats: 4,
           bookedSeats: 1,
-          price: 7500,
+          price: null, // auto-calculated below
           carModel: "Toyota Probox",
           carPlate: "YGN 3Q/1122",
           passengers: [
@@ -180,7 +188,7 @@ class DatabaseManager {
           departureTime: setTime(9, 0),
           availableSeats: 4,
           bookedSeats: 2,
-          price: 6000,
+          price: null, // auto-calculated below
           carModel: "Honda Shuttle",
           carPlate: "YGN 2P/5566",
           passengers: [
@@ -200,7 +208,7 @@ class DatabaseManager {
           departureTime: setTime(7, 45),
           availableSeats: 4,
           bookedSeats: 2,
-          price: 8000,
+          price: null, // auto-calculated below
           carModel: "Suzuki Ertiga",
           carPlate: "YGN 5R/9988",
           passengers: [
@@ -220,7 +228,7 @@ class DatabaseManager {
           departureTime: setTime(8, 0),
           availableSeats: 3,
           bookedSeats: 1,
-          price: 7000,
+          price: null, // auto-calculated below
           carModel: "Toyota Aqua",
           carPlate: "YGN 7T/3344",
           passengers: [{ id: "u-9", name: "မခင်ခင်", pickup: "Dagon Center" }],
@@ -237,7 +245,7 @@ class DatabaseManager {
           departureTime: setTime(8, 15),
           availableSeats: 4,
           bookedSeats: 2,
-          price: 5500,
+          price: null, // auto-calculated below
           carModel: "Honda Fit",
           carPlate: "YGN 1M/7788",
           passengers: [
@@ -257,7 +265,7 @@ class DatabaseManager {
           departureTime: setTime(9, 30),
           availableSeats: 4,
           bookedSeats: 1,
-          price: 6500,
+          price: null, // auto-calculated below
           carModel: "Toyota Probox",
           carPlate: "YGN 3Q/1122",
           passengers: [
@@ -276,7 +284,7 @@ class DatabaseManager {
           departureTime: setTime(7, 30),
           availableSeats: 3,
           bookedSeats: 0,
-          price: 9000,
+          price: null, // auto-calculated below
           carModel: "Honda Shuttle",
           carPlate: "YGN 2P/5566",
           passengers: [],
@@ -293,7 +301,7 @@ class DatabaseManager {
           departureTime: setTime(8, 45),
           availableSeats: 4,
           bookedSeats: 1,
-          price: 5000,
+          price: null, // auto-calculated below
           carModel: "Suzuki Ertiga",
           carPlate: "YGN 5R/9988",
           passengers: [
@@ -312,7 +320,7 @@ class DatabaseManager {
           departureTime: setTime(8, 30),
           availableSeats: 3,
           bookedSeats: 2,
-          price: 6000,
+          price: null, // auto-calculated below
           carModel: "Toyota Aqua",
           carPlate: "YGN 7T/3344",
           passengers: [
@@ -332,7 +340,7 @@ class DatabaseManager {
           departureTime: setTime(7, 0),
           availableSeats: 4,
           bookedSeats: 1,
-          price: 10000,
+          price: null, // auto-calculated below
           carModel: "Honda Fit",
           carPlate: "YGN 1M/7788",
           passengers: [
@@ -340,6 +348,21 @@ class DatabaseManager {
           ],
         },
       ];
+
+      // Auto-calculate distance-based prices for all sample rides
+      const priceMatcher = new RouteMatcher();
+      sampleRides.forEach(ride => {
+        if (ride.startLat != null && ride.endLat != null) {
+          const result = priceMatcher.calculatePriceFromCoords(
+            ride.startLat, ride.startLng, ride.endLat, ride.endLng
+          );
+          ride.price = result.price;
+          ride.distanceKm = result.distanceKm;
+        } else {
+          ride.price = priceMatcher.DEFAULT_PRICE;
+          ride.distanceKm = 0;
+        }
+      });
 
       localStorage.setItem("smartride_users", JSON.stringify(sampleUsers));
       localStorage.setItem("smartride_rides", JSON.stringify(sampleRides));
@@ -413,15 +436,34 @@ class DatabaseManager {
 
   offerRide(rideData) {
     const rides = this.getRides();
+
+    // Auto-calculate distance-based price from GPS if available
+    const startLat = rideData.startLat ?? null;
+    const startLng = rideData.startLng ?? null;
+    const endLat = rideData.endLat ?? null;
+    const endLng = rideData.endLng ?? null;
+    let price = rideData.price;
+    let distanceKm = rideData.distanceKm || 0;
+
+    if (startLat != null && endLat != null) {
+      const result = this._matcher.calculatePriceFromCoords(startLat, startLng, endLat, endLng);
+      if (result) {
+        price = result.price;
+        distanceKm = result.distanceKm;
+      }
+    }
+    // Fallback if no GPS
+    if (!price) price = this._matcher.DEFAULT_PRICE;
+
     const newRide = {
       id: "ride-" + Math.random().toString(36).substr(2, 9),
-      // Spread ride data — must include startLat, startLng, endLat, endLng
-      // if captured from the map picker in offer-ride.html
       ...rideData,
-      startLat: rideData.startLat ?? null,
-      startLng: rideData.startLng ?? null,
-      endLat: rideData.endLat ?? null,
-      endLng: rideData.endLng ?? null,
+      startLat,
+      startLng,
+      endLat,
+      endLng,
+      price,
+      distanceKm,
       bookedSeats: 0,
       passengers: [],
     };
@@ -468,11 +510,12 @@ If GPS coordinates are present, use them for corridor proximity. Also match by l
 "သန်လျင်"=Thanlyin/Star City; "ဗဟန်း"=Bahan; "ဆူးလေ"=Sule/Downtown; "ဒဂုံ"=Dagon; "လှည်းတန်း"=Hledan.
 
 PRICING MODEL:
-- FIRST RIDER RULE: If bookedSeats is 0, first rider pays ONLY the base price. Set discountedPrice = price, fareShare = price, driverBonusPerPassenger = 0, appCommissionPerPassenger = 0, savings = 0.
-- SHARED RIDE (bookedSeats >= 1): Each passenger pays: (baseFare / passengerCount) + (baseFare * 0.10 / passengerCount) + 5% app commission
+- Each ride has a distance-based "price" field already calculated: BASE_FARE(1500 MMK) + distance_km × 500 MMK/km
+- FIRST RIDER RULE: If bookedSeats is 0, first rider pays ONLY the ride price. Set discountedPrice = price, fareShare = price, driverBonusPerPassenger = 0, appCommissionPerPassenger = 0, savings = 0.
+- SHARED RIDE (bookedSeats >= 1): Use the ride's "price" field as the base. Each passenger pays proportionally based on their individual distance, but for simplicity in Gemini output use equal split: (price / passengerCount) + (price * 0.10 / passengerCount) + 5% app commission
 - "discountedPrice" = total price ONE passenger pays
-- "driverEarnings" = baseFare + (baseFare * 0.10)
-- "savings" = originalPrice - discountedPrice
+- "driverEarnings" = price + (price * 0.10)
+- "savings" = price - discountedPrice
 - passengerCount = bookedSeats + 1
 
 INPUT DATA (JSON):
@@ -537,7 +580,7 @@ Do NOT include any text outside the JSON array.
 
       // Ensure each result has the required fields with defaults
       return results.map((ride) => {
-        const basePrice = ride.price || 7500;
+        const basePrice = ride.price || this._matcher.DEFAULT_PRICE;
         const isFirstRider = (ride.bookedSeats || 0) === 0;
 
         // First rider pays standard fare only — no bonus/commission
@@ -736,7 +779,7 @@ Do NOT include any text outside the JSON array.
       .sort((a, b) => b.matchScore - a.matchScore);
 
     return scored.map((r) => {
-      const basePrice = r.price || 7500;
+      const basePrice = r.price || this._matcher.DEFAULT_PRICE;
       const isFirstRider = (r.bookedSeats || 0) === 0;
 
       if (isFirstRider) {
@@ -812,7 +855,7 @@ Do NOT include any text outside the JSON array.
     });
 
     // Calculate pricing breakdown
-    const basePrice = rides[rideIndex].price || 7500;
+    const basePrice = rides[rideIndex].price || this._matcher.DEFAULT_PRICE;
     const totalPassengers = rides[rideIndex].bookedSeats;
     const isFirstRider = totalPassengers === 1;
 
@@ -858,6 +901,8 @@ Do NOT include any text outside the JSON array.
       rideId,
       passengerId,
       totalPrice,
+      originalPrice: basePrice,
+      passengerDistanceKm: rides[rideIndex].distanceKm || 0,
       fareShare,
       driverBonusPerPassenger,
       appCommission: appCommissionPerPassenger,
@@ -912,6 +957,89 @@ Do NOT include any text outside the JSON array.
       description: `SmartRide ဝန်ဆောင်ခ - ခရီးစဉ် #${rideId}`,
       createdAt: new Date().toISOString(),
     });
+
+    // ─── Retroactive Fare Adjustment ───
+    // When a new passenger joins, existing passengers may have overpaid.
+    // Recalculate fair shares for everyone and refund the excess.
+    if (!isFirstRider) {
+      const existingBookingsForRide = bookings.filter(
+        (b) => b.rideId === rideId && b.status === "confirmed" && b.id !== newBooking.id
+      );
+
+      // Gather all passengers' distances for fair proportional pricing
+      const allPassengers = rides[rideIndex].passengers || [];
+      const allDistances = allPassengers.map((p) => {
+        // Try to find this passenger's booking to get their distance
+        const pBooking = bookings.find(
+          (b) => b.rideId === rideId && b.passengerId === p.id && b.status === "confirmed"
+        );
+        if (pBooking && pBooking.passengerDistanceKm) {
+          return pBooking.passengerDistanceKm;
+        }
+        // Fallback: use ride distance or estimate
+        return rides[rideIndex].distanceKm || 10;
+      });
+
+      // Calculate new fair breakdown for all passengers
+      const fairBreakdowns = this._matcher.calculateFairPriceBreakdown(basePrice, allDistances);
+
+      // Refund existing passengers who overpaid
+      existingBookingsForRide.forEach((oldBooking) => {
+        const pIndex = allPassengers.findIndex((p) => p.id === oldBooking.passengerId);
+        if (pIndex === -1) return;
+
+        const newFairPrice = fairBreakdowns[pIndex].passengerPrice;
+        const oldPaid = oldBooking.totalPrice;
+        const refundAmount = oldPaid - newFairPrice;
+
+        if (refundAmount > 0) {
+          // Update the old booking with new fair price
+          const bookingIdx = bookings.findIndex((b) => b.id === oldBooking.id);
+          if (bookingIdx !== -1) {
+            bookings[bookingIdx].totalPrice = newFairPrice;
+            bookings[bookingIdx].fareShare = fairBreakdowns[pIndex].fareShare;
+            bookings[bookingIdx].driverBonusPerPassenger = fairBreakdowns[pIndex].driverBonusPerPassenger;
+            bookings[bookingIdx].appCommission = fairBreakdowns[pIndex].appCommissionPerPassenger;
+            bookings[bookingIdx].refundedAmount = (bookings[bookingIdx].refundedAmount || 0) + refundAmount;
+          }
+
+          // Refund to passenger's wallet (e-wallet bookings only)
+          if (oldBooking.paymentMethod !== "cash") {
+            const refundUserIdx = users.findIndex((u) => u.id === oldBooking.passengerId);
+            if (refundUserIdx !== -1) {
+              users[refundUserIdx].balance += refundAmount;
+
+              // Deduct excess from driver (they received too much from first rider)
+              if (driverIndex !== -1) {
+                users[driverIndex].balance -= refundAmount;
+              }
+
+              // Create refund transaction for passenger
+              transactions.push({
+                id: "tx-" + Math.random().toString(36).substr(2, 9),
+                userId: oldBooking.passengerId,
+                amount: refundAmount,
+                type: "refund",
+                description: `↩ ခရီးသည်အသစ် ပါဝင်လာ၍ ပြန်အမ်းငွေ ${refundAmount.toLocaleString()} ကျပ် (${oldPaid.toLocaleString()} → ${newFairPrice.toLocaleString()})`,
+                createdAt: new Date().toISOString(),
+              });
+
+              // Record driver adjustment transaction
+              if (driverIndex !== -1) {
+                transactions.push({
+                  id: "tx-" + Math.random().toString(36).substr(2, 9),
+                  userId: driverId,
+                  amount: -refundAmount,
+                  type: "adjustment",
+                  description: `↩ ခရီးသည်အသစ်ပါဝင်၍ ${users[refundUserIdx].name} အား ${refundAmount.toLocaleString()} ကျပ် ပြန်အမ်း`,
+                  createdAt: new Date().toISOString(),
+                });
+              }
+            }
+          }
+        }
+      });
+    }
 
     localStorage.setItem("smartride_rides", JSON.stringify(rides));
     localStorage.setItem("smartride_users", JSON.stringify(users));

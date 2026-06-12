@@ -152,8 +152,8 @@
                   font-size: 0.8rem;
                   margin-bottom: 0.2rem;
                 ">
-              <span style="color: var(--gray)">အခြေခံခရီးစဉ်ခ</span>
-              <span style="font-weight: 600">7,500 ကျပ်</span>
+              <span style="color: var(--gray)">အခြေခံခရီးစဉ်ခ (1,500 + 500/km)</span>
+              <span id="earningsBase" style="font-weight: 600">— ကျပ်</span>
             </div>
             <div style="
                   display: flex;
@@ -162,7 +162,7 @@
                   margin-bottom: 0.2rem;
                 ">
               <span style="color: var(--gray)">ဘိုနပ်စ် (+10%)</span>
-              <span style="font-weight: 600; color: var(--green)">+750 ကျပ်</span>
+              <span id="earningsBonus" style="font-weight: 600; color: var(--green)">— ကျပ်</span>
             </div>
             <div style="
                   border-top: 1px dashed rgba(29, 158, 117, 0.2);
@@ -182,7 +182,7 @@
                     font-size: 1.2rem;
                     font-weight: 800;
                     color: var(--green);
-                  ">8,250 ကျပ်</span>
+                  ">— ကျပ်</span>
             </div>
             <div style="
                   font-size: 0.65rem;
@@ -190,7 +190,7 @@
                   margin-top: 0.4rem;
                   text-align: center;
                 ">
-              🚀 ပုံမှန်ခရီးစဉ်ခထက် 10% ပိုမိုရရှိပါသည်!
+              🚀 <span id="earningsNote">မြေပုံပေါ်တွင် နေရာရွေးပြီးမှ ခန့်မှန်းတွက်ချက်ပေးပါမည်</span>
             </div>
           </div>
           <button type="submit" class="btn-primary" style="width: 100%">
@@ -299,6 +299,7 @@
     import { db } from "../js/database.js";
     import { RideMap } from "../js/map.js";
     import { toggleTheme } from "../js/theme.js";
+    import { RouteMatcher } from "../js/matching.js";
 
     document
       .getElementById("themeToggleBtn")
@@ -339,6 +340,38 @@
         }
       }
 
+      // ── Dynamic earnings preview based on GPS distance ──
+      const priceMatcher = new RouteMatcher();
+      function updateEarningsPreview() {
+        const hasStart = rideMap && rideMap.startLocation;
+        const hasEnd = rideMap && rideMap.endLocation;
+
+        const baseEl = document.getElementById('earningsBase');
+        const bonusEl = document.getElementById('earningsBonus');
+        const totalEl = document.getElementById('earningsTotal');
+        const noteEl = document.getElementById('earningsNote');
+
+        if (hasStart && hasEnd) {
+          const result = priceMatcher.calculatePriceFromCoords(
+            rideMap.startLocation.lat, rideMap.startLocation.lng,
+            rideMap.endLocation.lat, rideMap.endLocation.lng
+          );
+          const base = result.price;
+          const bonus = Math.floor(base * 0.1);
+          const total = base + bonus;
+
+          baseEl.textContent = base.toLocaleString() + ' ကျပ် (' + result.distanceKm + ' km)';
+          bonusEl.textContent = '+' + bonus.toLocaleString() + ' ကျပ်';
+          totalEl.textContent = total.toLocaleString() + ' ကျပ်';
+          noteEl.textContent = result.distanceKm + ' km ခရီးစဉ် — ပုံမှန်ခရီးစဉ်ခထက် 10% ပိုမိုရရှိပါသည်!';
+        } else {
+          baseEl.textContent = '— ကျပ်';
+          bonusEl.textContent = '— ကျပ်';
+          totalEl.textContent = '— ကျပ်';
+          noteEl.textContent = 'မြေပုံပေါ်တွင် နေရာရွေးပြီးမှ ခန့်မှန်းတွက်ချက်ပေးပါမည်';
+        }
+      }
+
       // Initialize the interactive map
       function initMap() {
         if (typeof L === "undefined") return;
@@ -349,6 +382,8 @@
             endInput.classList.remove("map-select-active");
             // Update GPS status badge
             updateCoordsStatus();
+            // Update earnings preview
+            updateEarningsPreview();
             // Trigger route preview if both are set
             tryShowRoute();
           },
@@ -511,7 +546,8 @@
           endLng: endCoords?.lng ?? null,
           departureTime,
           availableSeats,
-          price: 7500,
+          // Price is auto-calculated by db.offerRide() from GPS coords
+          // No need to hardcode price here
           carModel: carModel || user.carModel || "Toyota Probox",
           carPlate: carPlate || user.carPlate || "YGN 3Q/XXXX",
         };

@@ -1050,7 +1050,7 @@
 
       driverRides.forEach((ride) => {
         const booked = ride.bookedSeats || 0;
-        const basePrice = ride.price || 7500;
+        const basePrice = ride.price || 0;
         totalPassengers += booked;
         totalAvailableSeats += (ride.availableSeats || 4) - booked;
         if (booked > 0) {

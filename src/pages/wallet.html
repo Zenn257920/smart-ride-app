@@ -907,8 +907,8 @@
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
               <div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  <span class="badge" style="background: ${tx.amount > 0 ? "var(--green-light)" : "#fee2e2"}; color: ${tx.amount > 0 ? "var(--green)" : "#dc2626"};">
-                    ${tx.amount > 0 ? "➕ ငွေသွင်း" : "➖ ငွေထုတ်"}
+                  <span class="badge" style="background: ${tx.type === 'refund' ? '#dbeafe' : tx.amount > 0 ? "var(--green-light)" : "#fee2e2"}; color: ${tx.type === 'refund' ? '#2563eb' : tx.amount > 0 ? "var(--green)" : "#dc2626"};">
+                    ${tx.type === 'refund' ? "↩ ပြန်အမ်းငွေ" : tx.type === 'adjustment' ? "⚖️ ညှိနှိုင်းမှု" : tx.amount > 0 ? "➕ ငွေသွင်း" : "➖ ငွေထုတ်"}
                   </span>
                   <span style="font-size: 0.7rem; color: var(--gray);">${new Date(tx.createdAt).toLocaleString()}</span>
                 </div>

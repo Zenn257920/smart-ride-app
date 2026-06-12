@@ -180,8 +180,9 @@
 
         let totalSaved = 0;
         bookings.forEach((booking) => {
-          // Saving Price
-          totalSaved += 7500 - booking.totalPrice;
+          // Saving Price — use the ride's original distance-based price
+          const origPrice = booking.originalPrice || booking.totalPrice;
+          totalSaved += origPrice - booking.totalPrice;
         });
         document.getElementById("totalSaved").textContent =
           totalSaved.toLocaleString() + " ကျပ်";
