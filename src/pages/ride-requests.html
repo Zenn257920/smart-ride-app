@@ -1,776 +1,1060 @@
 <!doctype html>
 <html lang="my">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ride Requests - Innovix SmartRide</title>
-  <link rel="stylesheet" href="/src/style.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    (function () {
-      const t = localStorage.getItem("smartride_theme") || "light";
-      document.documentElement.setAttribute("data-theme", t);
-    })();
-  </script>
-  <style>
-    /* ── Tab Navigation ── */
-    .tab-nav {
-      display: flex;
-      gap: 0.25rem;
-      background: rgba(255,255,255,0.5);
-      backdrop-filter: blur(10px);
-      border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      padding: 0.3rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 0.7rem 1rem;
-      border: none;
-      background: transparent;
-      border-radius: 12px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--gray);
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-    }
-
-    .tab-btn:hover {
-      color: var(--green-dark);
-      background: rgba(29,158,117,0.06);
-    }
-
-    .tab-btn.active {
-      background: linear-gradient(135deg, var(--green-dark), var(--green));
-      color: #fff;
-      box-shadow: 0 4px 16px rgba(29,158,117,0.25);
-    }
-
-    .tab-badge {
-      background: rgba(255,255,255,0.25);
-      padding: 0.1rem 0.45rem;
-      border-radius: 8px;
-      font-size: 0.65rem;
-      font-weight: 700;
-      min-width: 18px;
-      text-align: center;
-    }
-
-    .tab-btn:not(.active) .tab-badge {
-      background: var(--green-light);
-      color: var(--green);
-    }
-
-    .tab-content { display: none; }
-    .tab-content.active { display: block; animation: fadeInTab 0.35s ease; }
-
-    @keyframes fadeInTab {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── Request Card ── */
-    .req-card {
-      position: relative;
-      background: rgba(255,255,255,0.75);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border-subtle);
-      border-radius: 18px;
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-      transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
-      overflow: hidden;
-    }
-
-    .req-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0;
-      width: 4px; height: 100%;
-      background: linear-gradient(180deg, var(--green), #2bc48a);
-      border-radius: 4px 0 0 4px;
-    }
-
-    .req-card:hover {
-      border-color: rgba(29,158,117,0.2);
-      transform: translateY(-3px);
-      box-shadow: 0 12px 30px rgba(29,158,117,0.08);
-    }
-
-    .req-card.accepted::before { background: linear-gradient(180deg, #10b981, #34d399); }
-    .req-card.cancelled::before { background: linear-gradient(180deg, #ef4444, #f87171); }
-
-    .req-status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0.2rem 0.65rem;
-      border-radius: 20px;
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-    }
-
-    .req-status-badge.pending {
-      background: rgba(245,158,11,0.12);
-      color: #d97706;
-    }
-
-    .req-status-badge.accepted {
-      background: rgba(16,185,129,0.12);
-      color: #059669;
-    }
-
-    .req-status-badge.cancelled {
-      background: rgba(239,68,68,0.1);
-      color: #dc2626;
-    }
-
-    .req-route {
-      font-family: var(--font-heading);
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: var(--green-dark);
-      margin-bottom: 0.4rem;
-    }
-
-    .req-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.6rem;
-      font-size: 0.75rem;
-      color: var(--gray);
-      margin-bottom: 0.75rem;
-    }
-
-    .req-meta span {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.2rem;
-    }
-
-    .req-passengers-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem;
-      margin-bottom: 0.85rem;
-    }
-
-    .req-passenger-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: var(--green-light);
-      padding: 0.2rem 0.55rem;
-      border-radius: 20px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      color: var(--green-dark);
-    }
-
-    .req-passenger-pill .avatar {
-      width: 18px; height: 18px;
-      background: var(--green);
-      color: #fff;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.55rem;
-      font-weight: 700;
-    }
-
-    .req-actions {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 0.75rem;
-    }
-
-    .req-btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 10px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-
-    .req-btn-accept {
-      background: linear-gradient(135deg, var(--green-dark), var(--green));
-      color: #fff;
-      box-shadow: 0 3px 12px rgba(29,158,117,0.25);
-    }
-    .req-btn-accept:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(29,158,117,0.3);
-    }
-
-    .req-btn-join {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      color: #fff;
-      box-shadow: 0 3px 12px rgba(59,130,246,0.25);
-    }
-    .req-btn-join:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(59,130,246,0.3);
-    }
-
-    .req-btn-leave {
-      background: transparent;
-      border: 1px solid var(--border-subtle);
-      color: var(--gray);
-    }
-    .req-btn-leave:hover { border-color: #ef4444; color: #ef4444; }
-
-    .req-btn-skip {
-      background: transparent;
-      border: 1px solid var(--border-subtle);
-      color: var(--gray);
-    }
-    .req-btn-skip:hover { border-color: var(--amber); color: var(--amber); }
-
-    .req-btn-cancel {
-      background: rgba(239,68,68,0.08);
-      color: #dc2626;
-      border: 1px solid rgba(239,68,68,0.15);
-    }
-    .req-btn-cancel:hover { background: rgba(239,68,68,0.15); }
-
-    /* ── Notification Panel ── */
-    .notif-panel {
-      position: relative;
-    }
-
-    .notif-bell {
-      position: relative;
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 1.3rem;
-      padding: 0.4rem;
-      transition: transform 0.2s;
-    }
-    .notif-bell:hover { transform: scale(1.15); }
-
-    .notif-count {
-      position: absolute;
-      top: -2px; right: -4px;
-      background: #ef4444;
-      color: #fff;
-      font-size: 0.6rem;
-      font-weight: 700;
-      min-width: 16px;
-      height: 16px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 3px;
-      border: 2px solid var(--bg-primary);
-    }
-
-    .notif-dropdown {
-      display: none;
-      position: absolute;
-      top: 100%;
-      right: 0;
-      width: 340px;
-      max-height: 400px;
-      overflow-y: auto;
-      background: rgba(255,255,255,0.95);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.12);
-      z-index: 1000;
-      padding: 0.75rem;
-    }
-    .notif-dropdown.open { display: block; animation: fadeInTab 0.25s ease; }
-
-    .notif-item {
-      padding: 0.65rem 0.75rem;
-      border-radius: 10px;
-      margin-bottom: 0.35rem;
-      font-size: 0.78rem;
-      color: var(--text-primary);
-      transition: background 0.2s;
-      border-left: 3px solid transparent;
-    }
-    .notif-item:hover { background: rgba(29,158,117,0.05); }
-    .notif-item.unread { background: rgba(29,158,117,0.06); border-left-color: var(--green); font-weight: 500; }
-    .notif-item .notif-time {
-      font-size: 0.65rem;
-      color: var(--gray);
-      margin-top: 0.2rem;
-    }
-
-    /* ── Create form grid ── */
-    .create-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-    }
-
-    /* ── Empty state ── */
-    .empty-state-req {
-      text-align: center;
-      padding: 2.5rem 1rem;
-      color: var(--gray);
-    }
-    .empty-state-req .empty-icon { font-size: 3rem; margin-bottom: 0.75rem; opacity: 0.4; }
-    .empty-state-req p { font-size: 0.85rem; line-height: 1.6; }
-
-    /* ── Dark mode ── */
-    [data-theme="dark"] .tab-nav {
-      background: rgba(255,255,255,0.05);
-      border-color: rgba(255,255,255,0.08);
-    }
-    [data-theme="dark"] .tab-btn { color: rgba(255,255,255,0.5); }
-    [data-theme="dark"] .tab-btn:hover { color: var(--green); background: rgba(29,158,117,0.1); }
-    [data-theme="dark"] .tab-btn:not(.active) .tab-badge { background: rgba(29,158,117,0.15); }
-
-    [data-theme="dark"] .req-card {
-      background: rgba(255,255,255,0.05);
-      border-color: rgba(255,255,255,0.08);
-    }
-    [data-theme="dark"] .req-card:hover {
-      background: rgba(255,255,255,0.08);
-      border-color: rgba(29,158,117,0.25);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-    }
-
-    [data-theme="dark"] .notif-dropdown {
-      background: rgba(30,30,30,0.95);
-      border-color: rgba(255,255,255,0.1);
-    }
-    [data-theme="dark"] .notif-item.unread { background: rgba(29,158,117,0.1); }
-
-    [data-theme="dark"] .req-btn-skip,
-    [data-theme="dark"] .req-btn-leave {
-      border-color: rgba(255,255,255,0.1);
-      color: rgba(255,255,255,0.5);
-    }
-
-    /* ── Responsive ── */
-    @media (max-width: 768px) {
-      .create-grid { grid-template-columns: 1fr; }
-      .tab-btn { font-size: 0.7rem; padding: 0.55rem 0.5rem; }
-      .tab-btn span.tab-text { display: none; }
-      .req-card { padding: 1rem; }
-      .req-route { font-size: 0.92rem; }
-      .notif-dropdown { width: 280px; right: -80px; }
-    }
-  </style>
-</head>
-
-<body>
-  <div class="bg-grid"></div>
-  <div class="bg-glow bg-glow--1"></div>
-  <div class="bg-glow bg-glow--2"></div>
-
-  <nav class="nav-wrapper">
-    <div class="nav-inner">
-      <a href="/" class="logo">
-        <div class="logo-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
-            <rect x="1" y="3" width="15" height="13" rx="2" />
-            <path d="M16 8h4l3 4v4h-7V8z" />
-            <circle cx="5.5" cy="18.5" r="2.5" />
-            <circle cx="18.5" cy="18.5" r="2.5" />
-          </svg>
-        </div>
-        <div>
-          <span class="logo-text">Innovix SmartRide</span>
-          <span class="logo-sub">Myanmar</span>
-        </div>
-      </a>
-      <div class="nav-links">
-        <a href="find-ride.html" class="nav-link">ကားစီးမည်</a>
-        <a href="ride-requests.html" class="nav-link nav-cta">🙋 Ride Requests</a>
-        <a href="dashboard.html" class="nav-link">Dashboard</a>
-        <!-- Notification Bell -->
-        <div class="notif-panel" style="display:inline-flex; align-items:center;">
-          <button class="notif-bell" id="notifBell" title="Notifications">
-            🔔
-            <span class="notif-count" id="notifCount" style="display:none;">0</span>
-          </button>
-          <div class="notif-dropdown" id="notifDropdown">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; padding:0 0.25rem;">
-              <span style="font-size:0.82rem; font-weight:700; color:var(--green-dark);">🔔 အသိပေးချက်များ</span>
-              <button id="markAllReadBtn" style="font-size:0.68rem; color:var(--green); background:none; border:none; cursor:pointer; font-weight:600;">အားလုံးဖတ်ပြီး</button>
-            </div>
-            <div id="notifList"></div>
-          </div>
-        </div>
-        <button id="themeToggleBtn" class="theme-toggle" title="Dark Mode">🌙</button>
-        <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
-      </div>
-      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
-  </nav>
-
-  <div class="container" style="padding: 2rem">
-    <!-- Page Header -->
-    <div class="animate-fade-in-up" style="margin-bottom: 1.5rem;">
-      <h1 style="font-family: var(--font-heading); color: var(--green-dark); font-size: 1.6rem; font-weight: 800; margin-bottom: 0.3rem;">
-        🙋 ခရီးစဉ် တောင်းဆိုချက်များ
-      </h1>
-      <p style="color: var(--gray); font-size: 0.85rem;">
-        ခရီးသည်များ ခရီးစဉ်တောင်းဆို၍ ယာဉ်မောင်းများ လက်ခံနိုင်ပါသည်
-      </p>
-    </div>
-
-    <!-- Tab Navigation -->
-    <div class="tab-nav animate-fade-in-up animate-delay-1" id="tabNav">
-      <button class="tab-btn active" data-tab="all-requests">
-        📋 <span class="tab-text">Request အားလုံး</span>
-        <span class="tab-badge" id="allReqCount">0</span>
-      </button>
-      <button class="tab-btn" data-tab="create-request" id="tabCreateBtn">
-        ✏️ <span class="tab-text">Request အသစ်</span>
-      </button>
-      <button class="tab-btn" data-tab="my-requests">
-        👤 <span class="tab-text">ကျွန်ုပ်၏ Requests</span>
-        <span class="tab-badge" id="myReqCount">0</span>
-      </button>
-    </div>
-
-    <!-- TAB 1: All Requests -->
-    <div class="tab-content active" id="tab-all-requests">
-      <div id="allRequestsList"></div>
-    </div>
-
-    <!-- TAB 2: Create Request (Passenger only) -->
-    <div class="tab-content" id="tab-create-request">
-      <div id="createFormArea">
-        <div class="create-grid">
-          <!-- Form -->
-          <div class="glass-card animate-fade-in-up">
-            <h2 style="font-family:var(--font-heading); color:var(--green-dark); margin-bottom:1.5rem; font-size:1.15rem;">
-              ✏️ ခရီးစဉ် Request အသစ်ဖန်တီးမည်
-            </h2>
-            <form id="createRequestForm">
-              <div class="input-group">
-                <label class="input-label">ထွက်ခွာမည့်နေရာ</label>
-                <input type="text" id="reqStartLocation" class="input-field" placeholder="e.g. သံလျင်, လှိုင်, ဒဂုံ" required />
-              </div>
-              <div class="input-group">
-                <label class="input-label">ဦးတည်ရာ</label>
-                <input type="text" id="reqEndLocation" class="input-field" placeholder="e.g. ဗဟန်း, လမ်းမတော်, ရန်ကင်း" required />
-              </div>
-              <div class="input-group">
-                <label class="input-label">ထွက်ခွာမည့်အချိန်</label>
-                <input type="datetime-local" id="reqDepartureTime" class="input-field" required />
-              </div>
-              <!-- Price Preview -->
-              <div id="reqPricePreview" style="
-                margin-bottom:1rem; padding:0.75rem; border-radius:12px;
-                background:linear-gradient(135deg,rgba(29,158,117,0.08),rgba(29,158,117,0.03));
-                border:1px solid rgba(29,158,117,0.12); display:none;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span style="font-size:0.78rem; color:var(--gray);">ခန့်မှန်းခရီးစဉ်ခ</span>
-                  <span id="reqEstPrice" style="font-family:var(--font-heading); font-size:1.15rem; font-weight:800; color:var(--green);">—</span>
-                </div>
-                <div style="font-size:0.68rem; color:var(--green); margin-top:0.2rem; text-align:center;" id="reqDistNote"></div>
-              </div>
-              <button type="submit" class="btn-primary" style="width:100%;">
-                🙋 Request ပို့မည်
-              </button>
-            </form>
-          </div>
-          <!-- Map -->
-          <div class="glass-card animate-fade-in-up animate-delay-2">
-            <h3 style="font-family:var(--font-heading); color:var(--green-dark); margin-bottom:1rem; font-size:1rem;">
-              🗺️ မြေပုံပေါ်တွင် နေရာရွေးပါ
-            </h3>
-            <div id="mapClickHint" style="
-              margin-bottom:0.75rem; padding:0.6rem 1rem; border-radius:10px;
-              background:var(--green-light); color:var(--green-dark);
-              font-size:0.78rem; font-weight:500; display:flex; align-items:center; gap:0.5rem;
-              opacity:0; transition:all 0.3s ease; transform:translateY(-4px);">
-              <span style="font-size:1rem">👆</span>
-              <span id="mapClickHintText">မြေပုံပေါ်တွင် နှိပ်၍ နေရာရွေးပါ</span>
-            </div>
-            <div id="map" class="map-container" style="height:380px;"></div>
-            <div style="margin-top:0.75rem; display:flex; gap:0.5rem;">
-              <button id="getCurrentLocation" class="btn-outline" style="font-size:0.75rem;">
-                📍 လက်ရှိတည်နေရာ
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Driver can't create -->
-      <div id="driverCreateMsg" style="display:none;">
-        <div class="glass-card" style="text-align:center; padding:2.5rem;">
-          <div style="font-size:3rem; margin-bottom:1rem;">🚗</div>
-          <h3 style="color:var(--green-dark); margin-bottom:0.5rem;">ယာဉ်မောင်းများအတွက်</h3>
-          <p style="color:var(--gray); font-size:0.85rem; margin-bottom:1rem;">
-            Request အသစ် ဖန်တီးရန် ခရီးသည်အဖြစ် Login ဝင်ပါ။<br>
-            ယာဉ်မောင်းများအနေဖြင့် "Request အားလုံး" tab မှ လက်ခံနိုင်ပါသည်။
-          </p>
-          <button class="btn-primary" onclick="document.querySelector('[data-tab=all-requests]').click()">
-            📋 Request များကြည့်မည်
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB 3: My Requests -->
-    <div class="tab-content" id="tab-my-requests">
-      <div id="myRequestsList"></div>
-    </div>
-  </div>
-
-  <!-- Success Modal -->
-  <div id="requestSuccessModal" class="modal">
-    <div class="modal-content">
-      <h3 style="color:var(--green); margin-bottom:1rem;">✅ Request ပို့ပြီးပါပြီ</h3>
-      <p id="requestSuccessMsg" style="margin-bottom:1rem; line-height:1.7; font-size:0.88rem;"></p>
-      <div class="modal-actions">
-        <button onclick="document.getElementById('requestSuccessModal').style.display='none'; document.querySelector('[data-tab=all-requests]').click();" class="btn-primary" style="width:100%;">
-          Request များကြည့်မည်
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Accept Confirmation Modal -->
-  <div id="acceptModal" class="modal">
-    <div class="modal-content">
-      <h3 style="color:var(--green); margin-bottom:1rem;">✅ Request လက်ခံမည်</h3>
-      <div style="margin-bottom:1rem; line-height:1.8;">
-        <p><span style="color:var(--gray);">ခရီးစဉ်:</span> <strong id="acceptRoute">—</strong></p>
-        <p><span style="color:var(--gray);">ခရီးသည်များ:</span> <span id="acceptPassengers">—</span></p>
-        <p><span style="color:var(--gray);">ထွက်ခွာချိန်:</span> <span id="acceptTime">—</span></p>
-        <p><span style="color:var(--gray);">ခန့်မှန်းခရီးစဉ်ခ:</span>
-          <strong id="acceptPrice" style="color:var(--green);">—</strong>
-        </p>
-      </div>
-      <p style="font-size:0.78rem; color:var(--gray); margin-bottom:1rem;">
-        ⚠️ လက်ခံပါက ခရီးစဉ်အသစ် ဖန်တီးပြီး ခရီးသည်များကို အကြောင်းကြားပါမည်။
-      </p>
-      <div class="modal-actions">
-        <button id="confirmAcceptBtn" class="btn-primary">လက်ခံမည် ✅</button>
-        <button onclick="document.getElementById('acceptModal').style.display='none';" class="btn-outline">မယ်တော့ဘူး</button>
-      </div>
-    </div>
-  </div>
-
-  <script type="module">
-    import { requireAuth, getCurrentUser, logout } from '../js/auth.js';
-    import { db } from '../js/database.js';
-    import { RideMap } from '../js/map.js';
-    import { toggleTheme } from '../js/theme.js';
-    import { RouteMatcher } from '../js/matching.js';
-
-    document.getElementById('themeToggleBtn')?.addEventListener('click', toggleTheme);
-
-    if (!requireAuth()) {
-      // redirect
-    } else {
-      const user = getCurrentUser();
-      const isDriver = user.userType === 'driver';
-      let rideMap;
-      const priceMatcher = new RouteMatcher();
-
-      // ── Tab switching ──
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-          btn.classList.add('active');
-          document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-        });
-      });
-
-      // ── Show/hide create form based on user type ──
-      if (isDriver) {
-        document.getElementById('createFormArea').style.display = 'none';
-        document.getElementById('driverCreateMsg').style.display = 'block';
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ride Requests - Innovix SmartRide</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      (function () {
+        const t = localStorage.getItem("smartride_theme") || "light";
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+    <style>
+      /* ── Tab Navigation ── */
+      .tab-nav {
+        display: flex;
+        gap: 0.25rem;
+        background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        padding: 0.3rem;
+        margin-bottom: 1.5rem;
       }
 
-      // ── Notification system ──
-      function loadNotifications() {
-        const notifications = db.getNotifications(user.id);
-        const unreadCount = notifications.filter(n => !n.read).length;
-        const countEl = document.getElementById('notifCount');
-        const listEl = document.getElementById('notifList');
+      .tab-btn {
+        flex: 1;
+        padding: 0.7rem 1rem;
+        border: none;
+        background: transparent;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--gray);
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+      }
 
-        if (unreadCount > 0) {
-          countEl.style.display = 'flex';
-          countEl.textContent = unreadCount;
-        } else {
-          countEl.style.display = 'none';
+      .tab-btn:hover {
+        color: var(--green-dark);
+        background: rgba(29, 158, 117, 0.06);
+      }
+
+      .tab-btn.active {
+        background: linear-gradient(135deg, var(--green-dark), var(--green));
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(29, 158, 117, 0.25);
+      }
+
+      .tab-badge {
+        background: rgba(255, 255, 255, 0.25);
+        padding: 0.1rem 0.45rem;
+        border-radius: 8px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        min-width: 18px;
+        text-align: center;
+      }
+
+      .tab-btn:not(.active) .tab-badge {
+        background: var(--green-light);
+        color: var(--green);
+      }
+
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+        animation: fadeInTab 0.35s ease;
+      }
+
+      @keyframes fadeInTab {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ── Request Card ── */
+      .req-card {
+        position: relative;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+      }
+
+      .req-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, var(--green), #2bc48a);
+        border-radius: 4px 0 0 4px;
+      }
+
+      .req-card:hover {
+        border-color: rgba(29, 158, 117, 0.2);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(29, 158, 117, 0.08);
+      }
+
+      .req-card.accepted::before {
+        background: linear-gradient(180deg, #10b981, #34d399);
+      }
+      .req-card.cancelled::before {
+        background: linear-gradient(180deg, #ef4444, #f87171);
+      }
+
+      .req-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.2rem 0.65rem;
+        border-radius: 20px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+      }
+
+      .req-status-badge.pending {
+        background: rgba(245, 158, 11, 0.12);
+        color: #d97706;
+      }
+
+      .req-status-badge.accepted {
+        background: rgba(16, 185, 129, 0.12);
+        color: #059669;
+      }
+
+      .req-status-badge.cancelled {
+        background: rgba(239, 68, 68, 0.1);
+        color: #dc2626;
+      }
+
+      .req-route {
+        font-family: var(--font-heading);
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--green-dark);
+        margin-bottom: 0.4rem;
+      }
+
+      .req-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        font-size: 0.75rem;
+        color: var(--gray);
+        margin-bottom: 0.75rem;
+      }
+
+      .req-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+      }
+
+      .req-passengers-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-bottom: 0.85rem;
+      }
+
+      .req-passenger-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--green-light);
+        padding: 0.2rem 0.55rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--green-dark);
+      }
+
+      .req-passenger-pill .avatar {
+        width: 18px;
+        height: 18px;
+        background: var(--green);
+        color: #fff;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.55rem;
+        font-weight: 700;
+      }
+
+      .req-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+      }
+
+      .req-btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+
+      .req-btn-accept {
+        background: linear-gradient(135deg, var(--green-dark), var(--green));
+        color: #fff;
+        box-shadow: 0 3px 12px rgba(29, 158, 117, 0.25);
+      }
+      .req-btn-accept:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(29, 158, 117, 0.3);
+      }
+
+      .req-btn-join {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: #fff;
+        box-shadow: 0 3px 12px rgba(59, 130, 246, 0.25);
+      }
+      .req-btn-join:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+      }
+
+      .req-btn-leave {
+        background: transparent;
+        border: 1px solid var(--border-subtle);
+        color: var(--gray);
+      }
+      .req-btn-leave:hover {
+        border-color: #ef4444;
+        color: #ef4444;
+      }
+
+      .req-btn-skip {
+        background: transparent;
+        border: 1px solid var(--border-subtle);
+        color: var(--gray);
+      }
+      .req-btn-skip:hover {
+        border-color: var(--amber);
+        color: var(--amber);
+      }
+
+      .req-btn-cancel {
+        background: rgba(239, 68, 68, 0.08);
+        color: #dc2626;
+        border: 1px solid rgba(239, 68, 68, 0.15);
+      }
+      .req-btn-cancel:hover {
+        background: rgba(239, 68, 68, 0.15);
+      }
+
+      /* ── Notification Panel ── */
+      .notif-panel {
+        position: relative;
+      }
+
+      .notif-bell {
+        position: relative;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.3rem;
+        padding: 0.4rem;
+        transition: transform 0.2s;
+      }
+      .notif-bell:hover {
+        transform: scale(1.15);
+      }
+
+      .notif-count {
+        position: absolute;
+        top: -2px;
+        right: -4px;
+        background: #ef4444;
+        color: #fff;
+        font-size: 0.6rem;
+        font-weight: 700;
+        min-width: 16px;
+        height: 16px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 3px;
+        border: 2px solid var(--bg-primary);
+      }
+
+      .notif-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        width: 340px;
+        max-height: 400px;
+        overflow-y: auto;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+        z-index: 1000;
+        padding: 0.75rem;
+      }
+      .notif-dropdown.open {
+        display: block;
+        animation: fadeInTab 0.25s ease;
+      }
+
+      .notif-item {
+        padding: 0.65rem 0.75rem;
+        border-radius: 10px;
+        margin-bottom: 0.35rem;
+        font-size: 0.78rem;
+        color: var(--text-primary);
+        transition: background 0.2s;
+        border-left: 3px solid transparent;
+      }
+      .notif-item:hover {
+        background: rgba(29, 158, 117, 0.05);
+      }
+      .notif-item.unread {
+        background: rgba(29, 158, 117, 0.06);
+        border-left-color: var(--green);
+        font-weight: 500;
+      }
+      .notif-item .notif-time {
+        font-size: 0.65rem;
+        color: var(--gray);
+        margin-top: 0.2rem;
+      }
+
+      /* ── Create form grid ── */
+      .create-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+      }
+
+      /* ── Empty state ── */
+      .empty-state-req {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: var(--gray);
+      }
+      .empty-state-req .empty-icon {
+        font-size: 3rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.4;
+      }
+      .empty-state-req p {
+        font-size: 0.85rem;
+        line-height: 1.6;
+      }
+
+      /* ── Dark mode ── */
+      [data-theme="dark"] .tab-nav {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+      [data-theme="dark"] .tab-btn {
+        color: rgba(255, 255, 255, 0.5);
+      }
+      [data-theme="dark"] .tab-btn:hover {
+        color: var(--green);
+        background: rgba(29, 158, 117, 0.1);
+      }
+      [data-theme="dark"] .tab-btn:not(.active) .tab-badge {
+        background: rgba(29, 158, 117, 0.15);
+      }
+
+      [data-theme="dark"] .req-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+      [data-theme="dark"] .req-card:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(29, 158, 117, 0.25);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      [data-theme="dark"] .notif-dropdown {
+        background: rgba(30, 30, 30, 0.95);
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+      [data-theme="dark"] .notif-item.unread {
+        background: rgba(29, 158, 117, 0.1);
+      }
+
+      [data-theme="dark"] .req-btn-skip,
+      [data-theme="dark"] .req-btn-leave {
+        border-color: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 768px) {
+        .create-grid {
+          grid-template-columns: 1fr;
+        }
+        .tab-btn {
+          font-size: 0.7rem;
+          padding: 0.55rem 0.5rem;
+        }
+        .tab-btn span.tab-text {
+          display: none;
+        }
+        .req-card {
+          padding: 1rem;
+        }
+        .req-route {
+          font-size: 0.92rem;
+        }
+        .notif-dropdown {
+          width: 280px;
+          right: -80px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow--1"></div>
+    <div class="bg-glow bg-glow--2"></div>
+
+    <nav class="nav-wrapper">
+      <div class="nav-inner">
+        <a href="/" class="logo">
+          <div class="logo-icon">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="2"
+            >
+              <rect x="1" y="3" width="15" height="13" rx="2" />
+              <path d="M16 8h4l3 4v4h-7V8z" />
+              <circle cx="5.5" cy="18.5" r="2.5" />
+              <circle cx="18.5" cy="18.5" r="2.5" />
+            </svg>
+          </div>
+          <div>
+            <span class="logo-text">Innovix SmartRide</span>
+            <span class="logo-sub">Myanmar</span>
+          </div>
+        </a>
+        <div class="nav-links">
+          <a href="find-ride.html" class="nav-link">ကားစီးမည်</a>
+          <a href="ride-requests.html" class="nav-link nav-cta"
+            >🙋 Ride Requests</a
+          >
+          <a href="dashboard.html" class="nav-link">Dashboard</a>
+          <!-- Notification Bell -->
+          <div
+            class="notif-panel"
+            style="display: inline-flex; align-items: center"
+          >
+            <button class="notif-bell" id="notifBell" title="Notifications">
+              🔔
+              <span class="notif-count" id="notifCount" style="display: none"
+                >0</span
+              >
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 0.5rem;
+                  padding: 0 0.25rem;
+                "
+              >
+                <span
+                  style="
+                    font-size: 0.82rem;
+                    font-weight: 700;
+                    color: var(--green-dark);
+                  "
+                  >🔔 အသိပေးချက်များ</span
+                >
+                <button
+                  id="markAllReadBtn"
+                  style="
+                    font-size: 0.68rem;
+                    color: var(--green);
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    font-weight: 600;
+                  "
+                >
+                  အားလုံးဖတ်ပြီး
+                </button>
+              </div>
+              <div id="notifList"></div>
+            </div>
+          </div>
+          <button id="themeToggleBtn" class="theme-toggle" title="Dark Mode">
+            🌙
+          </button>
+          <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
+        </div>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="container" style="padding: 2rem">
+      <!-- Page Header -->
+      <div class="animate-fade-in-up" style="margin-bottom: 1.5rem">
+        <h1
+          style="
+            font-family: var(--font-heading);
+            color: var(--green-dark);
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 0.3rem;
+          "
+        >
+          🙋 ခရီးစဉ် တောင်းဆိုချက်များ
+        </h1>
+        <p style="color: var(--gray); font-size: 0.85rem">
+          ခရီးသည်များ ခရီးစဉ်တောင်းဆို၍ ယာဉ်မောင်းများ လက်ခံနိုင်ပါသည်
+        </p>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="tab-nav animate-fade-in-up animate-delay-1" id="tabNav">
+        <button class="tab-btn active" data-tab="all-requests">
+          📋 <span class="tab-text">Request အားလုံး</span>
+          <span class="tab-badge" id="allReqCount">0</span>
+        </button>
+        <button class="tab-btn" data-tab="create-request" id="tabCreateBtn">
+          ✏️ <span class="tab-text">Request အသစ်</span>
+        </button>
+        <button class="tab-btn" data-tab="my-requests">
+          👤 <span class="tab-text">ကျွန်ုပ်၏ Requests</span>
+          <span class="tab-badge" id="myReqCount">0</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: All Requests -->
+      <div class="tab-content active" id="tab-all-requests">
+        <div id="allRequestsList"></div>
+      </div>
+
+      <!-- TAB 2: Create Request (Passenger only) -->
+      <div class="tab-content" id="tab-create-request">
+        <div id="createFormArea">
+          <div class="create-grid">
+            <!-- Form -->
+            <div class="glass-card animate-fade-in-up">
+              <h2
+                style="
+                  font-family: var(--font-heading);
+                  color: var(--green-dark);
+                  margin-bottom: 1.5rem;
+                  font-size: 1.15rem;
+                "
+              >
+                ✏️ ခရီးစဉ် Request အသစ်ဖန်တီးမည်
+              </h2>
+              <form id="createRequestForm">
+                <div class="input-group">
+                  <label class="input-label">ထွက်ခွာမည့်နေရာ</label>
+                  <input
+                    type="text"
+                    id="reqStartLocation"
+                    class="input-field"
+                    placeholder="e.g. သံလျင်, လှိုင်, ဒဂုံ"
+                    required
+                  />
+                </div>
+                <div class="input-group">
+                  <label class="input-label">ဦးတည်ရာ</label>
+                  <input
+                    type="text"
+                    id="reqEndLocation"
+                    class="input-field"
+                    placeholder="e.g. ဗဟန်း, လမ်းမတော်, ရန်ကင်း"
+                    required
+                  />
+                </div>
+                <div class="input-group">
+                  <label class="input-label">ထွက်ခွာမည့်အချိန်</label>
+                  <input
+                    type="datetime-local"
+                    id="reqDepartureTime"
+                    class="input-field"
+                    required
+                  />
+                </div>
+                <!-- Price Preview -->
+                <div
+                  id="reqPricePreview"
+                  style="
+                    margin-bottom: 1rem;
+                    padding: 0.75rem;
+                    border-radius: 12px;
+                    background: linear-gradient(
+                      135deg,
+                      rgba(29, 158, 117, 0.08),
+                      rgba(29, 158, 117, 0.03)
+                    );
+                    border: 1px solid rgba(29, 158, 117, 0.12);
+                    display: none;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                    "
+                  >
+                    <span style="font-size: 0.78rem; color: var(--gray)"
+                      >ခန့်မှန်းခရီးစဉ်ခ</span
+                    >
+                    <span
+                      id="reqEstPrice"
+                      style="
+                        font-family: var(--font-heading);
+                        font-size: 1.15rem;
+                        font-weight: 800;
+                        color: var(--green);
+                      "
+                      >—</span
+                    >
+                  </div>
+                  <div
+                    style="
+                      font-size: 0.68rem;
+                      color: var(--green);
+                      margin-top: 0.2rem;
+                      text-align: center;
+                    "
+                    id="reqDistNote"
+                  ></div>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%">
+                  🙋 Request ပို့မည်
+                </button>
+              </form>
+            </div>
+            <!-- Map -->
+            <div class="glass-card animate-fade-in-up animate-delay-2">
+              <h3
+                style="
+                  font-family: var(--font-heading);
+                  color: var(--green-dark);
+                  margin-bottom: 1rem;
+                  font-size: 1rem;
+                "
+              >
+                🗺️ မြေပုံပေါ်တွင် နေရာရွေးပါ
+              </h3>
+              <div
+                id="mapClickHint"
+                style="
+                  margin-bottom: 0.75rem;
+                  padding: 0.6rem 1rem;
+                  border-radius: 10px;
+                  background: var(--green-light);
+                  color: var(--green-dark);
+                  font-size: 0.78rem;
+                  font-weight: 500;
+                  display: flex;
+                  align-items: center;
+                  gap: 0.5rem;
+                  opacity: 0;
+                  transition: all 0.3s ease;
+                  transform: translateY(-4px);
+                "
+              >
+                <span style="font-size: 1rem">👆</span>
+                <span id="mapClickHintText"
+                  >မြေပုံပေါ်တွင် နှိပ်၍ နေရာရွေးပါ</span
+                >
+              </div>
+              <div id="map" class="map-container" style="height: 380px"></div>
+              <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem">
+                <button
+                  id="getCurrentLocation"
+                  class="btn-outline"
+                  style="font-size: 0.75rem"
+                >
+                  📍 လက်ရှိတည်နေရာ
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Driver can't create -->
+        <div id="driverCreateMsg" style="display: none">
+          <div class="glass-card" style="text-align: center; padding: 2.5rem">
+            <div style="font-size: 3rem; margin-bottom: 1rem">🚗</div>
+            <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
+              ယာဉ်မောင်းများအတွက်
+            </h3>
+            <p
+              style="
+                color: var(--gray);
+                font-size: 0.85rem;
+                margin-bottom: 1rem;
+              "
+            >
+              Request အသစ် ဖန်တီးရန် ခရီးသည်အဖြစ် Login ဝင်ပါ။<br />
+              ယာဉ်မောင်းများအနေဖြင့် "Request အားလုံး" tab မှ လက်ခံနိုင်ပါသည်။
+            </p>
+            <button
+              class="btn-primary"
+              onclick="
+                document.querySelector('[data-tab=all-requests]').click()
+              "
+            >
+              📋 Request များကြည့်မည်
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: My Requests -->
+      <div class="tab-content" id="tab-my-requests">
+        <div id="myRequestsList"></div>
+      </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="requestSuccessModal" class="modal">
+      <div class="modal-content">
+        <h3 style="color: var(--green); margin-bottom: 1rem">
+          ✅ Request ပို့ပြီးပါပြီ
+        </h3>
+        <p
+          id="requestSuccessMsg"
+          style="margin-bottom: 1rem; line-height: 1.7; font-size: 0.88rem"
+        ></p>
+        <div class="modal-actions">
+          <button
+            onclick="
+              document.getElementById('requestSuccessModal').style.display =
+                'none';
+              document.querySelector('[data-tab=all-requests]').click();
+            "
+            class="btn-primary"
+            style="width: 100%"
+          >
+            Request များကြည့်မည်
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accept Confirmation Modal -->
+    <div id="acceptModal" class="modal">
+      <div class="modal-content">
+        <h3 style="color: var(--green); margin-bottom: 1rem">
+          ✅ Request လက်ခံမည်
+        </h3>
+        <div style="margin-bottom: 1rem; line-height: 1.8">
+          <p>
+            <span style="color: var(--gray)">ခရီးစဉ်:</span>
+            <strong id="acceptRoute">—</strong>
+          </p>
+          <p>
+            <span style="color: var(--gray)">ခရီးသည်များ:</span>
+            <span id="acceptPassengers">—</span>
+          </p>
+          <p>
+            <span style="color: var(--gray)">ထွက်ခွာချိန်:</span>
+            <span id="acceptTime">—</span>
+          </p>
+          <p>
+            <span style="color: var(--gray)">ခန့်မှန်းခရီးစဉ်ခ:</span>
+            <strong id="acceptPrice" style="color: var(--green)">—</strong>
+          </p>
+        </div>
+        <p style="font-size: 0.78rem; color: var(--gray); margin-bottom: 1rem">
+          ⚠️ လက်ခံပါက ခရီးစဉ်အသစ် ဖန်တီးပြီး ခရီးသည်များကို အကြောင်းကြားပါမည်။
+        </p>
+        <div class="modal-actions">
+          <button id="confirmAcceptBtn" class="btn-primary">လက်ခံမည် ✅</button>
+          <button
+            onclick="
+              document.getElementById('acceptModal').style.display = 'none'
+            "
+            class="btn-outline"
+          >
+            မယ်တော့ဘူး
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { requireAuth, getCurrentUser, logout } from "../js/auth.js";
+      import { db } from "../js/database.js";
+      import { RideMap } from "../js/map.js";
+      import { toggleTheme } from "../js/theme.js";
+      import { RouteMatcher } from "../js/matching.js";
+
+      document
+        .getElementById("themeToggleBtn")
+        ?.addEventListener("click", toggleTheme);
+
+      if (!requireAuth()) {
+        // redirect
+      } else {
+        const user = getCurrentUser();
+        const isDriver = user.userType === "driver";
+        let rideMap;
+        const priceMatcher = new RouteMatcher();
+
+        // ── Tab switching ──
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll(".tab-btn")
+              .forEach((b) => b.classList.remove("active"));
+            document
+              .querySelectorAll(".tab-content")
+              .forEach((c) => c.classList.remove("active"));
+            btn.classList.add("active");
+            document
+              .getElementById("tab-" + btn.dataset.tab)
+              .classList.add("active");
+          });
+        });
+
+        // ── Show/hide create form based on user type ──
+        if (isDriver) {
+          document.getElementById("createFormArea").style.display = "none";
+          document.getElementById("driverCreateMsg").style.display = "block";
         }
 
-        if (notifications.length === 0) {
-          listEl.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--gray); font-size:0.8rem;">အသိပေးချက် မရှိသေးပါ</div>';
-          return;
-        }
+        // ── Notification system ──
+        function loadNotifications() {
+          const notifications = db.getNotifications(user.id);
+          const unreadCount = notifications.filter((n) => !n.read).length;
+          const countEl = document.getElementById("notifCount");
+          const listEl = document.getElementById("notifList");
 
-        listEl.innerHTML = notifications.slice(0, 15).map(n => {
-          const timeAgo = getTimeAgo(n.createdAt);
-          const icon = n.type === 'accepted' ? '🎉' : n.type === 'joined' ? '🤝' : 'ℹ️';
-          return `
-            <div class="notif-item ${n.read ? '' : 'unread'}" data-id="${n.id}">
+          if (unreadCount > 0) {
+            countEl.style.display = "flex";
+            countEl.textContent = unreadCount;
+          } else {
+            countEl.style.display = "none";
+          }
+
+          if (notifications.length === 0) {
+            listEl.innerHTML =
+              '<div style="text-align:center; padding:1.5rem; color:var(--gray); font-size:0.8rem;">အသိပေးချက် မရှိသေးပါ</div>';
+            return;
+          }
+
+          listEl.innerHTML = notifications
+            .slice(0, 15)
+            .map((n) => {
+              const timeAgo = getTimeAgo(n.createdAt);
+              const icon =
+                n.type === "accepted"
+                  ? "🎉"
+                  : n.type === "joined"
+                    ? "🤝"
+                    : "ℹ️";
+              return `
+            <div class="notif-item ${n.read ? "" : "unread"}" data-id="${n.id}">
               <div>${icon} ${n.message}</div>
               <div class="notif-time">${timeAgo}</div>
             </div>
           `;
-        }).join('');
-      }
+            })
+            .join("");
+        }
 
-      function getTimeAgo(dateStr) {
-        const diff = Date.now() - new Date(dateStr).getTime();
-        const mins = Math.floor(diff / 60000);
-        if (mins < 1) return 'ယခု';
-        if (mins < 60) return `${mins} မိနစ်အကြာ`;
-        const hours = Math.floor(mins / 60);
-        if (hours < 24) return `${hours} နာရီအကြာ`;
-        return `${Math.floor(hours / 24)} ရက်အကြာ`;
-      }
+        function getTimeAgo(dateStr) {
+          const diff = Date.now() - new Date(dateStr).getTime();
+          const mins = Math.floor(diff / 60000);
+          if (mins < 1) return "ယခု";
+          if (mins < 60) return `${mins} မိနစ်အကြာ`;
+          const hours = Math.floor(mins / 60);
+          if (hours < 24) return `${hours} နာရီအကြာ`;
+          return `${Math.floor(hours / 24)} ရက်အကြာ`;
+        }
 
-      document.getElementById('notifBell').addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.getElementById('notifDropdown').classList.toggle('open');
-      });
+        document.getElementById("notifBell").addEventListener("click", (e) => {
+          e.stopPropagation();
+          document.getElementById("notifDropdown").classList.toggle("open");
+        });
 
-      document.addEventListener('click', () => {
-        document.getElementById('notifDropdown').classList.remove('open');
-      });
+        document.addEventListener("click", () => {
+          document.getElementById("notifDropdown").classList.remove("open");
+        });
 
-      document.getElementById('markAllReadBtn').addEventListener('click', () => {
-        db.markAllNotificationsRead(user.id);
-        loadNotifications();
-      });
+        document
+          .getElementById("markAllReadBtn")
+          .addEventListener("click", () => {
+            db.markAllNotificationsRead(user.id);
+            loadNotifications();
+          });
 
-      // ── Render all pending requests ──
-      function renderAllRequests() {
-        const requests = db.getActivePendingRequests();
-        const container = document.getElementById('allRequestsList');
-        document.getElementById('allReqCount').textContent = requests.length;
+        // ── Render all pending requests ──
+        function renderAllRequests() {
+          const requests = db.getActivePendingRequests();
+          const container = document.getElementById("allRequestsList");
+          document.getElementById("allReqCount").textContent = requests.length;
 
-        if (requests.length === 0) {
-          container.innerHTML = `
+          if (requests.length === 0) {
+            container.innerHTML = `
             <div class="empty-state-req">
               <div class="empty-icon">📭</div>
               <p>လက်ရှိ Pending Ride Request မရှိသေးပါ<br>
-                ${!isDriver ? '<a href="#" onclick="document.querySelector(\'[data-tab=create-request]\').click(); return false;" style="color:var(--green); font-weight:600;">✏️ Request အသစ် ဖန်တီးမည်</a>' : ''}
+                ${!isDriver ? '<a href="#" onclick="document.querySelector(\'[data-tab=create-request]\').click(); return false;" style="color:var(--green); font-weight:600;">✏️ Request အသစ် ဖန်တီးမည်</a>' : ""}
               </p>
             </div>`;
-          return;
+            return;
+          }
+
+          container.innerHTML = requests
+            .map((req) => renderRequestCard(req, "all"))
+            .join("");
         }
 
-        container.innerHTML = requests.map(req => renderRequestCard(req, 'all')).join('');
-      }
+        // ── Render my requests ──
+        function renderMyRequests() {
+          const requests = db.getRideRequestsByPassenger(user.id);
+          const container = document.getElementById("myRequestsList");
+          const pendingCount = requests.filter(
+            (r) => r.status === "pending",
+          ).length;
+          document.getElementById("myReqCount").textContent = pendingCount;
 
-      // ── Render my requests ──
-      function renderMyRequests() {
-        const requests = db.getRideRequestsByPassenger(user.id);
-        const container = document.getElementById('myRequestsList');
-        const pendingCount = requests.filter(r => r.status === 'pending').length;
-        document.getElementById('myReqCount').textContent = pendingCount;
-
-        if (requests.length === 0) {
-          container.innerHTML = `
+          if (requests.length === 0) {
+            container.innerHTML = `
             <div class="empty-state-req">
               <div class="empty-icon">📋</div>
               <p>သင့်တွင် Ride Request မရှိသေးပါ</p>
             </div>`;
-          return;
+            return;
+          }
+
+          container.innerHTML = requests
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .map((req) => renderRequestCard(req, "my"))
+            .join("");
         }
 
-        container.innerHTML = requests
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-          .map(req => renderRequestCard(req, 'my'))
-          .join('');
-      }
+        // ── Request card renderer ──
+        function renderRequestCard(req, context) {
+          const statusLabels = {
+            pending: "🟡 Pending",
+            accepted: "✅ Accepted",
+            cancelled: "❌ Cancelled",
+          };
 
-      // ── Request card renderer ──
-      function renderRequestCard(req, context) {
-        const statusLabels = {
-          pending: '🟡 Pending',
-          accepted: '✅ Accepted',
-          cancelled: '❌ Cancelled',
-        };
+          const time = new Date(req.departureTime);
+          const timeStr = time.toLocaleString("my-MM", {
+            hour: "2-digit",
+            minute: "2-digit",
+            month: "short",
+            day: "numeric",
+          });
+          const totalPassengers = 1 + (req.joinedPassengers?.length || 0);
 
-        const time = new Date(req.departureTime);
-        const timeStr = time.toLocaleString('my-MM', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
-        const totalPassengers = 1 + (req.joinedPassengers?.length || 0);
-
-        // Passenger pills
-        let passengerPills = `
+          // Passenger pills
+          let passengerPills = `
           <div class="req-passenger-pill">
             <span class="avatar">${req.passengerName.charAt(0)}</span>
             ${req.passengerName} <span style="font-size:0.6rem; color:var(--green); margin-left:2px;">(requester)</span>
           </div>`;
 
-        if (req.joinedPassengers && req.joinedPassengers.length > 0) {
-          passengerPills += req.joinedPassengers.map(p => `
+          if (req.joinedPassengers && req.joinedPassengers.length > 0) {
+            passengerPills += req.joinedPassengers
+              .map(
+                (p) => `
             <div class="req-passenger-pill">
               <span class="avatar">${p.name.charAt(0)}</span>
               ${p.name}
-            </div>`).join('');
-        }
+            </div>`,
+              )
+              .join("");
+          }
 
-        // Action buttons
-        let actions = '';
-        const isOwner = req.passengerId === user.id;
-        const hasJoined = req.joinedPassengers?.some(p => p.id === user.id);
+          // Action buttons
+          let actions = "";
+          const isOwner = req.passengerId === user.id;
+          const hasJoined = req.joinedPassengers?.some((p) => p.id === user.id);
 
-        if (req.status === 'pending') {
-          if (isDriver) {
-            // Driver sees Accept / Skip
-            actions = `
+          if (req.status === "pending") {
+            if (isDriver) {
+              // Driver sees Accept / Skip
+              actions = `
               <button class="req-btn req-btn-accept" onclick="window.showAcceptModal('${req.id}')">✅ လက်ခံမည်</button>
               <button class="req-btn req-btn-skip" onclick="window.skipRequest('${req.id}')">⏭️ ကျော်မည်</button>`;
-          } else if (isOwner) {
-            // Owner sees Cancel
-            actions = `
+            } else if (isOwner) {
+              // Owner sees Cancel
+              actions = `
               <button class="req-btn req-btn-cancel" onclick="window.cancelRequest('${req.id}')">❌ ပယ်ဖျက်မည်</button>`;
-          } else if (hasJoined) {
-            // Already joined — can leave
-            actions = `
+            } else if (hasJoined) {
+              // Already joined — can leave
+              actions = `
               <button class="req-btn req-btn-leave" onclick="window.leaveRequest('${req.id}')">🚪 ထွက်မည်</button>`;
-          } else {
-            // Other passenger — can join
-            actions = `
+            } else {
+              // Other passenger — can join
+              actions = `
               <button class="req-btn req-btn-join" onclick="window.joinRequest('${req.id}')">🤝 ပါဝင်မည်</button>`;
+            }
           }
-        }
 
-        // Accepted info
-        let acceptedInfo = '';
-        if (req.status === 'accepted' && req.acceptedDriverId) {
-          const users = db.getUsers();
-          const driver = users.find(u => u.id === req.acceptedDriverId);
-          if (driver) {
-            acceptedInfo = `
+          // Accepted info
+          let acceptedInfo = "";
+          if (req.status === "accepted" && req.acceptedDriverId) {
+            const users = db.getUsers();
+            const driver = users.find((u) => u.id === req.acceptedDriverId);
+            if (driver) {
+              acceptedInfo = `
               <div style="margin-top:0.6rem; padding:0.6rem 0.85rem; background:rgba(16,185,129,0.08); border-radius:10px; border:1px solid rgba(16,185,129,0.15);">
                 <span style="font-size:0.75rem; color:#059669; font-weight:600;">
-                  🚗 ${driver.name} (${driver.carModel || ''} - ${driver.carPlate || ''}) လက်ခံပြီး
+                  🚗 ${driver.name} (${driver.carModel || ""} - ${driver.carPlate || ""}) လက်ခံပြီး
                 </span>
               </div>`;
+            }
           }
-        }
 
-        return `
+          return `
           <div class="req-card ${req.status} animate-fade-in-up">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.6rem;">
               <span class="req-status-badge ${req.status}">${statusLabels[req.status] || req.status}</span>
@@ -780,7 +1064,7 @@
             <div class="req-meta">
               <span>🕒 ${timeStr}</span>
               <span>👥 ${totalPassengers} ဦး</span>
-              ${req.distanceKm ? `<span>📏 ${req.distanceKm} km</span>` : ''}
+              ${req.distanceKm ? `<span>📏 ${req.distanceKm} km</span>` : ""}
               <span>💰 ${(req.estimatedPrice || 0).toLocaleString()} ကျပ်</span>
             </div>
             <div style="font-size:0.7rem; color:var(--gray); font-weight:600; margin-bottom:0.35rem; text-transform:uppercase; letter-spacing:0.04em;">
@@ -788,287 +1072,338 @@
             </div>
             <div class="req-passengers-row">${passengerPills}</div>
             ${acceptedInfo}
-            ${actions ? `<div class="req-actions">${actions}</div>` : ''}
+            ${actions ? `<div class="req-actions">${actions}</div>` : ""}
           </div>
         `;
-      }
-
-      // ── Window actions ──
-
-      // Join a request
-      window.joinRequest = function(requestId) {
-        try {
-          db.joinRideRequest(requestId, user.id);
-          renderAllRequests();
-          renderMyRequests();
-          loadNotifications();
-          showToast('🤝 Request တွင် ပါဝင်ပြီးပါပြီ!');
-        } catch (err) {
-          alert('❌ ' + err.message);
         }
-      };
 
-      // Leave a request
-      window.leaveRequest = function(requestId) {
-        try {
-          db.leaveRideRequest(requestId, user.id);
-          renderAllRequests();
-          renderMyRequests();
-          showToast('🚪 Request မှ ထွက်ပြီးပါပြီ');
-        } catch (err) {
-          alert('❌ ' + err.message);
-        }
-      };
+        // ── Window actions ──
 
-      // Skip/reject a request (driver)
-      window.skipRequest = function(requestId) {
-        try {
-          db.rejectRideRequest(requestId, user.id);
-          renderAllRequests();
-          showToast('⏭️ Request ကျော်ပြီးပါပြီ');
-        } catch (err) {
-          alert('❌ ' + err.message);
-        }
-      };
+        // Join a request
+        window.joinRequest = function (requestId) {
+          try {
+            db.joinRideRequest(requestId, user.id);
+            renderAllRequests();
+            renderMyRequests();
+            loadNotifications();
+            showToast("🤝 Request တွင် ပါဝင်ပြီးပါပြီ!");
+          } catch (err) {
+            alert("❌ " + err.message);
+          }
+        };
 
-      // Cancel own request
-      window.cancelRequest = function(requestId) {
-        if (!confirm('ဤ Request ကို ပယ်ဖျက်မှာ သေချာပါသလား?')) return;
-        try {
-          db.cancelRideRequest(requestId, user.id);
-          renderAllRequests();
-          renderMyRequests();
-          showToast('❌ Request ပယ်ဖျက်ပြီးပါပြီ');
-        } catch (err) {
-          alert('❌ ' + err.message);
-        }
-      };
+        // Leave a request
+        window.leaveRequest = function (requestId) {
+          try {
+            db.leaveRideRequest(requestId, user.id);
+            renderAllRequests();
+            renderMyRequests();
+            showToast("🚪 Request မှ ထွက်ပြီးပါပြီ");
+          } catch (err) {
+            alert("❌ " + err.message);
+          }
+        };
 
-      // Show accept confirmation modal
-      let pendingAcceptId = null;
-      window.showAcceptModal = function(requestId) {
-        const requests = db.getRideRequests();
-        const req = requests.find(r => r.id === requestId);
-        if (!req) return;
+        // Skip/reject a request (driver)
+        window.skipRequest = function (requestId) {
+          try {
+            db.rejectRideRequest(requestId, user.id);
+            renderAllRequests();
+            showToast("⏭️ Request ကျော်ပြီးပါပြီ");
+          } catch (err) {
+            alert("❌ " + err.message);
+          }
+        };
 
-        pendingAcceptId = requestId;
-        document.getElementById('acceptRoute').textContent = `${req.startLocation} → ${req.endLocation}`;
-        const allNames = [req.passengerName, ...(req.joinedPassengers || []).map(p => p.name)];
-        document.getElementById('acceptPassengers').textContent = allNames.join(', ') + ` (${allNames.length} ဦး)`;
-        document.getElementById('acceptTime').textContent = new Date(req.departureTime).toLocaleString('my-MM', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
-        document.getElementById('acceptPrice').textContent = (req.estimatedPrice || 0).toLocaleString() + ' ကျပ်';
-        document.getElementById('acceptModal').style.display = 'flex';
-      };
+        // Cancel own request
+        window.cancelRequest = function (requestId) {
+          if (!confirm("ဤ Request ကို ပယ်ဖျက်မှာ သေချာပါသလား?")) return;
+          try {
+            db.cancelRideRequest(requestId, user.id);
+            renderAllRequests();
+            renderMyRequests();
+            showToast("❌ Request ပယ်ဖျက်ပြီးပါပြီ");
+          } catch (err) {
+            alert("❌ " + err.message);
+          }
+        };
 
-      document.getElementById('confirmAcceptBtn').addEventListener('click', () => {
-        if (!pendingAcceptId) return;
-        try {
-          const result = db.acceptRideRequest(pendingAcceptId, user.id);
-          document.getElementById('acceptModal').style.display = 'none';
-          pendingAcceptId = null;
-          renderAllRequests();
-          renderMyRequests();
-          loadNotifications();
-          showToast('✅ Request လက်ခံပြီး ခရီးစဉ်အသစ် ဖန်တီးပြီးပါပြီ!');
-        } catch (err) {
-          alert('❌ ' + err.message);
-        }
-      });
+        // Show accept confirmation modal
+        let pendingAcceptId = null;
+        window.showAcceptModal = function (requestId) {
+          const requests = db.getRideRequests();
+          const req = requests.find((r) => r.id === requestId);
+          if (!req) return;
 
-      // ── Toast notification ──
-      function showToast(message) {
-        const toast = document.createElement('div');
-        toast.style.cssText = `
+          pendingAcceptId = requestId;
+          document.getElementById("acceptRoute").textContent =
+            `${req.startLocation} → ${req.endLocation}`;
+          const allNames = [
+            req.passengerName,
+            ...(req.joinedPassengers || []).map((p) => p.name),
+          ];
+          document.getElementById("acceptPassengers").textContent =
+            allNames.join(", ") + ` (${allNames.length} ဦး)`;
+          document.getElementById("acceptTime").textContent = new Date(
+            req.departureTime,
+          ).toLocaleString("my-MM", {
+            hour: "2-digit",
+            minute: "2-digit",
+            month: "short",
+            day: "numeric",
+          });
+          document.getElementById("acceptPrice").textContent =
+            (req.estimatedPrice || 0).toLocaleString() + " ကျပ်";
+          document.getElementById("acceptModal").style.display = "flex";
+        };
+
+        document
+          .getElementById("confirmAcceptBtn")
+          .addEventListener("click", () => {
+            if (!pendingAcceptId) return;
+            try {
+              const result = db.acceptRideRequest(pendingAcceptId, user.id);
+              document.getElementById("acceptModal").style.display = "none";
+              pendingAcceptId = null;
+              renderAllRequests();
+              renderMyRequests();
+              loadNotifications();
+              showToast("✅ Request လက်ခံပြီး ခရီးစဉ်အသစ် ဖန်တီးပြီးပါပြီ!");
+            } catch (err) {
+              alert("❌ " + err.message);
+            }
+          });
+
+        // ── Toast notification ──
+        function showToast(message) {
+          const toast = document.createElement("div");
+          toast.style.cssText = `
           position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(20px);
           background:linear-gradient(135deg, var(--green-dark), var(--green));
           color:#fff; padding:0.75rem 1.5rem; border-radius:12px;
           font-size:0.85rem; font-weight:600; z-index:10000;
           box-shadow:0 8px 32px rgba(29,158,117,0.35);
           opacity:0; transition:all 0.4s cubic-bezier(0.4,0,0.2,1);`;
-        toast.textContent = message;
-        document.body.appendChild(toast);
-        requestAnimationFrame(() => {
-          toast.style.opacity = '1';
-          toast.style.transform = 'translateX(-50%) translateY(0)';
-        });
-        setTimeout(() => {
-          toast.style.opacity = '0';
-          toast.style.transform = 'translateX(-50%) translateY(20px)';
-          setTimeout(() => toast.remove(), 400);
-        }, 3000);
-      }
-
-      // ── Map initialization for create form ──
-      function initMap() {
-        if (typeof L === 'undefined' || isDriver) return;
-
-        rideMap = new RideMap('map', {
-          onLocationSelected: (mode, location) => {
-            reqStartInput.classList.remove('map-select-active');
-            reqEndInput.classList.remove('map-select-active');
-            updatePricePreview();
-          },
-        });
-      }
-
-      const reqStartInput = document.getElementById('reqStartLocation');
-      const reqEndInput = document.getElementById('reqEndLocation');
-      const mapClickHint = document.getElementById('mapClickHint');
-      const mapClickHintText = document.getElementById('mapClickHintText');
-
-      if (!isDriver) {
-        reqStartInput?.addEventListener('focus', () => {
-          if (!rideMap) return;
-          reqEndInput.classList.remove('map-select-active');
-          reqStartInput.classList.add('map-select-active');
-          rideMap.enableClickToSelect('start', reqStartInput, mapClickHint, mapClickHintText);
-        });
-
-        reqEndInput?.addEventListener('focus', () => {
-          if (!rideMap) return;
-          reqStartInput.classList.remove('map-select-active');
-          reqEndInput.classList.add('map-select-active');
-          rideMap.enableClickToSelect('end', reqEndInput, mapClickHint, mapClickHintText);
-        });
-      }
-
-      // Current location button
-      document.getElementById('getCurrentLocation')?.addEventListener('click', async (e) => {
-        e.preventDefault();
-        if (!rideMap) return;
-        const btn = e.currentTarget;
-        btn.textContent = '⏳ ရှာဖွေနေသည်...';
-        btn.disabled = true;
-        try {
-          const pos = await rideMap.getCurrentLocation();
-          const address = await rideMap._reverseGeocode(pos.lat, pos.lng);
-          const displayAddr = address || `${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)}`;
-          rideMap.setStartLocation(pos.lat, pos.lng, displayAddr);
-          reqStartInput.value = displayAddr;
-          btn.textContent = '✅ တည်နေရာရပြီ';
-          setTimeout(() => { btn.textContent = '📍 လက်ရှိတည်နေရာ'; btn.disabled = false; }, 2000);
-        } catch {
-          btn.textContent = '❌ ရှာမတွေ့ပါ';
-          setTimeout(() => { btn.textContent = '📍 လက်ရှိတည်နေရာ'; btn.disabled = false; }, 2000);
-        }
-      });
-
-      // Price preview
-      function updatePricePreview() {
-        const preview = document.getElementById('reqPricePreview');
-        if (!rideMap || !rideMap.startLocation || !rideMap.endLocation) {
-          preview.style.display = 'none';
-          return;
-        }
-        const result = priceMatcher.calculatePriceFromCoords(
-          rideMap.startLocation.lat, rideMap.startLocation.lng,
-          rideMap.endLocation.lat, rideMap.endLocation.lng
-        );
-        document.getElementById('reqEstPrice').textContent = result.price.toLocaleString() + ' ကျပ်';
-        document.getElementById('reqDistNote').textContent = `📏 ${result.distanceKm} km ခရီးစဉ်`;
-        preview.style.display = 'block';
-      }
-
-      // Default departure time
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(8, 30, 0, 0);
-      const depInput = document.getElementById('reqDepartureTime');
-      if (depInput) depInput.value = tomorrow.toISOString().slice(0, 16);
-
-      // ── Create request form submit ──
-      document.getElementById('createRequestForm')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-
-        const startLocation = reqStartInput.value.trim();
-        const endLocation = reqEndInput.value.trim();
-        const departureTime = document.getElementById('reqDepartureTime').value;
-
-        if (!startLocation || !endLocation || !departureTime) {
-          alert('ကျေးဇူးပြု၍ လိုအပ်သော အချက်များ ဖြည့်ပါ။');
-          return;
+          toast.textContent = message;
+          document.body.appendChild(toast);
+          requestAnimationFrame(() => {
+            toast.style.opacity = "1";
+            toast.style.transform = "translateX(-50%) translateY(0)";
+          });
+          setTimeout(() => {
+            toast.style.opacity = "0";
+            toast.style.transform = "translateX(-50%) translateY(20px)";
+            setTimeout(() => toast.remove(), 400);
+          }, 3000);
         }
 
-        const startCoords = rideMap?.startLocation ?? null;
-        const endCoords = rideMap?.endLocation ?? null;
+        // ── Map initialization for create form ──
+        function initMap() {
+          if (typeof L === "undefined" || isDriver) return;
 
-        try {
-          const newReq = db.createRideRequest({
-            startLocation,
-            endLocation,
-            departureTime,
-            startLat: startCoords?.lat ?? null,
-            startLng: startCoords?.lng ?? null,
-            endLat: endCoords?.lat ?? null,
-            endLng: endCoords?.lng ?? null,
+          rideMap = new RideMap("map", {
+            onLocationSelected: (mode, location) => {
+              reqStartInput.classList.remove("map-select-active");
+              reqEndInput.classList.remove("map-select-active");
+              updatePricePreview();
+            },
+          });
+        }
+
+        const reqStartInput = document.getElementById("reqStartLocation");
+        const reqEndInput = document.getElementById("reqEndLocation");
+        const mapClickHint = document.getElementById("mapClickHint");
+        const mapClickHintText = document.getElementById("mapClickHintText");
+
+        if (!isDriver) {
+          reqStartInput?.addEventListener("focus", () => {
+            if (!rideMap) return;
+            reqEndInput.classList.remove("map-select-active");
+            reqStartInput.classList.add("map-select-active");
+            rideMap.enableClickToSelect(
+              "start",
+              reqStartInput,
+              mapClickHint,
+              mapClickHintText,
+            );
           });
 
-          document.getElementById('requestSuccessMsg').textContent =
-            `"${startLocation} → ${endLocation}" ခရီးစဉ် Request ကို အောင်မြင်စွာ ပို့ပြီးပါပြီ။ ယာဉ်မောင်း လက်ခံသည်နှင့် အကြောင်းကြားပါမည်။`;
-          document.getElementById('requestSuccessModal').style.display = 'flex';
-
-          document.getElementById('createRequestForm').reset();
-          if (depInput) depInput.value = tomorrow.toISOString().slice(0, 16);
-          if (rideMap) rideMap.clearAll();
-          document.getElementById('reqPricePreview').style.display = 'none';
-
-          renderAllRequests();
-          renderMyRequests();
-        } catch (err) {
-          alert('❌ ' + err.message);
-        }
-      });
-
-      // ── Initialize everything ──
-      renderAllRequests();
-      renderMyRequests();
-      loadNotifications();
-      initMap();
-
-      // ── Pre-fill from URL params (e.g. coming from find-ride no-results) ──
-      if (!isDriver) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const prefillStart = urlParams.get('start');
-        const prefillEnd = urlParams.get('end');
-        if (prefillStart || prefillEnd) {
-          // Switch to create tab
-          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-          document.querySelector('[data-tab="create-request"]').classList.add('active');
-          document.getElementById('tab-create-request').classList.add('active');
-          // Pre-fill inputs
-          if (prefillStart) document.getElementById('reqStartLocation').value = prefillStart;
-          if (prefillEnd) document.getElementById('reqEndLocation').value = prefillEnd;
-        }
-      }
-
-      // Logout
-      document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        logout();
-      });
-
-    }
-  </script>
-  <script>
-    // Mobile hamburger menu toggle
-    (function () {
-      const btn = document.getElementById('mobileMenuBtn');
-      const nav = document.querySelector('.nav-links');
-      if (btn && nav) {
-        btn.addEventListener('click', function () {
-          nav.classList.toggle('active');
-          btn.classList.toggle('active');
-        });
-        nav.querySelectorAll('a').forEach(function (link) {
-          link.addEventListener('click', function () {
-            nav.classList.remove('active');
-            btn.classList.remove('active');
+          reqEndInput?.addEventListener("focus", () => {
+            if (!rideMap) return;
+            reqStartInput.classList.remove("map-select-active");
+            reqEndInput.classList.add("map-select-active");
+            rideMap.enableClickToSelect(
+              "end",
+              reqEndInput,
+              mapClickHint,
+              mapClickHintText,
+            );
           });
+        }
+
+        // Current location button
+        document
+          .getElementById("getCurrentLocation")
+          ?.addEventListener("click", async (e) => {
+            e.preventDefault();
+            if (!rideMap) return;
+            const btn = e.currentTarget;
+            btn.textContent = "⏳ ရှာဖွေနေသည်...";
+            btn.disabled = true;
+            try {
+              const pos = await rideMap.getCurrentLocation();
+              const address = await rideMap._reverseGeocode(pos.lat, pos.lng);
+              const displayAddr =
+                address || `${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)}`;
+              rideMap.setStartLocation(pos.lat, pos.lng, displayAddr);
+              reqStartInput.value = displayAddr;
+              btn.textContent = "✅ တည်နေရာရပြီ";
+              setTimeout(() => {
+                btn.textContent = "📍 လက်ရှိတည်နေရာ";
+                btn.disabled = false;
+              }, 2000);
+            } catch {
+              btn.textContent = "❌ ရှာမတွေ့ပါ";
+              setTimeout(() => {
+                btn.textContent = "📍 လက်ရှိတည်နေရာ";
+                btn.disabled = false;
+              }, 2000);
+            }
+          });
+
+        // Price preview
+        function updatePricePreview() {
+          const preview = document.getElementById("reqPricePreview");
+          if (!rideMap || !rideMap.startLocation || !rideMap.endLocation) {
+            preview.style.display = "none";
+            return;
+          }
+          const result = priceMatcher.calculatePriceFromCoords(
+            rideMap.startLocation.lat,
+            rideMap.startLocation.lng,
+            rideMap.endLocation.lat,
+            rideMap.endLocation.lng,
+          );
+          document.getElementById("reqEstPrice").textContent =
+            result.price.toLocaleString() + " ကျပ်";
+          document.getElementById("reqDistNote").textContent =
+            `📏 ${result.distanceKm} km ခရီးစဉ်`;
+          preview.style.display = "block";
+        }
+
+        // Default departure time
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(8, 30, 0, 0);
+        const depInput = document.getElementById("reqDepartureTime");
+        if (depInput) depInput.value = tomorrow.toISOString().slice(0, 16);
+
+        // ── Create request form submit ──
+        document
+          .getElementById("createRequestForm")
+          ?.addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            const startLocation = reqStartInput.value.trim();
+            const endLocation = reqEndInput.value.trim();
+            const departureTime =
+              document.getElementById("reqDepartureTime").value;
+
+            if (!startLocation || !endLocation || !departureTime) {
+              alert("ကျေးဇူးပြု၍ လိုအပ်သော အချက်များ ဖြည့်ပါ။");
+              return;
+            }
+
+            const startCoords = rideMap?.startLocation ?? null;
+            const endCoords = rideMap?.endLocation ?? null;
+
+            try {
+              const newReq = db.createRideRequest({
+                startLocation,
+                endLocation,
+                departureTime,
+                startLat: startCoords?.lat ?? null,
+                startLng: startCoords?.lng ?? null,
+                endLat: endCoords?.lat ?? null,
+                endLng: endCoords?.lng ?? null,
+              });
+
+              document.getElementById("requestSuccessMsg").textContent =
+                `"${startLocation} → ${endLocation}" ခရီးစဉ် Request ကို အောင်မြင်စွာ ပို့ပြီးပါပြီ။ ယာဉ်မောင်း လက်ခံသည်နှင့် အကြောင်းကြားပါမည်။`;
+              document.getElementById("requestSuccessModal").style.display =
+                "flex";
+
+              document.getElementById("createRequestForm").reset();
+              if (depInput)
+                depInput.value = tomorrow.toISOString().slice(0, 16);
+              if (rideMap) rideMap.clearAll();
+              document.getElementById("reqPricePreview").style.display = "none";
+
+              renderAllRequests();
+              renderMyRequests();
+            } catch (err) {
+              alert("❌ " + err.message);
+            }
+          });
+
+        // ── Initialize everything ──
+        renderAllRequests();
+        renderMyRequests();
+        loadNotifications();
+        initMap();
+
+        // ── Pre-fill from URL params (e.g. coming from find-ride no-results) ──
+        if (!isDriver) {
+          const urlParams = new URLSearchParams(window.location.search);
+          const prefillStart = urlParams.get("start");
+          const prefillEnd = urlParams.get("end");
+          if (prefillStart || prefillEnd) {
+            // Switch to create tab
+            document
+              .querySelectorAll(".tab-btn")
+              .forEach((b) => b.classList.remove("active"));
+            document
+              .querySelectorAll(".tab-content")
+              .forEach((c) => c.classList.remove("active"));
+            document
+              .querySelector('[data-tab="create-request"]')
+              .classList.add("active");
+            document
+              .getElementById("tab-create-request")
+              .classList.add("active");
+            // Pre-fill inputs
+            if (prefillStart)
+              document.getElementById("reqStartLocation").value = prefillStart;
+            if (prefillEnd)
+              document.getElementById("reqEndLocation").value = prefillEnd;
+          }
+        }
+
+        // Logout
+        document.getElementById("logoutBtn")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          logout();
         });
       }
-    })();
-  </script>
-</body>
-
+    </script>
+    <script>
+      // Mobile hamburger menu toggle
+      (function () {
+        const btn = document.getElementById("mobileMenuBtn");
+        const nav = document.querySelector(".nav-links");
+        if (btn && nav) {
+          btn.addEventListener("click", function () {
+            nav.classList.toggle("active");
+            btn.classList.toggle("active");
+          });
+          nav.querySelectorAll("a").forEach(function (link) {
+            link.addEventListener("click", function () {
+              nav.classList.remove("active");
+              btn.classList.remove("active");
+            });
+          });
+        }
+      })();
+    </script>
+  </body>
 </html>
