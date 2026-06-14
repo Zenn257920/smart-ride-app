@@ -21,7 +21,7 @@ class DatabaseManager {
 
   // Bump this version string whenever sample data schema changes.
   // Forces re-seed in any browser that has an older version cached.
-  static get DATA_VERSION() { return 'v5-ride-requests'; }
+  static get DATA_VERSION() { return 'v6-price-breakdown'; }
 
   initDatabase() {
     const storedVersion = localStorage.getItem('smartride_data_version');
@@ -381,7 +381,13 @@ class DatabaseManager {
           estimatedPrice: null,
           status: "pending",
           joinedPassengers: [
-            { id: "u-7", name: "ကိုသန့်ဇင်", phone: "09112233445", joinedAt: new Date().toISOString() }
+            {
+              id: "u-7", name: "ကိုသန့်ဇင်", phone: "09112233445", joinedAt: new Date().toISOString(),
+              // Shorter trip: Thanlyin → Tamwe (joins partway)
+              startLocation: "Thanlyin (သန်လျင်)", endLocation: "Tamwe (တာမွေ)",
+              startLat: 16.7784, startLng: 96.2504,
+              endLat: 16.8333, endLng: 96.1649,
+            }
           ],
           acceptedDriverId: null,
           rejectedByDrivers: [],
@@ -417,7 +423,13 @@ class DatabaseManager {
           estimatedPrice: null,
           status: "pending",
           joinedPassengers: [
-            { id: "u-1", name: "Demo Passenger", phone: "09123456789", joinedAt: new Date().toISOString() }
+            {
+              id: "u-1", name: "Demo Passenger", phone: "09123456789", joinedAt: new Date().toISOString(),
+              // Shorter trip: Dagon → Yankin (shorter route than requester)
+              startLocation: "North Dagon (မြောက်ဒဂုံ)", endLocation: "Yankin (ရန်ကင်း)",
+              startLat: 16.9208, startLng: 96.2011,
+              endLat: 16.8438, endLng: 96.1783,
+            }
           ],
           acceptedDriverId: null,
           rejectedByDrivers: [],
@@ -425,7 +437,7 @@ class DatabaseManager {
         },
       ];
 
-      // Auto-calculate estimated prices for ride requests
+      // Auto-calculate estimated prices + fair price breakdown for ride requests
       sampleRideRequests.forEach(req => {
         if (req.startLat != null && req.endLat != null) {
           const result = priceMatcher.calculatePriceFromCoords(
@@ -437,7 +449,42 @@ class DatabaseManager {
           req.estimatedPrice = priceMatcher.DEFAULT_PRICE;
           req.distanceKm = 0;
         }
+        // Compute fair price breakdown for all passengers
+        _computeBreakdown(req, priceMatcher);
       });
+
+      // Helper: compute priceBreakdown for a request using fair proportional pricing
+      function _computeBreakdown(req, matcher) {
+        const allPassengers = [
+          { passengerId: req.passengerId, name: req.passengerName,
+            startLat: req.startLat, startLng: req.startLng,
+            endLat: req.endLat, endLng: req.endLng },
+          ...req.joinedPassengers.map(p => ({
+            passengerId: p.id, name: p.name,
+            startLat: p.startLat ?? req.startLat, startLng: p.startLng ?? req.startLng,
+            endLat: p.endLat ?? req.endLat, endLng: p.endLng ?? req.endLng,
+          }))
+        ];
+        const distances = allPassengers.map(p =>
+          p.startLat != null && p.endLat != null
+            ? matcher.calculateDistance(p.startLat, p.startLng, p.endLat, p.endLng)
+            : (req.distanceKm || 10)
+        );
+        const maxDist = Math.max(...distances);
+        const routePrice = matcher.calculateDistancePrice(maxDist);
+        const breakdowns = matcher.calculateFairPriceBreakdown(routePrice, distances);
+        req.priceBreakdown = allPassengers.map((p, i) => ({
+          passengerId: p.passengerId,
+          name: p.name,
+          distanceKm: Math.round(distances[i] * 10) / 10,
+          price: breakdowns[i].passengerPrice,
+          fareShare: breakdowns[i].fareShare,
+          driverBonus: breakdowns[i].driverBonusPerPassenger,
+          appFee: breakdowns[i].appCommissionPerPassenger,
+          weightPercent: breakdowns[i].weightPercent,
+        }));
+        req.totalRoutePrice = routePrice;
+      }
 
       localStorage.setItem("smartride_users", JSON.stringify(sampleUsers));
       localStorage.setItem("smartride_rides", JSON.stringify(sampleRides));
@@ -815,7 +862,17 @@ Do NOT include any text outside the JSON array.
     const startArea = findAreaKey(startLocation);
     const endArea = findAreaKey(endLocation);
 
-    const scored = availableRides.map((ride) => {
+    const scored = availableRides
+      .filter((ride) => {
+        // ── Hard time gate (15 min) — applied to ALL paths ──
+        // If either time is missing, allow through (no restriction).
+        if (departureTime && ride.departureTime) {
+          const diffMin = Math.abs(new Date(departureTime) - new Date(ride.departureTime)) / 60000;
+          if (diffMin > 15) return false; // absolute unmatch
+        }
+        return true;
+      })
+      .map((ride) => {
       // ── Attempt corridor matching if GPS coords exist ──
       if (
         passengerCoords &&
@@ -844,11 +901,8 @@ Do NOT include any text outside the JSON array.
       if (endArea && rideEndArea && endArea === rideEndArea) score += 45;
       else if (normalize(ride.endLocation).includes(endNorm) || endNorm.includes(normalize(ride.endLocation))) score += 35;
 
-      if (departureTime) {
-        const diffMin = Math.abs(new Date(departureTime) - new Date(ride.departureTime)) / 60000;
-        if (diffMin <= 30) score += 10;
-        else if (diffMin <= 60) score += 5;
-      }
+      // Time already gated above — add full bonus if time data exists
+      if (departureTime && ride.departureTime) score += 10;
 
       return { ...ride, matchScore: Math.min(score, 98), _usedCorridor: false };
     })
@@ -1348,6 +1402,18 @@ Do NOT include any text outside the JSON array.
       acceptedDriverId: null,
       rejectedByDrivers: [],
       createdAt: new Date().toISOString(),
+      // Initial solo price breakdown (1 passenger pays full fare)
+      priceBreakdown: [{
+        passengerId: user.id,
+        name: user.name || 'Passenger',
+        distanceKm,
+        price: estimatedPrice,
+        fareShare: estimatedPrice,
+        driverBonus: 0,
+        appFee: 0,
+        weightPercent: 100,
+      }],
+      totalRoutePrice: estimatedPrice,
     };
 
     requests.push(newRequest);
@@ -1355,8 +1421,58 @@ Do NOT include any text outside the JSON array.
     return newRequest;
   }
 
+  // ── Recalculate per-passenger price breakdown using fair proportional system ──
+  // Route price = based on the longest rider. Each passenger pays their km-weight × route price.
+  _recalculatePriceBreakdown(req) {
+    const allPassengers = [
+      {
+        passengerId: req.passengerId,
+        name: req.passengerName,
+        startLat: req.startLat,
+        startLng: req.startLng,
+        endLat: req.endLat,
+        endLng: req.endLng,
+      },
+      ...req.joinedPassengers.map(p => ({
+        passengerId: p.id,
+        name: p.name,
+        startLat: p.startLat ?? req.startLat,
+        startLng: p.startLng ?? req.startLng,
+        endLat: p.endLat ?? req.endLat,
+        endLng: p.endLng ?? req.endLng,
+      }))
+    ];
+
+    const distances = allPassengers.map(p =>
+      p.startLat != null && p.endLat != null
+        ? this._matcher.calculateDistance(p.startLat, p.startLng, p.endLat, p.endLng)
+        : (req.distanceKm || 10)
+    );
+
+    // Route price driven by the longest rider's distance
+    const maxDist = Math.max(...distances);
+    const routePrice = this._matcher.calculateDistancePrice(maxDist);
+    const breakdowns = this._matcher.calculateFairPriceBreakdown(routePrice, distances);
+
+    req.priceBreakdown = allPassengers.map((p, i) => ({
+      passengerId: p.passengerId,
+      name: p.name,
+      distanceKm: Math.round(distances[i] * 10) / 10,
+      price: breakdowns[i].passengerPrice,
+      fareShare: breakdowns[i].fareShare,
+      driverBonus: breakdowns[i].driverBonusPerPassenger,
+      appFee: breakdowns[i].appCommissionPerPassenger,
+      weightPercent: breakdowns[i].weightPercent,
+    }));
+    req.totalRoutePrice = routePrice;
+
+    // Keep estimatedPrice in sync with requester's current share
+    req.estimatedPrice = req.priceBreakdown[0]?.price ?? req.estimatedPrice;
+  }
+
   // ── Another passenger joins an existing request ──
-  joinRideRequest(requestId, passengerId) {
+  // locationData = { startLocation, endLocation, startLat, startLng, endLat, endLng } (their own route)
+  joinRideRequest(requestId, passengerId, locationData = {}) {
     const requests = this.getRideRequests();
     const idx = requests.findIndex(r => r.id === requestId);
     if (idx === -1) throw new Error('Ride Request ရှာမတွေ့ပါ။');
@@ -1370,12 +1486,48 @@ Do NOT include any text outside the JSON array.
     const passenger = users.find(u => u.id === passengerId);
     if (!passenger) throw new Error('User ရှာမတွေ့ပါ။');
 
+    // ── Corridor validation: joiner's route must align with the original request route ──
+    // Only validate when BOTH sides have GPS — text-only joins are allowed through.
+    const joinerHasGPS = locationData.startLat != null && locationData.endLat != null;
+    const requestHasGPS = req.startLat != null && req.endLat != null;
+
+    if (joinerHasGPS && requestHasGPS) {
+      const joinerRoute = {
+        startLat: locationData.startLat, startLng: locationData.startLng,
+        endLat:   locationData.endLat,   endLng:   locationData.endLng,
+        departureTime: req.departureTime,
+      };
+      const requestRoute = {
+        startLat: req.startLat, startLng: req.startLng,
+        endLat:   req.endLat,   endLng:   req.endLng,
+        departureTime: req.departureTime,
+      };
+      const corridorResult = this._matcher.isOnDriverCorridor(joinerRoute, requestRoute);
+      if (corridorResult === null) {
+        throw new Error(
+          '❌ သင်၏ ခရီးလမ်ကြောင်းသည် ဤ Request နှင့် မကိုက်ညိပါ။ ' +
+          '(စည့်လာမတူ / လမ်ကြောင်း Corridor မကျ) ' +
+          'ကိုယ်ခရီးနှင့် ကိုက်ညိသော Request ကို ရှာပါ။'
+        );
+      }
+    }
+
     req.joinedPassengers.push({
       id: passengerId,
       name: passenger.name,
       phone: passenger.phone || '',
       joinedAt: new Date().toISOString(),
+      // Store their own route coords for distance-based pricing
+      startLocation: locationData.startLocation || req.startLocation,
+      endLocation: locationData.endLocation || req.endLocation,
+      startLat: locationData.startLat ?? req.startLat,
+      startLng: locationData.startLng ?? req.startLng,
+      endLat: locationData.endLat ?? req.endLat,
+      endLng: locationData.endLng ?? req.endLng,
     });
+
+    // Recalculate fair price breakdown for all passengers
+    this._recalculatePriceBreakdown(req);
 
     localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
 
@@ -1399,6 +1551,8 @@ Do NOT include any text outside the JSON array.
     if (req.status !== 'pending') throw new Error('ဤ Request ကို ပြင်ဆင်၍ မရတော့ပါ။');
 
     req.joinedPassengers = req.joinedPassengers.filter(p => p.id !== passengerId);
+    // Recalculate prices now that someone left (remaining passengers pay more)
+    this._recalculatePriceBreakdown(req);
     localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
     return req;
   }

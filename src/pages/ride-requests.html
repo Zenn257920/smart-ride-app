@@ -783,6 +783,50 @@
       </div>
     </div>
 
+    <!-- Join Request Modal -->
+    <div id="joinModal" class="modal">
+      <div class="modal-content" style="max-width:520px; max-height:90vh; overflow-y:auto;">
+        <h3 style="color: var(--green); margin-bottom: 0.5rem">🤝 ခရီးစဉ်တွင် ပါဝင်မည်</h3>
+        <p style="font-size:0.8rem; color:var(--gray); margin-bottom:0.75rem; line-height:1.5;">
+          သင်၏ မိမိ Pickup နှင့် Dropoff နေရာ GPS ပါပြီးပါက လမ်ကြောင်း ကိုက်ညညိ မှသပြီး ပါဝင်လိမည်။
+        </p>
+        <!-- Map for GPS selection -->
+        <div style="margin-bottom:0.75rem; font-size:0.72rem; color:var(--green-dark); font-weight:600; padding:0.4rem 0.75rem; background:var(--green-light); border-radius:8px;">
+          🗺️ မြေပုံပေါ်တွင် နှင့်ပါက မိိမိမှတ် Pickup → Dropoff ရွေးပါက အလပ်သာ ကည့်မွေသား</div>
+        <div id="joinMap" style="height:200px; border-radius:12px; overflow:hidden; margin-bottom:0.75rem; border:1px solid var(--border-subtle);"></div>
+        <div class="input-group">
+          <label class="input-label">📍 Pickup နေရာ</label>
+          <input type="text" id="joinStartLocation" class="input-field" placeholder="e.g. သံလျင်, ဒဂုံ" required />
+        </div>
+        <div class="input-group">
+          <label class="input-label">🏁 Dropoff နေရာ</label>
+          <input type="text" id="joinEndLocation" class="input-field" placeholder="e.g. ဗဟန်း, ဆူးလေ" required />
+        </div>
+        <!-- Route validation status -->
+        <div id="joinRouteStatus" style="display:none; margin:0.5rem 0; padding:0.6rem 0.85rem; border-radius:10px; font-size:0.78rem; font-weight:600;"></div>
+        <!-- Price Preview -->
+        <div id="joinPricePreview" style="
+          margin: 0.5rem 0;
+          padding: 0.85rem;
+          border-radius: 12px;
+          background: linear-gradient(135deg, rgba(29,158,117,0.08), rgba(29,158,117,0.03));
+          border: 1px solid rgba(29,158,117,0.15);
+          display: none;
+        ">
+          <div style="font-size:0.68rem; color:var(--green-dark); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.5rem;">💰 သင်ပေးသင့်သောငွေ (ခန့်မှန်း)</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span id="joinDistNote" style="font-size:0.78rem; color:var(--gray);"></span>
+            <span id="joinEstPrice" style="font-family:var(--font-heading); font-size:1.3rem; font-weight:800; color:var(--green);"></span>
+          </div>
+          <div id="joinWeightNote" style="font-size:0.68rem; color:var(--gray); margin-top:0.2rem;"></div>
+        </div>
+        <div class="modal-actions">
+          <button id="confirmJoinBtn" class="btn-primary">🤝 ပါဝင်မည်</button>
+          <button onclick="document.getElementById('joinModal').style.display='none'; if(window._joinMap){window._joinMap.clearAll();}" class="btn-outline">မယ်တော့ဘူး</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Accept Confirmation Modal -->
     <div id="acceptModal" class="modal">
       <div class="modal-content">
@@ -795,17 +839,18 @@
             <strong id="acceptRoute">—</strong>
           </p>
           <p>
-            <span style="color: var(--gray)">ခရီးသည်များ:</span>
-            <span id="acceptPassengers">—</span>
-          </p>
-          <p>
             <span style="color: var(--gray)">ထွက်ခွာချိန်:</span>
             <span id="acceptTime">—</span>
           </p>
-          <p>
-            <span style="color: var(--gray)">ခန့်မှန်းခရီးစဉ်ခ:</span>
-            <strong id="acceptPrice" style="color: var(--green)">—</strong>
-          </p>
+          <!-- Per-passenger price breakdown table -->
+          <div id="acceptBreakdownWrap" style="margin-top:0.75rem; padding:0.85rem; background:var(--green-light); border-radius:12px; border:1px solid rgba(29,158,117,0.15);">
+            <div style="font-size:0.7rem; font-weight:700; color:var(--green-dark); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.6rem;">💰 ခရီးသည်အလိုက် ကျသင့်ငွေ</div>
+            <div id="acceptBreakdownTable"></div>
+            <div style="border-top:1px dashed rgba(29,158,117,0.25); margin-top:0.5rem; padding-top:0.5rem; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.78rem; font-weight:700; color:var(--green-dark);">🚗 ယာဉ်မောင်းရရှိမည်</span>
+              <span id="acceptDriverEarnings" style="font-family:var(--font-heading); font-size:1.1rem; font-weight:800; color:var(--amber);">—</span>
+            </div>
+          </div>
         </div>
         <p style="font-size: 0.78rem; color: var(--gray); margin-bottom: 1rem">
           ⚠️ လက်ခံပါက ခရီးစဉ်အသစ် ဖန်တီးပြီး ခရီးသည်များကို အကြောင်းကြားပါမည်။
@@ -994,22 +1039,34 @@
           });
           const totalPassengers = 1 + (req.joinedPassengers?.length || 0);
 
-          // Passenger pills
+          // Build per-passenger price rows (uses priceBreakdown if available)
+          const breakdown = req.priceBreakdown || [];
+          const getBreakdownFor = (pid) => breakdown.find(b => b.passengerId === pid);
+
+          // Requester pill
+          const reqBD = getBreakdownFor(req.passengerId);
           let passengerPills = `
           <div class="req-passenger-pill">
             <span class="avatar">${req.passengerName.charAt(0)}</span>
-            ${req.passengerName} <span style="font-size:0.6rem; color:var(--green); margin-left:2px;">(requester)</span>
+            <div>
+              <div>${req.passengerName} <span style="font-size:0.6rem; color:var(--green); margin-left:2px;">(requester)</span></div>
+              ${reqBD ? `<div style="font-size:0.65rem; color:var(--gray); margin-top:1px;">📏 ${reqBD.distanceKm} km &nbsp;·&nbsp; <span style="color:var(--green); font-weight:700;">💰 ${reqBD.price.toLocaleString()} ကျပ် (${reqBD.weightPercent}%)</span></div>` : ''}
+            </div>
           </div>`;
 
           if (req.joinedPassengers && req.joinedPassengers.length > 0) {
             passengerPills += req.joinedPassengers
-              .map(
-                (p) => `
+              .map((p) => {
+                const bd = getBreakdownFor(p.id);
+                return `
             <div class="req-passenger-pill">
               <span class="avatar">${p.name.charAt(0)}</span>
-              ${p.name}
-            </div>`,
-              )
+              <div>
+                <div>${p.name}</div>
+                ${bd ? `<div style="font-size:0.65rem; color:var(--gray); margin-top:1px;">📏 ${bd.distanceKm} km &nbsp;·&nbsp; <span style="color:var(--green); font-weight:700;">💰 ${bd.price.toLocaleString()} ကျပ် (${bd.weightPercent}%)</span></div>` : ''}
+              </div>
+            </div>`;
+              })
               .join("");
           }
 
@@ -1033,9 +1090,9 @@
               actions = `
               <button class="req-btn req-btn-leave" onclick="window.leaveRequest('${req.id}')">🚪 ထွက်မည်</button>`;
             } else {
-              // Other passenger — can join
+              // Other passenger — can join (opens modal to enter their own route)
               actions = `
-              <button class="req-btn req-btn-join" onclick="window.joinRequest('${req.id}')">🤝 ပါဝင်မည်</button>`;
+              <button class="req-btn req-btn-join" onclick="window.showJoinModal('${req.id}')">🤝 ပါဝင်မည်</button>`;
             }
           }
 
@@ -1065,7 +1122,10 @@
               <span>🕒 ${timeStr}</span>
               <span>👥 ${totalPassengers} ဦး</span>
               ${req.distanceKm ? `<span>📏 ${req.distanceKm} km</span>` : ""}
-              <span>💰 ${(req.estimatedPrice || 0).toLocaleString()} ကျပ်</span>
+              ${breakdown.length > 0
+                ? `<span style="color:var(--green); font-weight:600;">💰 ${breakdown.map(b => b.price.toLocaleString()).join(' + ')} ကျပ်</span>`
+                : `<span>💰 ${(req.estimatedPrice || 0).toLocaleString()} ကျပ်</span>`
+              }
             </div>
             <div style="font-size:0.7rem; color:var(--gray); font-weight:600; margin-bottom:0.35rem; text-transform:uppercase; letter-spacing:0.04em;">
               🧑‍🤝‍🧑 ခရီးသည်များ
@@ -1079,18 +1139,148 @@
 
         // ── Window actions ──
 
-        // Join a request
-        window.joinRequest = function (requestId) {
+        // ── Join Request: open modal, init mini-map, validate corridor, preview price ──
+        let pendingJoinRequestId = null;
+        let pendingJoinReq = null;    // the full request object for validation preview
+        window._joinMap = null;       // mini map instance inside join modal
+
+        window.showJoinModal = function(requestId) {
+          pendingJoinRequestId = requestId;
+          const requests = db.getRideRequests();
+          pendingJoinReq = requests.find(r => r.id === requestId);
+
+          // Reset UI
+          document.getElementById('joinStartLocation').value = '';
+          document.getElementById('joinEndLocation').value = '';
+          document.getElementById('joinPricePreview').style.display = 'none';
+          document.getElementById('joinRouteStatus').style.display = 'none';
+          document.getElementById('joinModal').style.display = 'flex';
+
+          // Init mini-map (must be after display:flex so Leaflet can measure size)
+          setTimeout(() => {
+            if (window._joinMap) {
+              window._joinMap.clearAll();
+            } else if (typeof L !== 'undefined') {
+              window._joinMap = new RideMap('joinMap', {
+                onLocationSelected: (mode) => {
+                  // Update input fields from map selection
+                  if (mode === 'start' && window._joinMap.startLocation) {
+                    document.getElementById('joinStartLocation').value =
+                      window._joinMap.startLocationName || `${window._joinMap.startLocation.lat.toFixed(4)}, ${window._joinMap.startLocation.lng.toFixed(4)}`;
+                  }
+                  if (mode === 'end' && window._joinMap.endLocation) {
+                    document.getElementById('joinEndLocation').value =
+                      window._joinMap.endLocationName || `${window._joinMap.endLocation.lat.toFixed(4)}, ${window._joinMap.endLocation.lng.toFixed(4)}`;
+                  }
+                  updateJoinPreview();
+                }
+              });
+            }
+            // Enable click-to-select: first click = start, second = end (toggle)
+            if (window._joinMap) {
+              const startInput = document.getElementById('joinStartLocation');
+              const endInput = document.getElementById('joinEndLocation');
+              window._joinMap.enableClickToSelect('start', startInput, null, null);
+            }
+          }, 100);
+        };
+
+        // Focus toggles map mode
+        document.getElementById('joinStartLocation')?.addEventListener('focus', () => {
+          if (window._joinMap) window._joinMap.enableClickToSelect('start', document.getElementById('joinStartLocation'), null, null);
+        });
+        document.getElementById('joinEndLocation')?.addEventListener('focus', () => {
+          if (window._joinMap) window._joinMap.enableClickToSelect('end', document.getElementById('joinEndLocation'), null, null);
+        });
+
+        // Live price + corridor preview
+        function updateJoinPreview() {
+          const jm = window._joinMap;
+          const statusEl = document.getElementById('joinRouteStatus');
+          const priceEl = document.getElementById('joinPricePreview');
+
+          if (!jm || !jm.startLocation || !jm.endLocation) {
+            priceEl.style.display = 'none';
+            statusEl.style.display = 'none';
+            return;
+          }
+
+          const jStartLat = jm.startLocation.lat, jStartLng = jm.startLocation.lng;
+          const jEndLat   = jm.endLocation.lat,   jEndLng   = jm.endLocation.lng;
+
+          // Corridor check against the original request
+          let corridorOk = true;
+          if (pendingJoinReq && pendingJoinReq.startLat != null) {
+            const joinerRoute  = { startLat: jStartLat, startLng: jStartLng, endLat: jEndLat, endLng: jEndLng, departureTime: pendingJoinReq.departureTime };
+            const requestRoute = { startLat: pendingJoinReq.startLat, startLng: pendingJoinReq.startLng, endLat: pendingJoinReq.endLat, endLng: pendingJoinReq.endLng, departureTime: pendingJoinReq.departureTime };
+            corridorOk = priceMatcher.isOnDriverCorridor(joinerRoute, requestRoute) !== null;
+          }
+
+          // Show corridor status badge
+          statusEl.style.display = 'block';
+          if (corridorOk) {
+            statusEl.style.background = 'rgba(16,185,129,0.1)';
+            statusEl.style.color = '#059669';
+            statusEl.style.border = '1px solid rgba(16,185,129,0.25)';
+            statusEl.textContent = '✅ လမ်ကြောင်း ကိုက်ညညိပါသည် — ပါဝင်လိမည်';
+          } else {
+            statusEl.style.background = 'rgba(239,68,68,0.08)';
+            statusEl.style.color = '#dc2626';
+            statusEl.style.border = '1px solid rgba(239,68,68,0.2)';
+            statusEl.textContent = '❌ လမ်ကြောင်း မကိုက်ညညိပါ — အခြာစည့်လာ သွားလားသွား မကိုက်ညညိပါ။';
+          }
+
+          // Live distance-based price preview
+          const myDist = priceMatcher.calculateDistance(jStartLat, jStartLng, jEndLat, jEndLng);
+          const existingDists = (pendingJoinReq?.priceBreakdown || []).map(b => b.distanceKm);
+          const allDists = [...existingDists, myDist];
+          const maxDist = Math.max(...allDists);
+          const routePrice = priceMatcher.calculateDistancePrice(maxDist);
+          const breakdowns = priceMatcher.calculateFairPriceBreakdown(routePrice, allDists);
+          const myBreakdown = breakdowns[breakdowns.length - 1];
+
+          document.getElementById('joinDistNote').textContent = `📏 ${Math.round(myDist * 10) / 10} km (${myBreakdown.weightPercent}%)`;
+          document.getElementById('joinEstPrice').textContent = myBreakdown.passengerPrice.toLocaleString() + ' ကျပ်';
+          document.getElementById('joinWeightNote').textContent = `ခရီးသည် ${existingDists.length + 1} ဦးနှင့် ကျသင့်ငွေ`;
+          priceEl.style.display = 'block';
+        }
+
+        // Text input change also triggers preview (text-only, no GPS)
+        ['joinStartLocation','joinEndLocation'].forEach(id => {
+          document.getElementById(id)?.addEventListener('input', () => updateJoinPreview());
+        });
+
+        // Confirm join
+        document.getElementById('confirmJoinBtn').addEventListener('click', () => {
+          if (!pendingJoinRequestId) return;
+          const startLoc = document.getElementById('joinStartLocation').value.trim();
+          const endLoc   = document.getElementById('joinEndLocation').value.trim();
+          if (!startLoc || !endLoc) { alert('ကျေးဇူးပြု၍ Pickup နှင့် Dropoff နေရာ ဖြည့်ပါ'); return; }
+          const jm = window._joinMap;
           try {
-            db.joinRideRequest(requestId, user.id);
+            db.joinRideRequest(pendingJoinRequestId, user.id, {
+              startLocation: startLoc,
+              endLocation: endLoc,
+              startLat: jm?.startLocation?.lat ?? null,
+              startLng: jm?.startLocation?.lng ?? null,
+              endLat:   jm?.endLocation?.lat   ?? null,
+              endLng:   jm?.endLocation?.lng   ?? null,
+            });
+            document.getElementById('joinModal').style.display = 'none';
+            if (jm) jm.clearAll();
+            pendingJoinRequestId = null;
+            pendingJoinReq = null;
             renderAllRequests();
             renderMyRequests();
             loadNotifications();
-            showToast("🤝 Request တွင် ပါဝင်ပြီးပါပြီ!");
+            showToast('🤝 Request တွင် ပါဝင်ပြီးပါပြီ!');
           } catch (err) {
-            alert("❌ " + err.message);
+            alert('❌ ' + err.message);
           }
-        };
+        });
+
+        // Alias: direct join opens modal
+        window.joinRequest = function(requestId) { window.showJoinModal(requestId); };
 
         // Leave a request
         window.leaveRequest = function (requestId) {
@@ -1128,7 +1318,7 @@
           }
         };
 
-        // Show accept confirmation modal
+        // Show accept confirmation modal with per-passenger price breakdown
         let pendingAcceptId = null;
         window.showAcceptModal = function (requestId) {
           const requests = db.getRideRequests();
@@ -1138,12 +1328,6 @@
           pendingAcceptId = requestId;
           document.getElementById("acceptRoute").textContent =
             `${req.startLocation} → ${req.endLocation}`;
-          const allNames = [
-            req.passengerName,
-            ...(req.joinedPassengers || []).map((p) => p.name),
-          ];
-          document.getElementById("acceptPassengers").textContent =
-            allNames.join(", ") + ` (${allNames.length} ဦး)`;
           document.getElementById("acceptTime").textContent = new Date(
             req.departureTime,
           ).toLocaleString("my-MM", {
@@ -1152,8 +1336,39 @@
             month: "short",
             day: "numeric",
           });
-          document.getElementById("acceptPrice").textContent =
-            (req.estimatedPrice || 0).toLocaleString() + " ကျပ်";
+
+          // Build per-passenger breakdown table
+          const breakdown = req.priceBreakdown || [];
+          let tableHtml = '';
+          let totalDriverEarnings = 0;
+
+          if (breakdown.length > 0) {
+            breakdown.forEach(b => {
+              const driverBonus = b.driverBonus || 0;
+              totalDriverEarnings += b.fareShare + driverBonus;
+              tableHtml += `
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid rgba(29,158,117,0.08); font-size:0.78rem;">
+                <div>
+                  <span style="font-weight:600; color:var(--text-primary);">${b.name}</span>
+                  <span style="color:var(--gray); margin-left:0.4rem;">📏 ${b.distanceKm} km (${b.weightPercent}%)</span>
+                </div>
+                <span style="font-family:var(--font-heading); font-weight:700; color:var(--green);">${b.price.toLocaleString()} ကျပ်</span>
+              </div>`;
+            });
+          } else {
+            // Fallback if no breakdown
+            const allNames = [req.passengerName, ...(req.joinedPassengers||[]).map(p=>p.name)];
+            allNames.forEach(name => {
+              tableHtml += `<div style="display:flex; justify-content:space-between; font-size:0.78rem; padding:0.25rem 0;">
+                <span>${name}</span><span style="color:var(--green); font-weight:600;">${(req.estimatedPrice||0).toLocaleString()} ကျပ်</span></div>`;
+              totalDriverEarnings += req.estimatedPrice || 0;
+            });
+          }
+
+          const driverBonusTotal = Math.floor(totalDriverEarnings * 0.1);
+          document.getElementById('acceptBreakdownTable').innerHTML = tableHtml;
+          document.getElementById('acceptDriverEarnings').textContent =
+            (totalDriverEarnings + driverBonusTotal).toLocaleString() + ' ကျပ် (+ bonus)';
           document.getElementById("acceptModal").style.display = "flex";
         };
 

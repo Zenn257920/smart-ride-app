@@ -18,7 +18,7 @@ export class RouteMatcher {
     this.PICKUP_THRESHOLD_KM = 2.0; // How far passenger start can be from driver route
     this.DROPOFF_THRESHOLD_KM = 2.5; // How far passenger destination can be from driver route
     this.BEARING_MAX_DIFF_DEG = 65;  // Max angle difference to be considered "same direction"
-    this.TIME_WINDOW_MINUTES = 90;  // Acceptable departure time gap
+    this.TIME_WINDOW_MINUTES = 15;  // Hard limit: rides outside this window are an absolute unmatch
   }
 
   // ─── Haversine distance between two lat/lng points (km) ───
@@ -211,6 +211,9 @@ export class RouteMatcher {
   // ─── Composite match score (0–100) ───
   // Corridor check gates the match. Score reflects quality for ranking.
   calculateMatchScore(passenger, driver) {
+    // ── Hard time gate: >15 min difference = absolute unmatch ──
+    if (!this._isWithinTimeWindow(passenger.departureTime, driver.departureTime)) return 0;
+
     let score = 0;
 
     const corridorResult = this.isOnDriverCorridor(passenger, driver);
@@ -234,8 +237,8 @@ export class RouteMatcher {
       else if (corridorResult.dropoffDist < 2.0) score += 13;
       else score += 6;
 
-      // Time window (0–15 pts)
-      score += this._timeScore(passenger.departureTime, driver.departureTime, 15);
+      // Time is already validated above — add full time bonus points
+      score += 15;
 
     } else {
       // ── Fallback: no coordinates — use straight-line point matching ──
@@ -261,20 +264,19 @@ export class RouteMatcher {
       else if (endDist < 3) score += 28;
       else if (endDist < 5) score += 14;
 
-      score += this._timeScore(passenger.departureTime, driver.departureTime, 20);
+      // Time is already validated above — add full time bonus points
+      score += 20;
     }
 
     return Math.min(100, score);
   }
 
-  _timeScore(userTime, rideTime, maxPts) {
-    if (!userTime || !rideTime) return 0;
+  // ─── Hard time gate: returns false if departure times differ by more than 15 minutes ───
+  // If either time is missing, we allow the match (no time data = no restriction).
+  _isWithinTimeWindow(userTime, rideTime) {
+    if (!userTime || !rideTime) return true;
     const diffMin = Math.abs(new Date(userTime) - new Date(rideTime)) / 60000;
-    if (diffMin <= 15) return maxPts;
-    if (diffMin <= 30) return Math.round(maxPts * 0.75);
-    if (diffMin <= 60) return Math.round(maxPts * 0.5);
-    if (diffMin <= 120) return Math.round(maxPts * 0.2);
-    return 0;
+    return diffMin <= this.TIME_WINDOW_MINUTES;
   }
 
   // ─── Find the best matching rides for a passenger request ───
@@ -285,8 +287,10 @@ export class RouteMatcher {
         score: this.calculateMatchScore(userRequest, ride),
         corridorPassed: this.isOnDriverCorridor(userRequest, ride) !== null,
       }))
-      // Must pass corridor check (if coords available) AND score > 30
+      // Must pass time window (hard gate), corridor check (if coords available), AND score > 30
       .filter(({ ride, score, corridorPassed }) => {
+        // Hard time gate: reject if departure times differ by more than 15 minutes
+        if (!this._isWithinTimeWindow(userRequest.departureTime, ride.departureTime)) return false;
         const hasCoords = ride.startLat != null && userRequest.startLat != null;
         if (hasCoords && !corridorPassed) return false; // Strict gate when coords exist
         return score > 30;
