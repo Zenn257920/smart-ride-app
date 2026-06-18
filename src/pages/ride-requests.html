@@ -669,8 +669,32 @@
                     id="reqDistNote"
                   ></div>
                 </div>
+                <!-- Wallet Balance + Payment Info -->
+                <div id="reqWalletInfo" style="
+                  margin-bottom: 1rem;
+                  padding: 0.6rem 0.85rem;
+                  border-radius: 10px;
+                  background: rgba(59,130,246,0.06);
+                  border: 1px solid rgba(59,130,246,0.12);
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                ">
+                  <span style="font-size:0.75rem; color:var(--gray);">💳 Wallet လက်ကျန်</span>
+                  <span id="reqWalletBalance" style="font-family:var(--font-heading); font-size:1rem; font-weight:700; color:#2563eb;">—</span>
+                </div>
+                <div id="reqPaymentNote" style="
+                  margin-bottom: 0.8rem;
+                  padding: 0.5rem 0.75rem;
+                  border-radius: 8px;
+                  background: rgba(245,158,11,0.08);
+                  border: 1px solid rgba(245,158,11,0.15);
+                  font-size: 0.72rem;
+                  color: #d97706;
+                  display: none;
+                ">⚠️ Request ပို့လိုက်ပါက Wallet မှ ကြိုတင်ဖြတ်ယူပါမည်။ မစီးဖြစ်ပါက 3 နာရီအလိုတွင် Cancel လုပ်၍ ငွေပြန်ရနိုင်ပါသည်။</div>
                 <button type="submit" class="btn-primary" style="width: 100%">
-                  🙋 Request ပို့မည်
+                  💳 Wallet ဖြင့် Request ပို့မည်
                 </button>
               </form>
             </div>
@@ -888,6 +912,11 @@
         let rideMap;
         const priceMatcher = new RouteMatcher();
 
+        // Initialize wallet balance display
+        const _walBalEl = document.getElementById('reqWalletBalance');
+        if (_walBalEl && user) {
+          _walBalEl.textContent = (user.balance || 0).toLocaleString() + ' ကျပ်';
+        }
         // ── Tab switching ──
         document.querySelectorAll(".tab-btn").forEach((btn) => {
           btn.addEventListener("click", () => {
@@ -1111,6 +1140,23 @@
             }
           }
 
+          // Payment status badge
+          let paymentBadge = '';
+          if (req.status === 'pending' || req.status === 'accepted') {
+            const totalPaid = (req.priceBreakdown || []).reduce((s, b) => s + (b.paidAmount || 0), 0);
+            if (totalPaid > 0) {
+              paymentBadge = `
+              <div style="margin-top:0.4rem; padding:0.35rem 0.7rem; border-radius:8px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.12); display:inline-flex; align-items:center; gap:0.3rem;">
+                <span style="font-size:0.68rem; color:#059669; font-weight:600;">💳 ပေးချေပြီး ${totalPaid.toLocaleString()} ကျပ်</span>
+              </div>`;
+            }
+          } else if (req.status === 'cancelled' && req.totalRefunded) {
+            paymentBadge = `
+            <div style="margin-top:0.4rem; padding:0.35rem 0.7rem; border-radius:8px; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.12); display:inline-flex; align-items:center; gap:0.3rem;">
+              <span style="font-size:0.68rem; color:#2563eb; font-weight:600;">💰 ပြန်အမ်းပြီး ${req.totalRefunded.toLocaleString()} ကျပ်</span>
+            </div>`;
+          }
+
           return `
           <div class="req-card ${req.status} animate-fade-in-up">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.6rem;">
@@ -1131,6 +1177,7 @@
               🧑‍🤝‍🧑 ခရီးသည်များ
             </div>
             <div class="req-passengers-row">${passengerPills}</div>
+            ${paymentBadge}
             ${acceptedInfo}
             ${actions ? `<div class="req-actions">${actions}</div>` : ""}
           </div>
@@ -1381,7 +1428,7 @@
           if (!startLoc || !endLoc) { alert('ကျေးဇူးပြု၍ Pickup နှင့် Dropoff နေရာ ဖြည့်ပါ'); return; }
           const jm = window._joinMap;
           try {
-            db.joinRideRequest(pendingJoinRequestId, user.id, {
+            const updatedReq = db.joinRideRequest(pendingJoinRequestId, user.id, {
               startLocation: startLoc,
               endLocation: endLoc,
               startLat: jm?.startLocation?.lat ?? null,
@@ -1391,12 +1438,19 @@
             });
             document.getElementById('joinModal').style.display = 'none';
             if (jm) jm.clearAll();
+            // Find how much was deducted
+            const myBD = (updatedReq.priceBreakdown || []).find(b => b.passengerId === user.id);
+            const deducted = myBD ? (myBD.paidAmount || myBD.price || 0) : 0;
             pendingJoinRequestId = null;
             pendingJoinReq = null;
             renderAllRequests();
             renderMyRequests();
             loadNotifications();
-            showToast('🤝 Request တွင် ပါဝင်ပြီးပါပြီ!');
+            // Update wallet balance display
+            const freshUser = getCurrentUser();
+            const wBal = document.getElementById('reqWalletBalance');
+            if (wBal && freshUser) wBal.textContent = (freshUser.balance || 0).toLocaleString() + ' ကျပ်';
+            showToast(`🤝 ပါဝင်ပြီး! 💳 ${deducted.toLocaleString()} ကျပ် Wallet မှ ဖြတ်ယူပြီး`);
           } catch (err) {
             alert('❌ ' + err.message);
           }
@@ -1407,11 +1461,20 @@
 
         // Leave a request
         window.leaveRequest = function (requestId) {
+          const requests = db.getRideRequests();
+          const req = requests.find(r => r.id === requestId);
+          const myBD = req ? (req.priceBreakdown || []).find(b => b.passengerId === user.id) : null;
+          const refundAmt = myBD ? (myBD.paidAmount || myBD.price || 0) : 0;
+          if (!confirm(`Request မှ ထွက်ခွာမှာ သေချာပါသလား?\n\n💰 ပြန်အမ်းမည့်ငွေ: ${refundAmt.toLocaleString()} ကျပ်`)) return;
           try {
             db.leaveRideRequest(requestId, user.id);
             renderAllRequests();
             renderMyRequests();
-            showToast("🚪 Request မှ ထွက်ပြီးပါပြီ");
+            // Update wallet balance
+            const freshUser = getCurrentUser();
+            const wBal = document.getElementById('reqWalletBalance');
+            if (wBal && freshUser) wBal.textContent = (freshUser.balance || 0).toLocaleString() + ' ကျပ်';
+            showToast(`💰 ထွက်ခွာပြီး ${refundAmt.toLocaleString()} ကျပ် ပြန်အမ်းပြီး`);
           } catch (err) {
             alert("❌ " + err.message);
           }
@@ -1430,14 +1493,29 @@
 
         // Cancel own request
         window.cancelRequest = function (requestId) {
-          if (!confirm("ဤ Request ကို ပယ်ဖျက်မှာ သေချာပါသလား?")) return;
+          const requests = db.getRideRequests();
+          const req = requests.find(r => r.id === requestId);
+          if (!req) return;
+
+          // Check 3-hour policy before confirming
+          const depDate = new Date(req.departureTime);
+          const hoursLeft = (depDate - new Date()) / (1000 * 60 * 60);
+
+          if (hoursLeft < 3) {
+            alert(`⏰ ထွက်ခွာမည့်အချိန် ${Math.round(hoursLeft * 10) / 10} နာရီသာ ကျန်တော့သဖြင့် Cancel မရတော့ပါ။\n(3 နာရီ အလိုမှ Cancel နိုင်ပါသည်)`);
+            return;
+          }
+
+          // Show refund info in confirm
+          const totalRefund = (req.priceBreakdown || []).reduce((sum, b) => sum + (b.paidAmount || b.price || 0), 0);
+          if (!confirm(`ဤ Request ကို ပယ်ဖျက်မှာ သေချာပါသလား?\n\n💰 ပြန်အမ်းမည့်ငွေ: ${totalRefund.toLocaleString()} ကျပ်\n(ခရီးသည် ${(req.joinedPassengers||[]).length + 1} ဦးစလုံးကို ပြန်အမ်းမည်)`)) return;
           try {
             db.cancelRideRequest(requestId, user.id);
             renderAllRequests();
             renderMyRequests();
-            showToast("❌ Request ပယ်ဖျက်ပြီးပါပြီ");
+            showToast(`💰 Request ပယ်ဖျက်ပြီး ${totalRefund.toLocaleString()} ကျပ် ပြန်အမ်းပြီး`);
           } catch (err) {
-            alert("❌ " + err.message);
+            alert('❌ ' + err.message);
           }
         };
 
@@ -1627,6 +1705,18 @@
           document.getElementById("reqDistNote").textContent =
             `📏 ${result.distanceKm} km ခရီးစဉ်`;
           preview.style.display = "block";
+          // Show payment note when price is visible
+          document.getElementById('reqPaymentNote').style.display = 'block';
+          // Check if wallet balance is sufficient
+          const curUser = getCurrentUser();
+          const bal = curUser?.balance || 0;
+          const walBalEl = document.getElementById('reqWalletBalance');
+          if (walBalEl) walBalEl.textContent = bal.toLocaleString() + ' ကျပ်';
+          if (bal < result.price) {
+            walBalEl.style.color = '#dc2626'; // red
+          } else {
+            walBalEl.style.color = '#2563eb'; // blue
+          }
         }
 
         // Default departure time
@@ -1666,8 +1756,15 @@
                 endLng: endCoords?.lng ?? null,
               });
 
+              // Update wallet balance display
+              const updatedUser = getCurrentUser();
+              const walletBalEl = document.getElementById('reqWalletBalance');
+              if (walletBalEl && updatedUser) {
+                walletBalEl.textContent = (updatedUser.balance || 0).toLocaleString() + ' ကျပ်';
+              }
+
               document.getElementById("requestSuccessMsg").textContent =
-                `"${startLocation} → ${endLocation}" ခရီးစဉ် Request ကို အောင်မြင်စွာ ပို့ပြီးပါပြီ။ ယာဉ်မောင်း လက်ခံသည်နှင့် အကြောင်းကြားပါမည်။`;
+                `"${startLocation} → ${endLocation}" ခရီးစဉ် Request အောင်မြင်ပါပြီ။ 💳 ${newReq.estimatedPrice.toLocaleString()} ကျပ် Wallet မှ ဖြတ်ယူပြီး။ ယာဉ်မောင်း လက်ခံသည်နှင့် အကြောင်းကြားပါမည်။`;
               document.getElementById("requestSuccessModal").style.display =
                 "flex";
 

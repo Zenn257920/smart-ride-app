@@ -482,6 +482,7 @@ class DatabaseManager {
           driverBonus: breakdowns[i].driverBonusPerPassenger,
           appFee: breakdowns[i].appCommissionPerPassenger,
           weightPercent: breakdowns[i].weightPercent,
+          paidAmount: breakdowns[i].passengerPrice, // mark as pre-paid
         }));
         req.totalRoutePrice = routePrice;
       }
@@ -1384,6 +1385,17 @@ Do NOT include any text outside the JSON array.
       estimatedPrice = this._matcher.DEFAULT_PRICE;
     }
 
+    // ── E-Wallet: Check sufficient balance & deduct upfront ──
+    const users = this.getUsers();
+    const userIdx = users.findIndex(u => u.id === user.id);
+    if (userIdx === -1) throw new Error('User ရှာမတွေ့ပါ။');
+    const currentBalance = users[userIdx].balance || 0;
+    if (currentBalance < estimatedPrice) {
+      throw new Error(
+        `💰 Wallet လက်ကျန်ငွေ မလုံလောက်ပါ။ လိုအပ်ငွေ: ${estimatedPrice.toLocaleString()} ကျပ် | လက်ကျန်: ${currentBalance.toLocaleString()} ကျပ်`
+      );
+    }
+
     const newRequest = {
       id: 'req-' + Math.random().toString(36).substr(2, 9),
       passengerId: user.id,
@@ -1413,9 +1425,17 @@ Do NOT include any text outside the JSON array.
         driverBonus: 0,
         appFee: 0,
         weightPercent: 100,
+        paidAmount: estimatedPrice,  // track actual amount deducted
       }],
       totalRoutePrice: estimatedPrice,
     };
+
+    // Deduct from wallet
+    this.updateBalance(
+      user.id,
+      -estimatedPrice,
+      `🚗 Ride Request: ${data.startLocation} → ${data.endLocation} (ကြိုတင်ပေးချေ)`
+    );
 
     requests.push(newRequest);
     localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
@@ -1540,6 +1560,9 @@ Do NOT include any text outside the JSON array.
       }
     }
 
+    // ── Save old breakdown to compute refund diffs ──
+    const oldBreakdown = (req.priceBreakdown || []).map(b => ({ ...b }));
+
     req.joinedPassengers.push({
       id: passengerId,
       name: passenger.name,
@@ -1556,6 +1579,57 @@ Do NOT include any text outside the JSON array.
 
     // Recalculate fair price breakdown for all passengers
     this._recalculatePriceBreakdown(req);
+
+    // ── E-Wallet: charge joiner & refund existing passengers ──
+    const newBreakdown = req.priceBreakdown || [];
+
+    // Find joiner's new share
+    const joinerBD = newBreakdown.find(b => b.passengerId === passengerId);
+    const joinerPrice = joinerBD ? joinerBD.price : 0;
+
+    // Check joiner has sufficient balance
+    if (joinerPrice > 0) {
+      const joinerBalance = passenger.balance || 0;
+      if (joinerBalance < joinerPrice) {
+        // Rollback: remove from joinedPassengers
+        req.joinedPassengers = req.joinedPassengers.filter(p => p.id !== passengerId);
+        this._recalculatePriceBreakdown(req);
+        throw new Error(
+          `💰 Wallet လက်ကျန်ငွေ မလုံလောက်ပါ။ လိုအပ်ငွေ: ${joinerPrice.toLocaleString()} ကျပ် | လက်ကျန်: ${joinerBalance.toLocaleString()} ကျပ်`
+        );
+      }
+
+      // Deduct from joiner's wallet
+      this.updateBalance(
+        passengerId,
+        -joinerPrice,
+        `🤝 Ride Join: ${req.startLocation} → ${req.endLocation} (ကြိုတင်ပေးချေ)`
+      );
+      if (joinerBD) joinerBD.paidAmount = joinerPrice;
+    }
+
+    // Refund difference to existing passengers (their share decreased)
+    for (const newBD of newBreakdown) {
+      if (newBD.passengerId === passengerId) continue; // skip joiner
+      const oldBD = oldBreakdown.find(b => b.passengerId === newBD.passengerId);
+      if (!oldBD) continue;
+      const previousPaid = oldBD.paidAmount || oldBD.price || 0;
+      const newPrice = newBD.price || 0;
+      const refundDiff = previousPaid - newPrice;
+      if (refundDiff > 0) {
+        this.updateBalance(
+          newBD.passengerId,
+          refundDiff,
+          `💰 ခရီးသည်အသစ် ပါဝင်သဖြင့် ငွေပြန်အမ်း: ${req.startLocation} → ${req.endLocation} (-${refundDiff.toLocaleString()} ကျပ်)`
+        );
+        this.addNotification(
+          newBD.passengerId,
+          `💰 ${passenger.name} ပါဝင်လာသဖြင့် သင်၏ ကျသင့်ငွေ ${previousPaid.toLocaleString()} → ${newPrice.toLocaleString()} ကျပ် သို့ ကျဆင်း၊ ${refundDiff.toLocaleString()} ကျပ် ပြန်အမ်းပြီး`,
+          'refund'
+        );
+      }
+      newBD.paidAmount = newPrice; // update tracked paid amount
+    }
 
     localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
 
@@ -1577,6 +1651,22 @@ Do NOT include any text outside the JSON array.
 
     const req = requests[idx];
     if (req.status !== 'pending') throw new Error('ဤ Request ကို ပြင်ဆင်၍ မရတော့ပါ။');
+
+    // ── E-Wallet: refund the leaving passenger ──
+    const leaverBD = (req.priceBreakdown || []).find(b => b.passengerId === passengerId);
+    const refundAmount = leaverBD ? (leaverBD.paidAmount || leaverBD.price || 0) : 0;
+    if (refundAmount > 0) {
+      this.updateBalance(
+        passengerId,
+        refundAmount,
+        `💰 Request ထွက်ခွာ ငွေပြန်အမ်း: ${req.startLocation} → ${req.endLocation}`
+      );
+      this.addNotification(
+        passengerId,
+        `💰 Request မှ ထွက်ခွာသဖြင့် ${refundAmount.toLocaleString()} ကျပ် ပြန်အမ်းပြီး`,
+        'refund'
+      );
+    }
 
     req.joinedPassengers = req.joinedPassengers.filter(p => p.id !== passengerId);
     // Recalculate prices now that someone left (remaining passengers pay more)
@@ -1679,17 +1769,46 @@ Do NOT include any text outside the JSON array.
     const req = requests[idx];
     if (req.passengerId !== passengerId) throw new Error('ဤ Request ကို ဖျက်သိမ်းခွင့် မရှိပါ။');
     if (req.status !== 'pending') throw new Error('ဤ Request ကို ဖျက်သိမ်း၍ မရတော့ပါ။');
+    if (req.status === 'accepted') throw new Error('Driver လက်ခံပြီးသဖြင့် ဖျက်သိမ်း၍ မရတော့ပါ။');
+
+    // ── 3-hour cancellation policy ──
+    const departureDate = new Date(req.departureTime);
+    const now = new Date();
+    const hoursUntilDeparture = (departureDate - now) / (1000 * 60 * 60);
+    if (hoursUntilDeparture < 3) {
+      throw new Error(
+        `⏰ ထွက်ခွာမည့်အချိန် ${Math.round(hoursUntilDeparture * 10) / 10} နာရီသာ ကျန်တော့သဖြင့် ဖျက်သိမ်း၍ မရတော့ပါ။ (3 နာရီ အလိုမှ ဖျက်သိမ်းနိုင်ပါသည်)`
+      );
+    }
+
+    // ── E-Wallet: refund ALL passengers ──
+    const allToRefund = (req.priceBreakdown || []);
+    let totalRefunded = 0;
+    allToRefund.forEach(bd => {
+      const refund = bd.paidAmount || bd.price || 0;
+      if (refund > 0) {
+        this.updateBalance(
+          bd.passengerId,
+          refund,
+          `💰 Request ပယ်ဖျက် ငွေပြန်အမ်း: ${req.startLocation} → ${req.endLocation}`
+        );
+        totalRefunded += refund;
+      }
+    });
 
     req.status = 'cancelled';
     req.cancelledAt = new Date().toISOString();
+    req.totalRefunded = totalRefunded;
     localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
 
-    // Notify joined passengers
+    // Notify joined passengers (with refund info)
     req.joinedPassengers.forEach(p => {
+      const pBD = allToRefund.find(b => b.passengerId === p.id);
+      const pRefund = pBD ? (pBD.paidAmount || pBD.price || 0) : 0;
       this.addNotification(
         p.id,
-        `"${req.startLocation} → ${req.endLocation}" ခရီးစဉ် Request ကို ${req.passengerName} မှ ပယ်ဖျက်ပါသည်။`,
-        'info'
+        `"${req.startLocation} → ${req.endLocation}" Request ပယ်ဖျက်ပြီး ${pRefund > 0 ? pRefund.toLocaleString() + ' ကျပ် ပြန်အမ်းပြီး' : ''}`,
+        'refund'
       );
     });
 
