@@ -38,5 +38,5 @@ function updateToggleIcon(theme) {
   }
 }
 
-// Auto-initialize on import
+
 initTheme();

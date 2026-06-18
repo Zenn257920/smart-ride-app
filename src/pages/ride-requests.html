@@ -1193,61 +1193,184 @@
           if (window._joinMap) window._joinMap.enableClickToSelect('end', document.getElementById('joinEndLocation'), null, null);
         });
 
-        // Live price + corridor preview
-        function updateJoinPreview() {
+        // Live price + corridor preview (GPS corridor check only — text alias matching removed)
+        // Logic: geocode joiner's typed text → get GPS coords → draw line from request start→end
+        //        → check joiner's start is within 2km of that line AND same direction → ✅ match
+        async function updateJoinPreview() {
           const jm = window._joinMap;
           const statusEl = document.getElementById('joinRouteStatus');
-          const priceEl = document.getElementById('joinPricePreview');
+          const priceEl  = document.getElementById('joinPricePreview');
+          const startText = document.getElementById('joinStartLocation').value.trim();
+          const endText   = document.getElementById('joinEndLocation').value.trim();
 
-          if (!jm || !jm.startLocation || !jm.endLocation) {
-            priceEl.style.display = 'none';
+          if (!startText || !endText) {
+            priceEl.style.display  = 'none';
             statusEl.style.display = 'none';
             return;
           }
 
-          const jStartLat = jm.startLocation.lat, jStartLng = jm.startLocation.lng;
-          const jEndLat   = jm.endLocation.lat,   jEndLng   = jm.endLocation.lng;
+          // ── Step 1: Resolve GPS coordinates ──
+          // Use cached coords only when the text hasn't changed (avoids stale map data)
+          let jStartLat = null, jStartLng = null, jEndLat = null, jEndLng = null;
 
-          // Corridor check against the original request
-          let corridorOk = true;
-          if (pendingJoinReq && pendingJoinReq.startLat != null) {
-            const joinerRoute  = { startLat: jStartLat, startLng: jStartLng, endLat: jEndLat, endLng: jEndLng, departureTime: pendingJoinReq.departureTime };
-            const requestRoute = { startLat: pendingJoinReq.startLat, startLng: pendingJoinReq.startLng, endLat: pendingJoinReq.endLat, endLng: pendingJoinReq.endLng, departureTime: pendingJoinReq.departureTime };
-            corridorOk = priceMatcher.isOnDriverCorridor(joinerRoute, requestRoute) !== null;
+          const cacheValid = jm &&
+            jm.startLocation && jm.endLocation &&
+            jm._geocodedStartText === startText &&
+            jm._geocodedEndText   === endText;
+
+          if (cacheValid) {
+            // Re-use previously geocoded result for this exact text
+            jStartLat = jm.startLocation.lat; jStartLng = jm.startLocation.lng;
+            jEndLat   = jm.endLocation.lat;   jEndLng   = jm.endLocation.lng;
+          } else if (jm) {
+            // Geocode the typed place names to GPS coordinates
+            statusEl.style.display = 'block';
+            statusEl.style.background = 'rgba(59,130,246,0.08)';
+            statusEl.style.color      = '#2563eb';
+            statusEl.style.border     = '1px solid rgba(59,130,246,0.2)';
+            statusEl.textContent      = '📍 GPS တည်နေရာ ရှာဖွေနေသည်...';
+            priceEl.style.display = 'none';
+
+            try {
+              const [sg, eg] = await Promise.all([
+                jm.geocodeAddress(startText),
+                jm.geocodeAddress(endText),
+              ]);
+
+              if (!sg || !eg) {
+                statusEl.style.background = 'rgba(239,68,68,0.08)';
+                statusEl.style.color      = '#dc2626';
+                statusEl.style.border     = '1px solid rgba(239,68,68,0.2)';
+                statusEl.textContent = !sg
+                  ? `❌ "${startText}" GPS မတွေ့ပါ — ပိုမိုအသေးစိတ် ထည့်ပါ`
+                  : `❌ "${endText}" GPS မတွေ့ပါ — ပိုမိုအသေးစိတ် ထည့်ပါ`;
+                return;
+              }
+
+              jStartLat = sg.lat; jStartLng = sg.lng;
+              jEndLat   = eg.lat; jEndLng   = eg.lng;
+
+              // Show joiner's route on the mini-map
+              jm.setStartLocation(jStartLat, jStartLng, startText);
+              jm.setEndLocation(jEndLat,   jEndLng,   endText);
+
+              // Cache: avoid re-geocoding if text hasn't changed
+              jm._geocodedStartText = startText;
+              jm._geocodedEndText   = endText;
+
+            } catch(geoErr) {
+              console.warn('Geocode error:', geoErr);
+              statusEl.style.display = 'none';
+              priceEl.style.display  = 'none';
+              return;
+            }
+          } else {
+            // Map not ready yet — wait for 100ms init
+            statusEl.style.display = 'none';
+            priceEl.style.display  = 'none';
+            return;
           }
 
-          // Show corridor status badge
+          // ── Step 2: Geometric corridor check ──
+          // Text-typed area names geocode to area CENTRES (not precise streets).
+          // Nominatim "Hledan" may be 3-4km from the stored GPS point — so we use
+          // a 5km tolerance for text input while still enforcing direction.
+          const TEXT_PICKUP_KM  = 5.0;  // tolerant threshold for area-level geocoding
+          const TEXT_DROPOFF_KM = 5.0;
+
+          let corridorOk   = false;
+          let pickupDist   = null;
+          let dropoffDist  = null;
+          let bearingDiff  = null;
+          let directionOk  = false;
+
+          if (pendingJoinReq && pendingJoinReq.startLat != null) {
+            // Bearing check: must travel in roughly the same direction
+            const jBearing = priceMatcher._bearing(jStartLat, jStartLng, jEndLat, jEndLng);
+            const rBearing = priceMatcher._bearing(
+              pendingJoinReq.startLat, pendingJoinReq.startLng,
+              pendingJoinReq.endLat,   pendingJoinReq.endLng
+            );
+            bearingDiff = priceMatcher._bearingDiff(jBearing, rBearing);
+            directionOk = bearingDiff <= priceMatcher.BEARING_MAX_DIFF_DEG;
+
+            if (directionOk) {
+              // Point-to-segment distances: joiner's start/end vs request's route line
+              const pu = priceMatcher._pointToSegment(
+                jStartLng, jStartLat,
+                pendingJoinReq.startLng, pendingJoinReq.startLat,
+                pendingJoinReq.endLng,   pendingJoinReq.endLat
+              );
+              const dr = priceMatcher._pointToSegment(
+                jEndLng, jEndLat,
+                pendingJoinReq.startLng, pendingJoinReq.startLat,
+                pendingJoinReq.endLng,   pendingJoinReq.endLat
+              );
+              pickupDist  = pu.distance;
+              dropoffDist = dr.distance;
+
+              // Direction check: joiner's pickup must come before dropoff along the route
+              const dirOk = pu.t < dr.t;
+
+              corridorOk = pickupDist  <= TEXT_PICKUP_KM &&
+                           dropoffDist <= TEXT_DROPOFF_KM &&
+                           dirOk;
+            }
+          } else {
+            corridorOk = true; // No stored GPS — allow join
+          }
+
+          // ── Step 3: Show result with actual distances ──
           statusEl.style.display = 'block';
           if (corridorOk) {
             statusEl.style.background = 'rgba(16,185,129,0.1)';
-            statusEl.style.color = '#059669';
-            statusEl.style.border = '1px solid rgba(16,185,129,0.25)';
-            statusEl.textContent = '✅ လမ်ကြောင်း ကိုက်ညညိပါသည် — ပါဝင်လိမည်';
+            statusEl.style.color      = '#059669';
+            statusEl.style.border     = '1px solid rgba(16,185,129,0.25)';
+            const pKm = pickupDist  != null ? `${Math.round(pickupDist  * 10) / 10} km` : '?';
+            const dKm = dropoffDist != null ? `${Math.round(dropoffDist * 10) / 10} km` : '?';
+            statusEl.textContent = `✅ လမ်ကြောင်း ကိုက်ညညိပါသည် — Pickup ${pKm} · Dropoff ${dKm} (လမ်ကြောင်းမှ)`;
           } else {
+            let reason;
+            if (!directionOk && bearingDiff != null) {
+              reason = `ဦးတည်ရာ မတူပါ — ${Math.round(bearingDiff)}° ကွာဟနေသည် (${priceMatcher.BEARING_MAX_DIFF_DEG}° ထက် မကျော်ရ)`;
+            } else if (pickupDist != null && dropoffDist != null) {
+              const pKm = Math.round(pickupDist  * 10) / 10;
+              const dKm = Math.round(dropoffDist * 10) / 10;
+              reason = `လမ်ကြောင်းမှ အကွာအဝေး — Pickup ${pKm} km · Dropoff ${dKm} km (${TEXT_PICKUP_KM} km အတွင်း မဝင်ပါ)`;
+            } else {
+              reason = 'လမ်ကြောင်း တိုက်ဆိုင်မှု မရှိပါ';
+            }
             statusEl.style.background = 'rgba(239,68,68,0.08)';
-            statusEl.style.color = '#dc2626';
-            statusEl.style.border = '1px solid rgba(239,68,68,0.2)';
-            statusEl.textContent = '❌ လမ်ကြောင်း မကိုက်ညညိပါ — အခြာစည့်လာ သွားလားသွား မကိုက်ညညိပါ။';
+            statusEl.style.color      = '#dc2626';
+            statusEl.style.border     = '1px solid rgba(239,68,68,0.2)';
+            statusEl.textContent      = `❌ ${reason}`;
           }
 
-          // Live distance-based price preview
+          // ── Step 4: Price preview (always show when GPS is available) ──
           const myDist = priceMatcher.calculateDistance(jStartLat, jStartLng, jEndLat, jEndLng);
           const existingDists = (pendingJoinReq?.priceBreakdown || []).map(b => b.distanceKm);
-          const allDists = [...existingDists, myDist];
-          const maxDist = Math.max(...allDists);
+          const allDists   = [...existingDists, myDist];
+          const maxDist    = Math.max(...allDists);
           const routePrice = priceMatcher.calculateDistancePrice(maxDist);
           const breakdowns = priceMatcher.calculateFairPriceBreakdown(routePrice, allDists);
-          const myBreakdown = breakdowns[breakdowns.length - 1];
+          const myBD       = breakdowns[breakdowns.length - 1];
 
-          document.getElementById('joinDistNote').textContent = `📏 ${Math.round(myDist * 10) / 10} km (${myBreakdown.weightPercent}%)`;
-          document.getElementById('joinEstPrice').textContent = myBreakdown.passengerPrice.toLocaleString() + ' ကျပ်';
+          document.getElementById('joinDistNote').textContent   = `📏 ${Math.round(myDist * 10) / 10} km (${myBD.weightPercent}%)`;
+          document.getElementById('joinEstPrice').textContent   = myBD.passengerPrice.toLocaleString() + ' ကျပ်';
           document.getElementById('joinWeightNote').textContent = `ခရီးသည် ${existingDists.length + 1} ဦးနှင့် ကျသင့်ငွေ`;
           priceEl.style.display = 'block';
         }
 
-        // Text input change also triggers preview (text-only, no GPS)
+        // Debounce helper so geocoding doesn't fire on every keystroke
+        let _joinPreviewTimer = null;
+        function debouncedUpdateJoinPreview() {
+          clearTimeout(_joinPreviewTimer);
+          _joinPreviewTimer = setTimeout(() => updateJoinPreview(), 600);
+        }
+
+        // Text input change triggers geocoded preview
         ['joinStartLocation','joinEndLocation'].forEach(id => {
-          document.getElementById(id)?.addEventListener('input', () => updateJoinPreview());
+          document.getElementById(id)?.addEventListener('input', () => debouncedUpdateJoinPreview());
         });
 
         // Confirm join

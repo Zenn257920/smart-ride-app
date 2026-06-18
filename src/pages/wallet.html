@@ -14,7 +14,7 @@
     })();
   </script>
   <style>
-    /* ── Payment Method Cards ── */
+    /* Payment Method Cards */
     .payment-methods {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -908,7 +908,7 @@
               <div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                   <span class="badge" style="background: ${tx.type === 'refund' ? '#dbeafe' : tx.amount > 0 ? "var(--green-light)" : "#fee2e2"}; color: ${tx.type === 'refund' ? '#2563eb' : tx.amount > 0 ? "var(--green)" : "#dc2626"};">
-                    ${tx.type === 'refund' ? "↩ ပြန်အမ်းငွေ" : tx.type === 'adjustment' ? "⚖️ ညှိနှိုင်းမှု" : tx.amount > 0 ? "➕ ငွေသွင်း" : "➖ ငွေထုတ်"}
+                    ${tx.type === 'refund' ? "↩ ပြန်အမ်းငွေ" : tx.type === 'adjustment' ? "⚖️ Adjust" : tx.amount > 0 ? "➕ ငွေသွင်း" : "➖ ငွေထုတ်"}
                   </span>
                   <span style="font-size: 0.7rem; color: var(--gray);">${new Date(tx.createdAt).toLocaleString()}</span>
                 </div>
@@ -924,7 +924,7 @@
           .join("");
       }
 
-      // ── Amount chip helpers ──
+      // Amount chip helpers
       window.setAmount = function (amount, type) {
         if (type === "topup") {
           document.getElementById("topupAmount").value = amount;
@@ -937,9 +937,9 @@
         });
       };
 
-      // ════════════════════════════════════
+      
       // TOPUP FLOW
-      // ════════════════════════════════════
+      
       function setTopupStepDots(step) {
         for (let i = 1; i <= 3; i++) {
           document.getElementById(`topup-dot-${i}`).classList.toggle("active", i <= step);
@@ -1039,9 +1039,8 @@
         showTopupStep(1);
       };
 
-      // ════════════════════════════════════
+    
       // WITHDRAW FLOW
-      // ════════════════════════════════════
       function setWdStepDots(step) {
         for (let i = 1; i <= 3; i++) {
           document.getElementById(`wd-dot-${i}`).classList.toggle("active", i <= step);
@@ -1172,6 +1171,25 @@
       loadTransactions();
     } // end auth guard
   </script>
+  <script>
+      // Mobile menu toggle
+      (function () {
+        const btn = document.getElementById("mobileMenuBtn");
+        const nav = document.querySelector(".nav-links");
+        if (btn && nav) {
+          btn.addEventListener("click", function () {
+            nav.classList.toggle("active");
+            btn.classList.toggle("active");
+          });
+          nav.querySelectorAll("a").forEach(function (link) {
+            link.addEventListener("click", function () {
+              nav.classList.remove("active");
+              btn.classList.remove("active");
+            });
+          });
+        }
+      })();
+    </script>
 </body>
 
 </html>

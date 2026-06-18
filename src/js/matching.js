@@ -4,7 +4,7 @@
 
 export class RouteMatcher {
   constructor() {
-    // ─── Distance-based pricing constants ───
+    // ─── Distance-based pricing constants
     this.BASE_FARE = 1500;        // Fixed starting charge (MMK)
     this.RATE_PER_KM = 500;       // Per-km charge (MMK)
     this.MIN_PRICE = 2000;        // Minimum ride price (MMK)
@@ -18,7 +18,7 @@ export class RouteMatcher {
     this.PICKUP_THRESHOLD_KM = 2.0; // How far passenger start can be from driver route
     this.DROPOFF_THRESHOLD_KM = 2.5; // How far passenger destination can be from driver route
     this.BEARING_MAX_DIFF_DEG = 65;  // Max angle difference to be considered "same direction"
-    this.TIME_WINDOW_MINUTES = 15;  // Hard limit: rides outside this window are an absolute unmatch
+    this.TIME_WINDOW_MINUTES = 120; // Limit: rides outside this window are an unmatch (2 hrs for geocoded text search)
   }
 
   // ─── Haversine distance between two lat/lng points (km) ───

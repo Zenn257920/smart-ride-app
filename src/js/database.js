@@ -864,11 +864,12 @@ Do NOT include any text outside the JSON array.
 
     const scored = availableRides
       .filter((ride) => {
-        // ── Hard time gate (15 min) — applied to ALL paths ──
-        // If either time is missing, allow through (no restriction).
+        // Time gate: corridor GPS match = 2 hr tolerance; text fallback = 90 min
         if (departureTime && ride.departureTime) {
           const diffMin = Math.abs(new Date(departureTime) - new Date(ride.departureTime)) / 60000;
-          if (diffMin > 15) return false; // absolute unmatch
+          const hasPassengerGPS = passengerCoords && passengerCoords.startLat != null;
+          const timeLimit = hasPassengerGPS ? 120 : 90; // minutes
+          if (diffMin > timeLimit) return false;
         }
         return true;
       })
@@ -1487,26 +1488,53 @@ Do NOT include any text outside the JSON array.
     if (!passenger) throw new Error('User ရှာမတွေ့ပါ။');
 
     // ── Corridor validation: joiner's route must align with the original request route ──
-    // Only validate when BOTH sides have GPS — text-only joins are allowed through.
+    // Uses 5km tolerance because text-geocoded area names (Nominatim) can be 3-4km
+    // from the precise GPS point stored in the database.
     const joinerHasGPS = locationData.startLat != null && locationData.endLat != null;
     const requestHasGPS = req.startLat != null && req.endLat != null;
 
     if (joinerHasGPS && requestHasGPS) {
-      const joinerRoute = {
-        startLat: locationData.startLat, startLng: locationData.startLng,
-        endLat:   locationData.endLat,   endLng:   locationData.endLng,
-        departureTime: req.departureTime,
-      };
-      const requestRoute = {
-        startLat: req.startLat, startLng: req.startLng,
-        endLat:   req.endLat,   endLng:   req.endLng,
-        departureTime: req.departureTime,
-      };
-      const corridorResult = this._matcher.isOnDriverCorridor(joinerRoute, requestRoute);
-      if (corridorResult === null) {
+      const JOIN_PICKUP_KM  = 5.0;  // tolerant threshold for area-level geocoding
+      const JOIN_DROPOFF_KM = 5.0;
+
+      // 1. Bearing check — must travel in roughly the same direction
+      const jBearing = this._matcher._bearing(
+        locationData.startLat, locationData.startLng,
+        locationData.endLat,   locationData.endLng
+      );
+      const rBearing = this._matcher._bearing(
+        req.startLat, req.startLng, req.endLat, req.endLng
+      );
+      const bearingDiff = this._matcher._bearingDiff(jBearing, rBearing);
+
+      if (bearingDiff > this._matcher.BEARING_MAX_DIFF_DEG) {
         throw new Error(
-          '❌ သင်၏ ခရီးလမ်ကြောင်းသည် ဤ Request နှင့် မကိုက်ညိပါ။ ' +
-          '(စည့်လာမတူ / လမ်ကြောင်း Corridor မကျ) ' +
+          `❌ ဦးတည်ရာ မတူပါ (${Math.round(bearingDiff)}° ကွာ)။ ` +
+          'ကိုယ်ခရီးနှင့် ကိုက်ညိသော Request ကို ရှာပါ။'
+        );
+      }
+
+      // 2. Point-to-segment distances: joiner's start/end vs request's route line
+      const pu = this._matcher._pointToSegment(
+        locationData.startLng, locationData.startLat,
+        req.startLng, req.startLat,
+        req.endLng,   req.endLat
+      );
+      const dr = this._matcher._pointToSegment(
+        locationData.endLng, locationData.endLat,
+        req.startLng, req.startLat,
+        req.endLng,   req.endLat
+      );
+
+      // 3. Direction order: pickup must come before dropoff along the route
+      const dirOk = pu.t < dr.t;
+
+      if (pu.distance > JOIN_PICKUP_KM || dr.distance > JOIN_DROPOFF_KM || !dirOk) {
+        const pKm = Math.round(pu.distance * 10) / 10;
+        const dKm = Math.round(dr.distance * 10) / 10;
+        throw new Error(
+          `❌ လမ်ကြောင်းမှ အကွာအဝေး — Pickup ${pKm} km · Dropoff ${dKm} km ` +
+          `(${JOIN_PICKUP_KM} km အတွင်း မဝင်ပါ)။ ` +
           'ကိုယ်ခရီးနှင့် ကိုက်ညိသော Request ကို ရှာပါ။'
         );
       }
