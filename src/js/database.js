@@ -1181,10 +1181,12 @@ Do NOT include any text outside the JSON array.
       "smartride_transactions",
       JSON.stringify(transactions),
     );
-    localStorage.setItem(
-      "smartride_currentUser",
-      JSON.stringify(users[passengerIndex]),
-    );
+    // Only refresh the session if the booking passenger IS the currently logged-in user.
+    // Avoid overwriting the session with another user's data (account switching bug).
+    const currentSession = this.getCurrentUser();
+    if (currentSession && currentSession.id === passengerId) {
+      localStorage.setItem("smartride_currentUser", JSON.stringify(users[passengerIndex]));
+    }
     return true;
   }
 
@@ -1210,7 +1212,12 @@ Do NOT include any text outside the JSON array.
       "smartride_transactions",
       JSON.stringify(transactions),
     );
-    localStorage.setItem("smartride_currentUser", JSON.stringify(users[index]));
+    // Only update the current session if it belongs to the same user.
+    // Do NOT overwrite the session with another user's data (causes account switching bug).
+    const currentSession = this.getCurrentUser();
+    if (currentSession && currentSession.id === userId) {
+      localStorage.setItem("smartride_currentUser", JSON.stringify(users[index]));
+    }
     return users[index].balance;
   }
 
