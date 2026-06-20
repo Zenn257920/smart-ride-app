@@ -11,6 +11,8 @@ export class RideMap {
     this.endLocation = null;
     this.routeLine = null;
     this.routeDecorator = null;
+    this.routeCoordinates = null; // Actual road polyline from OSRM [[lat,lng], ...]
+    this.routingControl = null; // Leaflet Routing Machine control
     this.selectMode = null; // 'start' | 'end' | null
     this.activeInput = null;
     this.hintElement = null;
@@ -147,18 +149,87 @@ export class RideMap {
     this._drawRoute();
   }
 
-  // ─── Draw animated route line between start and end ───
+  // ─── Draw route using Leaflet Routing Machine (real road routing) ───
   _drawRoute() {
     if (!this.startLocation || !this.endLocation) return;
 
+    // Remove previous routing control
+    if (this.routingControl) {
+      this.map.removeControl(this.routingControl);
+      this.routingControl = null;
+    }
+
+    // Remove old fallback polyline if any
     if (this.routeLine) {
       this.map.removeLayer(this.routeLine);
+      this.routeLine = null;
     }
+    if (this._shadowLine) {
+      this.map.removeLayer(this._shadowLine);
+      this._shadowLine = null;
+    }
+
+    const start = L.latLng(this.startLocation.lat, this.startLocation.lng);
+    const end = L.latLng(this.endLocation.lat, this.endLocation.lng);
+
+    // Check if Leaflet Routing Machine is available
+    if (typeof L.Routing === 'undefined') {
+      console.warn('Leaflet Routing Machine not loaded — falling back to straight line');
+      this._drawFallbackRoute();
+      return;
+    }
+
+    this.routingControl = L.Routing.control({
+      waypoints: [start, end],
+      routeWhileDragging: false,
+      addWaypoints: false,         // Prevent adding waypoints by clicking on route
+      draggableWaypoints: false,   // Prevent dragging waypoints
+      fitSelectedRoutes: true,
+      showAlternatives: false,
+      show: false,
+      createMarker: () => null,    // We use our own custom markers
+      lineOptions: {
+        styles: [
+          { color: '#1d9e75', opacity: 0.2, weight: 10 },   // Shadow/glow
+          { color: '#1d9e75', opacity: 0.85, weight: 5 },   // Main route
+        ],
+        addWaypoints: false,
+      },
+      router: L.Routing.osrmv1({
+        serviceUrl: 'https://router.project-osrm.org/route/v1',
+        language: 'my',  // Myanmar language for instructions
+      }),
+    }).addTo(this.map);
+
+    // Capture route polyline coordinates when route is found
+    this.routingControl.on('routesfound', (e) => {
+      if (e.routes && e.routes.length > 0) {
+        const route = e.routes[0];
+        // Store the full polyline as [[lat, lng], ...]
+        this.routeCoordinates = route.coordinates.map(c => [c.lat, c.lng]);
+        console.log(`✅ Route captured: ${this.routeCoordinates.length} points`);
+      }
+    });
+
+    // Handle routing errors — fall back to straight line
+    this.routingControl.on('routingerror', () => {
+      console.warn('Routing failed — falling back to straight line');
+      if (this.routingControl) {
+        this.map.removeControl(this.routingControl);
+        this.routingControl = null;
+      }
+      this.routeCoordinates = null;
+      this._drawFallbackRoute();
+    });
+  }
+
+  // ─── Fallback: draw a curved polyline when routing is unavailable ───
+  _drawFallbackRoute() {
+    if (!this.startLocation || !this.endLocation) return;
 
     const start = [this.startLocation.lat, this.startLocation.lng];
     const end = [this.endLocation.lat, this.endLocation.lng];
 
-    // Create a curved path with intermediate points
     const points = this._generateCurvePath(start, end);
 
     this.routeLine = L.polyline(points, {
@@ -172,8 +243,8 @@ export class RideMap {
       lineJoin: 'round',
     }).addTo(this.map);
 
-    // Add a subtle shadow line beneath
-    const shadowLine = L.polyline(points, {
+    // Shadow line
+    this._shadowLine = L.polyline(points, {
       color: '#1d9e75',
       weight: 8,
       opacity: 0.15,
@@ -181,10 +252,6 @@ export class RideMap {
       lineCap: 'round',
     }).addTo(this.map);
 
-    // Store shadow for cleanup
-    this._shadowLine = shadowLine;
-
-    // Animate dash offset
     this._animateRoute();
   }
 
@@ -263,8 +330,8 @@ export class RideMap {
     if (this.hintTextElement) {
       this.hintTextElement.textContent =
         mode === 'start'
-          ? '🟢 မြေပုံပေါ်တွင် ထွက်ခွာမည့်နေရာကို နှိပ်ပါ'
-          : '🔴 မြေပုံပေါ်တွင် ဦးတည်ရာနေရာကို နှိပ်ပါ';
+          ? '🟢 Select Start-Point'
+          : '🔴 Select End-Point';
     }
 
     // Change cursor
@@ -399,25 +466,61 @@ export class RideMap {
         </div>
       `);
 
-      // Route line
-      const points = this._generateCurvePath(
-        [startResult.lat, startResult.lng],
-        [endResult.lat, endResult.lng]
-      );
+      // Route line — use Routing Machine if available, otherwise fallback
+      if (typeof L.Routing !== 'undefined') {
+        const routingCtrl = L.Routing.control({
+          waypoints: [
+            L.latLng(startResult.lat, startResult.lng),
+            L.latLng(endResult.lat, endResult.lng),
+          ],
+          routeWhileDragging: false,
+          addWaypoints: false,
+          draggableWaypoints: false,
+          fitSelectedRoutes: false,  // Don't auto-fit for multi-ride
+          showAlternatives: false,
+          show: false,               // Hide the itinerary panel for multi-ride
+          createMarker: () => null,
+          lineOptions: {
+            styles: [
+              { color: routeColor, opacity: 0.2, weight: 8 },
+              { color: routeColor, opacity: 0.75, weight: 3.5 },
+            ],
+            addWaypoints: false,
+          },
+          router: L.Routing.osrmv1({
+            serviceUrl: 'https://router.project-osrm.org/route/v1',
+          }),
+        }).addTo(this.map);
 
-      const routeL = L.polyline(points, {
-        color: routeColor,
-        weight: 3.5,
-        opacity: 0.75,
-        dashArray: '10, 6',
-        smoothFactor: 1.5,
-        lineCap: 'round',
-      }).addTo(this.map);
+        // Hide the itinerary container that gets auto-created
+        routingCtrl.on('routesfound', () => {
+          const container = routingCtrl.getContainer();
+          if (container) container.style.display = 'none';
+        });
+
+        this.rideRoutes.push(routingCtrl);
+      } else {
+        // Fallback to curved polyline
+        const points = this._generateCurvePath(
+          [startResult.lat, startResult.lng],
+          [endResult.lat, endResult.lng]
+        );
+
+        const routeL = L.polyline(points, {
+          color: routeColor,
+          weight: 3.5,
+          opacity: 0.75,
+          dashArray: '10, 6',
+          smoothFactor: 1.5,
+          lineCap: 'round',
+        }).addTo(this.map);
+
+        this.rideRoutes.push(routeL);
+      }
 
       this.rideMarkers.push(startM, endM);
-      this.rideRoutes.push(routeL);
 
-      resolve({ startResult, endResult, routeLine: routeL });
+      resolve({ startResult, endResult });
     });
   }
 
@@ -430,9 +533,13 @@ export class RideMap {
 
   // Highlight a specific ride route
   highlightRide(index) {
-    // Dim all routes
+    // Dim all routes — handle both polyline and routing control objects
     this.rideRoutes.forEach((route, i) => {
-      route.setStyle({ opacity: i === index ? 0.9 : 0.2, weight: i === index ? 5 : 2 });
+      if (route.setStyle) {
+        // It's a polyline
+        route.setStyle({ opacity: i === index ? 0.9 : 0.2, weight: i === index ? 5 : 2 });
+      }
+      // For routing controls, we can't easily change style after creation
     });
 
     // Zoom to highlighted route markers
@@ -445,9 +552,71 @@ export class RideMap {
   // Reset all ride highlights
   resetHighlights() {
     this.rideRoutes.forEach((route) => {
-      route.setStyle({ opacity: 0.75, weight: 3.5 });
+      if (route.setStyle) {
+        route.setStyle({ opacity: 0.75, weight: 3.5 });
+      }
     });
     this.fitAllRoutes();
+  }
+
+  // ─── Get captured route polyline ───
+  getRouteCoordinates() {
+    return this.routeCoordinates;
+  }
+
+  // ─── Draw a route with intermediate waypoints (for detour routes) ───
+  // waypoints = [{lat, lng}, ...] — intermediate stops to insert between start and end
+  drawRouteWithWaypoints(start, end, waypoints = [], options = {}) {
+    const color = options.color || '#e67e22';
+    const opacity = options.opacity ?? 0.85;
+    const weight = options.weight ?? 5;
+    const glowOpacity = options.glowOpacity ?? 0.2;
+    const glowWeight = options.glowWeight ?? 10;
+    const showItinerary = options.showItinerary || false;
+
+    if (typeof L.Routing === 'undefined') {
+      console.warn('Leaflet Routing Machine not loaded — cannot draw waypoint route');
+      return null;
+    }
+
+    // Build waypoint list: start → intermediate stops → end
+    const allWaypoints = [
+      L.latLng(start.lat, start.lng),
+      ...waypoints.map(wp => L.latLng(wp.lat, wp.lng)),
+      L.latLng(end.lat, end.lng),
+    ];
+
+    const ctrl = L.Routing.control({
+      waypoints: allWaypoints,
+      routeWhileDragging: false,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: false,
+      showAlternatives: false,
+      show: showItinerary,
+      createMarker: () => null, // We use our own markers
+      lineOptions: {
+        styles: [
+          { color: color, opacity: glowOpacity, weight: glowWeight },
+          { color: color, opacity: opacity, weight: weight },
+        ],
+        addWaypoints: false,
+      },
+      router: L.Routing.osrmv1({
+        serviceUrl: 'https://router.project-osrm.org/route/v1',
+      }),
+    }).addTo(this.map);
+
+    // Hide itinerary panel if not needed
+    if (!showItinerary) {
+      ctrl.on('routesfound', () => {
+        const container = ctrl.getContainer();
+        if (container) container.style.display = 'none';
+      });
+    }
+
+    this.rideRoutes.push(ctrl);
+    return ctrl;
   }
 
   // ─── Get user's current location ───
@@ -479,9 +648,23 @@ export class RideMap {
     if (this._shadowLine) this.map.removeLayer(this._shadowLine);
     if (this._animFrame) cancelAnimationFrame(this._animFrame);
 
-    this.rideMarkers.forEach((m) => this.map.removeLayer(m));
-    this.rideRoutes.forEach((r) => this.map.removeLayer(r));
+    // Remove Leaflet Routing Machine control
+    if (this.routingControl) {
+      this.map.removeControl(this.routingControl);
+      this.routingControl = null;
+    }
 
+    // Clean up ride routes — handle both polylines and routing controls
+    this.rideMarkers.forEach((m) => this.map.removeLayer(m));
+    this.rideRoutes.forEach((r) => {
+      if (r.remove) {
+        r.remove();  // Routing control
+      } else if (this.map.removeLayer) {
+        this.map.removeLayer(r);  // Polyline
+      }
+    });
+
+    this.routeCoordinates = null;
     this.startMarker = null;
     this.endMarker = null;
     this.startLocation = null;

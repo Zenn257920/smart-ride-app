@@ -7,11 +7,14 @@ export class RouteMatcher {
     // ─── Distance-based pricing constants
     this.BASE_FARE = 1500;        // Fixed starting charge (MMK)
     this.RATE_PER_KM = 500;       // Per-km charge (MMK)
-    this.MIN_PRICE = 2000;        // Minimum ride price (MMK)
-    this.MAX_PRICE = 15000;       // Maximum ride price (MMK)
     this.DEFAULT_PRICE = 7500;    // Fallback when no GPS available (MMK)
 
-    this.DRIVER_BONUS_RATE = 0.1;
+    // Application tax: 5% on subtotal (base + per-km)
+    // Passenger cost = (BASE_FARE + RATE_PER_KM × km) × 1.05
+    this.APP_TAX_RATE = 0.05;
+
+    // Legacy aliases kept for backward compatibility
+    this.DRIVER_BONUS_RATE = 0;   // No separate driver bonus
     this.APP_COMMISSION_RATE = 0.05;
 
     // Tuned thresholds for Yangon city scale
@@ -19,6 +22,10 @@ export class RouteMatcher {
     this.DROPOFF_THRESHOLD_KM = 2.5; // How far passenger destination can be from driver route
     this.BEARING_MAX_DIFF_DEG = 65;  // Max angle difference to be considered "same direction"
     this.TIME_WINDOW_MINUTES = 120; // Limit: rides outside this window are an unmatch (2 hrs for geocoded text search)
+
+    // Polyline-based matching thresholds (tighter because actual road path is more accurate)
+    this.POLYLINE_PICKUP_THRESHOLD_KM = 2.0;  // Passenger pickup within 2km of actual road
+    this.POLYLINE_DROPOFF_THRESHOLD_KM = 2.0; // Passenger dropoff within 2km of actual road
   }
 
   // ─── Haversine distance between two lat/lng points (km) ───
@@ -37,28 +44,41 @@ export class RouteMatcher {
 
   _toRad(deg) { return (deg * Math.PI) / 180; }
 
-  // ─── Distance-based price calculation ───
-  // Formula: BASE_FARE + (distanceKm × RATE_PER_KM), clamped to [MIN, MAX]
+  // ─── Distance-based price calculation (subtotal before tax) ───
+  // Formula: BASE_FARE + (distanceKm × RATE_PER_KM)
+  // e.g. 10 km → 1500 + 5000 = 6500 MMK
   calculateDistancePrice(distanceKm) {
-    const raw = this.BASE_FARE + Math.floor(distanceKm * this.RATE_PER_KM);
-    return Math.max(this.MIN_PRICE, Math.min(this.MAX_PRICE, raw));
+    return this.BASE_FARE + Math.floor(distanceKm * this.RATE_PER_KM);
+  }
+
+  // ─── Passenger cost = subtotal + 5% app tax ───
+  // e.g. 10 km → subtotal 6500 × 1.05 = 6825 MMK
+  calculatePassengerCost(distanceKm) {
+    const subtotal = this.calculateDistancePrice(distanceKm);
+    return Math.floor(subtotal * (1 + this.APP_TAX_RATE));
   }
 
   // ─── Calculate price from GPS coordinates ───
-  // Returns { price, distanceKm } or null if coords missing
+  // Returns { price (subtotal), passengerCost (with 5% tax), appTax, distanceKm } or null
   calculatePriceFromCoords(startLat, startLng, endLat, endLng) {
     if (startLat == null || startLng == null || endLat == null || endLng == null) {
       return null;
     }
     const distanceKm = this.calculateDistance(startLat, startLng, endLat, endLng);
+    const subtotal = this.calculateDistancePrice(distanceKm);
+    const appTax = Math.floor(subtotal * this.APP_TAX_RATE);
+    const passengerCost = subtotal + appTax;
     return {
-      price: this.calculateDistancePrice(distanceKm),
+      price: subtotal,
+      passengerCost,
+      appTax,
       distanceKm: Math.round(distanceKm * 10) / 10,
     };
   }
 
-  // ─── Fair proportional price breakdown ───
-  // Each passenger pays based on their own distance, not equal split.
+  // ─── Fair per-passenger price breakdown ───
+  // Each passenger pays based on their OWN distance:
+  //   passengerCost = (1500 + 500 × km) × 1.05  (5% app tax)
   // passengerDistances = [15, 10, 5] (km each passenger travels)
   // Returns array of per-passenger breakdowns
   calculateFairPriceBreakdown(totalRoutePrice, passengerDistances) {
@@ -68,19 +88,16 @@ export class RouteMatcher {
       return passengerDistances.map(() => this._equalShareBreakdown(totalRoutePrice, passengerDistances.length));
     }
 
-    const driverBonusTotal = Math.floor(totalRoutePrice * this.DRIVER_BONUS_RATE);
-
     return passengerDistances.map(myKm => {
       const weight = myKm / totalKm;
-      const fareShare = Math.floor(totalRoutePrice * weight);
-      const driverBonusShare = Math.floor(driverBonusTotal * weight);
-      const subtotal = fareShare + driverBonusShare;
-      const appFee = Math.floor(subtotal * this.APP_COMMISSION_RATE);
-      const passengerPrice = subtotal + appFee;
+      // Each passenger's subtotal based on their own distance
+      const fareShare = this.calculateDistancePrice(myKm);
+      const appFee = Math.floor(fareShare * this.APP_TAX_RATE);
+      const passengerPrice = fareShare + appFee;
 
       return {
         fareShare,
-        driverBonusPerPassenger: driverBonusShare,
+        driverBonusPerPassenger: 0,
         appCommissionPerPassenger: appFee,
         passengerPrice,
         distanceKm: Math.round(myKm * 10) / 10,
@@ -92,15 +109,12 @@ export class RouteMatcher {
   // Helper: equal-share breakdown for a single passenger (fallback)
   _equalShareBreakdown(totalRoutePrice, passengerCount) {
     const fareShare = Math.floor(totalRoutePrice / passengerCount);
-    const driverBonusTotal = Math.floor(totalRoutePrice * this.DRIVER_BONUS_RATE);
-    const driverBonusPerPassenger = Math.floor(driverBonusTotal / passengerCount);
-    const subtotal = fareShare + driverBonusPerPassenger;
-    const appFee = Math.floor(subtotal * this.APP_COMMISSION_RATE);
+    const appFee = Math.floor(fareShare * this.APP_TAX_RATE);
     return {
       fareShare,
-      driverBonusPerPassenger,
+      driverBonusPerPassenger: 0,
       appCommissionPerPassenger: appFee,
-      passengerPrice: subtotal + appFee,
+      passengerPrice: fareShare + appFee,
       distanceKm: 0,
       weightPercent: Math.round(100 / passengerCount),
     };
@@ -188,6 +202,126 @@ export class RouteMatcher {
     return { bearingDiff, pickupDist: pickup.distance, dropoffDist: dropoff.distance, pickupT: pickup.t, dropoffT: dropoff.t };
   }
 
+  // ─── Polyline-based proximity check ───
+  // Checks if a point is within thresholdKm of ANY segment in a polyline.
+  // routeCoords = [[lat, lng], [lat, lng], ...]
+  // Returns { distance (km), segmentIndex, t } or null if not within threshold.
+  _pointToPolyline(px, py, routeCoords, thresholdKm) {
+    let bestDist = Infinity;
+    let bestSegment = -1;
+    let bestT = 0;
+
+    for (let i = 0; i < routeCoords.length - 1; i++) {
+      const [aLat, aLng] = routeCoords[i];
+      const [bLat, bLng] = routeCoords[i + 1];
+
+      const result = this._pointToSegment(px, py, aLng, aLat, bLng, bLat);
+      if (result.distance < bestDist) {
+        bestDist = result.distance;
+        bestSegment = i;
+        bestT = result.t;
+      }
+
+      // Early exit if we're already very close
+      if (bestDist < 0.1) break;
+    }
+
+    if (bestDist > thresholdKm) return null;
+
+    // Compute a global "progress" along the polyline (0 = start, 1 = end)
+    const globalT = (bestSegment + bestT) / (routeCoords.length - 1);
+
+    return { distance: bestDist, segmentIndex: bestSegment, t: bestT, globalT };
+  }
+
+  // ─── Core: Polyline Route Match Check ───
+  // Uses stored routeCoordinates (actual road path) instead of straight-line corridor.
+  // Returns null if not a match, or a detail object if it is.
+  isOnDriverRoute(passenger, driver) {
+    // Need polyline data from driver's route
+    if (!driver.routeCoordinates || driver.routeCoordinates.length < 2) return null;
+
+    // Need passenger coordinates
+    const hasCoordsPassenger =
+      passenger.startLat != null && passenger.startLng != null &&
+      passenger.endLat != null && passenger.endLng != null;
+    if (!hasCoordsPassenger) return null;
+
+    // 1. Bearing pre-filter — quick reject if travelling in very different directions
+    const driverBearing = this._bearing(
+      driver.routeCoordinates[0][0], driver.routeCoordinates[0][1],
+      driver.routeCoordinates[driver.routeCoordinates.length - 1][0],
+      driver.routeCoordinates[driver.routeCoordinates.length - 1][1]
+    );
+    const passengerBearing = this._bearing(
+      passenger.startLat, passenger.startLng, passenger.endLat, passenger.endLng
+    );
+    const bearingDiff = this._bearingDiff(driverBearing, passengerBearing);
+    if (bearingDiff > this.BEARING_MAX_DIFF_DEG) return null;
+
+    // 2. Pickup proximity — is passenger's start within 2km of any point on the actual road?
+    const pickup = this._pointToPolyline(
+      passenger.startLng, passenger.startLat,
+      driver.routeCoordinates,
+      this.POLYLINE_PICKUP_THRESHOLD_KM
+    );
+    if (!pickup) return null;
+
+    // 3. Dropoff proximity — is passenger's destination within 2km of the actual road?
+    const dropoff = this._pointToPolyline(
+      passenger.endLng, passenger.endLat,
+      driver.routeCoordinates,
+      this.POLYLINE_DROPOFF_THRESHOLD_KM
+    );
+    if (!dropoff) return null;
+
+    // 4. Direction check — pickup must come before dropoff along the route
+    if (pickup.globalT >= dropoff.globalT) return null;
+
+    return {
+      bearingDiff,
+      pickupDist: pickup.distance,
+      dropoffDist: dropoff.distance,
+      pickupT: pickup.globalT,
+      dropoffT: dropoff.globalT,
+      pickupSegment: pickup.segmentIndex,
+      dropoffSegment: dropoff.segmentIndex,
+      usedPolyline: true,
+    };
+  }
+
+  // ─── Build detour waypoints ───
+  // Inserts passenger pickup and dropoff into the driver's route as intermediate waypoints.
+  // Returns array of waypoint objects [{lat, lng}, ...] for the detour.
+  buildDetourWaypoints(passenger, driver) {
+    if (!driver.routeCoordinates || driver.routeCoordinates.length < 2) {
+      // Fallback: just use passenger points as waypoints
+      return [
+        { lat: passenger.startLat, lng: passenger.startLng },
+        { lat: passenger.endLat, lng: passenger.endLng },
+      ];
+    }
+
+    // Find where on the route to insert pickup and dropoff
+    const pickup = this._pointToPolyline(
+      passenger.startLng, passenger.startLat,
+      driver.routeCoordinates,
+      this.POLYLINE_PICKUP_THRESHOLD_KM * 2 // Wider threshold for waypoint insertion
+    );
+    const dropoff = this._pointToPolyline(
+      passenger.endLng, passenger.endLat,
+      driver.routeCoordinates,
+      this.POLYLINE_DROPOFF_THRESHOLD_KM * 2
+    );
+
+    // Build waypoints: passenger pickup first, then dropoff
+    const waypoints = [];
+    waypoints.push({ lat: passenger.startLat, lng: passenger.startLng });
+    waypoints.push({ lat: passenger.endLat, lng: passenger.endLng });
+
+    return waypoints;
+  }
+
   // ─── Calculate passenger's distance along the driver route ───
   // Uses the passenger's own start/end GPS coordinates.
   getPassengerDistance(passenger, driver) {
@@ -216,6 +350,35 @@ export class RouteMatcher {
 
     let score = 0;
 
+    // ── Try polyline-based matching first (most accurate) ──
+    const polylineResult = this.isOnDriverRoute(passenger, driver);
+
+    if (polylineResult !== null) {
+      // ── Polyline-based scoring (actual road path available) ──
+
+      // Bearing alignment (0–25 pts)
+      const bearingScore = Math.round(25 * (1 - polylineResult.bearingDiff / this.BEARING_MAX_DIFF_DEG));
+      score += bearingScore;
+
+      // Pickup proximity (0–35 pts) — tighter thresholds since polyline is more accurate
+      if (polylineResult.pickupDist < 0.3) score += 35;
+      else if (polylineResult.pickupDist < 0.8) score += 30;
+      else if (polylineResult.pickupDist < 1.2) score += 22;
+      else score += 14;
+
+      // Dropoff proximity (0–25 pts)
+      if (polylineResult.dropoffDist < 0.3) score += 25;
+      else if (polylineResult.dropoffDist < 0.8) score += 22;
+      else if (polylineResult.dropoffDist < 1.5) score += 15;
+      else score += 8;
+
+      // Time bonus
+      score += 15;
+
+      return Math.min(100, score);
+    }
+
+    // ── Fallback: straight-line corridor matching ──
     const corridorResult = this.isOnDriverCorridor(passenger, driver);
 
     if (corridorResult !== null) {
@@ -241,7 +404,22 @@ export class RouteMatcher {
       score += 15;
 
     } else {
-      // ── Fallback: no coordinates — use straight-line point matching ──
+      // ── Both polyline and corridor checks failed ──
+      // If both sides have full GPS coordinates, this means the routes genuinely
+      // don't overlap — hard reject. Do NOT fall through to loose point matching.
+      const hasFullCoordsDriver =
+        driver.startLat != null && driver.startLng != null &&
+        driver.endLat != null && driver.endLng != null;
+      const hasFullCoordsPassenger =
+        passenger.startLat != null && passenger.startLng != null &&
+        passenger.endLat != null && passenger.endLng != null;
+
+      if (hasFullCoordsDriver && hasFullCoordsPassenger) {
+        // Both have GPS but corridor/polyline failed → NOT a match
+        return 0;
+      }
+
+      // ── True fallback: one or both sides lack GPS — use loose point matching ──
       // (legacy behaviour for old rides that have no coords)
       const startDist = this.calculateDistance(
         passenger.startLat ?? 0, passenger.startLng ?? 0,
@@ -252,7 +430,6 @@ export class RouteMatcher {
         driver.endLat ?? 0, driver.endLng ?? 0,
       );
 
-      // Only give a score if both sides have coords; otherwise leave at 0
       const hasAnyCoords = (driver.startLat != null && passenger.startLat != null);
       if (!hasAnyCoords) return 0;
 
@@ -264,7 +441,6 @@ export class RouteMatcher {
       else if (endDist < 3) score += 28;
       else if (endDist < 5) score += 14;
 
-      // Time is already validated above — add full time bonus points
       score += 20;
     }
 
@@ -285,12 +461,17 @@ export class RouteMatcher {
       .map((ride) => ({
         ride,
         score: this.calculateMatchScore(userRequest, ride),
+        // Check polyline first, then corridor as fallback
+        routeMatched: this.isOnDriverRoute(userRequest, ride) !== null,
         corridorPassed: this.isOnDriverCorridor(userRequest, ride) !== null,
       }))
-      // Must pass time window (hard gate), corridor check (if coords available), AND score > 30
-      .filter(({ ride, score, corridorPassed }) => {
+      // Must pass time window (hard gate), route/corridor check (if coords available), AND score > 30
+      .filter(({ ride, score, routeMatched, corridorPassed }) => {
         // Hard time gate: reject if departure times differ by more than 15 minutes
         if (!this._isWithinTimeWindow(userRequest.departureTime, ride.departureTime)) return false;
+        // If polyline matching was possible and passed, accept
+        if (routeMatched) return score > 30;
+        // Otherwise check corridor
         const hasCoords = ride.startLat != null && userRequest.startLat != null;
         if (hasCoords && !corridorPassed) return false; // Strict gate when coords exist
         return score > 30;
@@ -321,19 +502,21 @@ export class RouteMatcher {
       const isFirstRider = totalPassengers === 1;
 
       if (isFirstRider) {
-        // First rider: pays full route price, no bonus/commission
+        // First rider: pays subtotal + 5% app tax
+        const appTax = Math.floor(basePrice * this.APP_TAX_RATE);
+        const passengerCost = basePrice + appTax;
         return {
           ...ride,
           matchScore: score,
           matchPercentage: score,
           originalPrice: basePrice,
           isFirstRider: true,
-          discountedPrice: basePrice,
+          discountedPrice: passengerCost,
           fareShare: basePrice,
           driverBonusPerPassenger: 0,
-          appCommissionPerPassenger: 0,
+          appCommissionPerPassenger: appTax,
           driverEarnings: basePrice,
-          appCommissionTotal: 0,
+          appCommissionTotal: appTax,
           savings: 0,
           savingsPercentage: 0,
           totalPassengers: 1,
@@ -342,11 +525,9 @@ export class RouteMatcher {
         };
       }
 
-      // Fair proportional pricing
+      // Fair proportional pricing — each passenger pays for own distance + 5% tax
       const breakdowns = this.calculateFairPriceBreakdown(basePrice, allDistances);
       const myBreakdown = breakdowns[breakdowns.length - 1]; // Last entry = the new passenger
-
-      const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
 
       return {
         ...ride,
@@ -356,9 +537,9 @@ export class RouteMatcher {
         isFirstRider: false,
         discountedPrice: myBreakdown.passengerPrice,
         fareShare: myBreakdown.fareShare,
-        driverBonusPerPassenger: myBreakdown.driverBonusPerPassenger,
+        driverBonusPerPassenger: 0,
         appCommissionPerPassenger: myBreakdown.appCommissionPerPassenger,
-        driverEarnings: basePrice + driverBonusTotal,
+        driverEarnings: basePrice,
         appCommissionTotal: breakdowns.reduce((sum, b) => sum + b.appCommissionPerPassenger, 0),
         savings: basePrice - myBreakdown.passengerPrice,
         savingsPercentage: Math.round(((basePrice - myBreakdown.passengerPrice) / basePrice) * 100),
@@ -370,22 +551,20 @@ export class RouteMatcher {
   }
 
   // ─── Price breakdown (equal split — kept for backward compatibility) ───
+  // Formula: passenger pays subtotal + 5% app tax
   calculatePriceBreakdown(basePrice, passengerCount) {
     const fareShare = Math.floor(basePrice / passengerCount);
-    const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
-    const driverBonusPerPassenger = Math.floor(driverBonusTotal / passengerCount);
-    const subtotal = fareShare + driverBonusPerPassenger;
-    const appCommissionPerPassenger = Math.floor(subtotal * this.APP_COMMISSION_RATE);
-    const passengerPrice = subtotal + appCommissionPerPassenger;
-    const driverEarnings = basePrice + driverBonusTotal;
+    const appCommissionPerPassenger = Math.floor(fareShare * this.APP_TAX_RATE);
+    const passengerPrice = fareShare + appCommissionPerPassenger;
+    const driverEarnings = basePrice;
     const appCommissionTotal = appCommissionPerPassenger * passengerCount;
     return {
       fareShare,
-      driverBonusPerPassenger,
+      driverBonusPerPassenger: 0,
       appCommissionPerPassenger,
       passengerPrice,
       driverEarnings,
-      driverBonusTotal,
+      driverBonusTotal: 0,
       appCommissionTotal,
       savings: basePrice - passengerPrice,
       savingsPercentage: Math.round(((basePrice - passengerPrice) / basePrice) * 100),
@@ -444,13 +623,12 @@ export class RouteMatcher {
         const maxDist = Math.max(...distances);
         const routePrice = this.calculateDistancePrice(maxDist);
         const breakdowns = this.calculateFairPriceBreakdown(routePrice, distances);
-        const driverBonusTotal = Math.floor(routePrice * this.DRIVER_BONUS_RATE);
 
         groups.push({
           passengers: group,
           count: group.length,
           totalPrice: routePrice,
-          driverEarnings: routePrice + driverBonusTotal,
+          driverEarnings: routePrice,
           appCommissionTotal: breakdowns.reduce((sum, b) => sum + b.appCommissionPerPassenger, 0),
           perPassengerBreakdowns: breakdowns,
           // Average for display
@@ -481,14 +659,17 @@ export class RouteMatcher {
   }
 
   // ─── Price estimate by distance ───
+  // Returns passenger cost with 5% app tax
   estimatePrice(distanceKm, passengerCount) {
     const basePrice = this.calculateDistancePrice(distanceKm);
+    const appTax = Math.floor(basePrice * this.APP_TAX_RATE);
+    const passengerCost = basePrice + appTax;
     if (!passengerCount || passengerCount <= 1) {
       return {
         basePrice,
-        discountedPrice: basePrice,
+        discountedPrice: passengerCost,
         driverEarnings: basePrice,
-        appCommissionTotal: 0,
+        appCommissionTotal: appTax,
         savings: 0,
         savingsPercentage: 0,
       };

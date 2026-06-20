@@ -1,4 +1,4 @@
-//LocalStorage & Gemini
+//LocalStorage & Geminii
 import { RouteMatcher } from "./matching.js";
 
 class DatabaseManager {
@@ -6,9 +6,10 @@ class DatabaseManager {
     this.initDatabase();
     //GeminiKey
     this.apiKey = "AIzaSyAQ-Ab8RN6ICmmw0YVmfI0xeyC78lLvzCO";
-    //Price constants
-    this.DRIVER_BONUS_RATE = 0.1;
-    this.APP_COMMISSION_RATE = 0.05;
+    //Price constants — aligned with RouteMatcher
+    this.DRIVER_BONUS_RATE = 0;     // No separate driver bonus
+    this.APP_TAX_RATE = 0.05;       // 5% app tax on subtotal
+    this.APP_COMMISSION_RATE = 0.05; // Legacy alias
     // Shared matcher for distance-based pricing
     this._matcher = new RouteMatcher();
   }
@@ -21,7 +22,7 @@ class DatabaseManager {
 
   // Bump this version string whenever sample data schema changes.
   // Forces re-seed in any browser that has an older version cached.
-  static get DATA_VERSION() { return 'v6-price-breakdown'; }
+  static get DATA_VERSION() { return 'v8-future-times'; }
 
   initDatabase() {
     const storedVersion = localStorage.getItem('smartride_data_version');
@@ -148,11 +149,17 @@ class DatabaseManager {
         },
       ];
 
-      // Helper to create timestamps
-      const tomorrow = new Date(Date.now() + 86400000);
+      // Helper to create timestamps — always relative to NOW so rides are always in the future.
+      // Each call returns a time within the next 1-23 hours from now, spread across the day.
+      const now = new Date();
       const setTime = (hours, minutes) => {
-        const d = new Date(tomorrow);
+        // Try to set the time on today first; if already past, move to tomorrow
+        const d = new Date(now);
         d.setHours(hours, minutes, 0, 0);
+        if (d <= now) {
+          // Time already passed today — push to tomorrow
+          d.setDate(d.getDate() + 1);
+        }
         return d.toISOString();
       };
 
@@ -567,6 +574,7 @@ class DatabaseManager {
     const startLng = rideData.startLng ?? null;
     const endLat = rideData.endLat ?? null;
     const endLng = rideData.endLng ?? null;
+    const routeCoordinates = rideData.routeCoordinates ?? null; // Actual road polyline
     let price = rideData.price;
     let distanceKm = rideData.distanceKm || 0;
 
@@ -587,6 +595,7 @@ class DatabaseManager {
       startLng,
       endLat,
       endLng,
+      routeCoordinates, // Store actual road polyline for polyline-based matching
       price,
       distanceKm,
       bookedSeats: 0,
@@ -635,11 +644,12 @@ If GPS coordinates are present, use them for corridor proximity. Also match by l
 "သန်လျင်"=Thanlyin/Star City; "ဗဟန်း"=Bahan; "ဆူးလေ"=Sule/Downtown; "ဒဂုံ"=Dagon; "လှည်းတန်း"=Hledan.
 
 PRICING MODEL:
-- Each ride has a distance-based "price" field already calculated: BASE_FARE(1500 MMK) + distance_km × 500 MMK/km
-- FIRST RIDER RULE: If bookedSeats is 0, first rider pays ONLY the ride price. Set discountedPrice = price, fareShare = price, driverBonusPerPassenger = 0, appCommissionPerPassenger = 0, savings = 0.
-- SHARED RIDE (bookedSeats >= 1): Use the ride's "price" field as the base. Each passenger pays proportionally based on their individual distance, but for simplicity in Gemini output use equal split: (price / passengerCount) + (price * 0.10 / passengerCount) + 5% app commission
-- "discountedPrice" = total price ONE passenger pays
-- "driverEarnings" = price + (price * 0.10)
+- Each ride has a distance-based "price" field (subtotal before tax): BASE_FARE(1500 MMK) + distance_km × 500 MMK/km
+- Passenger cost = price × 1.05 (5% application tax)
+- Example: 10km → 1500 + 5000 = 6500 subtotal → 6500 × 1.05 = 6825 kyats passenger cost
+- FIRST RIDER RULE: If bookedSeats is 0, set discountedPrice = Math.floor(price * 1.05), fareShare = price, driverBonusPerPassenger = 0, appCommissionPerPassenger = Math.floor(price * 0.05), savings = 0.
+- SHARED RIDE (bookedSeats >= 1): Each passenger pays their own distance-based fare + 5% tax. For simplicity use equal split: fareShare = Math.floor(price / passengerCount), appCommissionPerPassenger = Math.floor(fareShare * 0.05), discountedPrice = fareShare + appCommissionPerPassenger
+- "driverEarnings" = price (subtotal goes to driver)
 - "savings" = price - discountedPrice
 - passengerCount = bookedSeats + 1
 
@@ -703,13 +713,15 @@ Do NOT include any text outside the JSON array.
       console.log("✅ Gemini AI Response:", rawText);
       const results = JSON.parse(rawText);
 
-      // Ensure each result has the required fields with defaults
-      return results.map((ride) => {
+      // Normalize each Gemini result to ensure required fields with defaults
+      const geminiRides = results.map((ride) => {
         const basePrice = ride.price || this._matcher.DEFAULT_PRICE;
         const isFirstRider = (ride.bookedSeats || 0) === 0;
 
-        // First rider pays standard fare only — no bonus/commission
+        // First rider: pays subtotal + 5% app tax
         if (isFirstRider) {
+          const appTax = Math.floor(basePrice * this.APP_TAX_RATE);
+          const passengerCost = basePrice + appTax;
           return {
             id: ride.id || "ride-unknown",
             driverId: ride.driverId || "",
@@ -729,30 +741,24 @@ Do NOT include any text outside the JSON array.
             passengers: ride.passengers || [],
             matchScore: ride.matchScore || 70,
             isFirstRider: true,
-            discountedPrice: basePrice,
+            discountedPrice: passengerCost,
             fareShare: basePrice,
             driverBonusPerPassenger: 0,
-            appCommissionPerPassenger: 0,
+            appCommissionPerPassenger: appTax,
             driverEarnings: basePrice,
-            appCommissionTotal: 0,
+            appCommissionTotal: appTax,
             savings: 0,
           };
         }
 
-        // Shared ride pricing — split fare among all passengers
+        // Shared ride pricing — each pays fare share + 5% tax
         const totalPassengers = (ride.bookedSeats || 0) + 1;
         const fareShare =
           ride.fareShare || Math.floor(basePrice / totalPassengers);
-        const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
-        const driverBonusPerPassenger =
-          ride.driverBonusPerPassenger ||
-          Math.floor(driverBonusTotal / totalPassengers);
-        const subtotal = fareShare + driverBonusPerPassenger;
         const appCommissionPerPassenger =
           ride.appCommissionPerPassenger ||
-          Math.floor(subtotal * this.APP_COMMISSION_RATE);
-        const passengerPrice =
-          fareShare + driverBonusPerPassenger + appCommissionPerPassenger;
+          Math.floor(fareShare * this.APP_TAX_RATE);
+        const passengerPrice = fareShare + appCommissionPerPassenger;
 
         return {
           id: ride.id || "ride-unknown",
@@ -775,9 +781,9 @@ Do NOT include any text outside the JSON array.
           isFirstRider: false,
           discountedPrice: ride.discountedPrice || passengerPrice,
           fareShare: fareShare,
-          driverBonusPerPassenger: driverBonusPerPassenger,
+          driverBonusPerPassenger: 0,
           appCommissionPerPassenger: appCommissionPerPassenger,
-          driverEarnings: ride.driverEarnings || basePrice + driverBonusTotal,
+          driverEarnings: ride.driverEarnings || basePrice,
           appCommissionTotal:
             ride.appCommissionTotal ||
             appCommissionPerPassenger * totalPassengers,
@@ -786,10 +792,10 @@ Do NOT include any text outside the JSON array.
       });
 
       // Merge Gemini results with the guaranteed local results.
-      // This means even if Gemini misses an obvious match (e.g. ride-102),
+      // This means even if Gemini misses an obvious match (e.g. ride-101),
       // the local matcher catches it and it still appears in results.
-      console.log(`✅ Gemini returned ${results.length} | Local returned ${localResults.length} → merging`);
-      return this._mergeResults(results, localResults);
+      console.log(`✅ Gemini returned ${geminiRides.length} | Local returned ${localResults.length} → merging`);
+      return this._mergeResults(geminiRides, localResults);
 
     } catch (error) {
       console.warn('⚠️ Gemini failed — returning local corridor results:', error);
@@ -865,16 +871,30 @@ Do NOT include any text outside the JSON array.
 
     const scored = availableRides
       .filter((ride) => {
-        // Time gate: corridor GPS match = 2 hr tolerance; text fallback = 90 min
+        // Time gate: corridor GPS match = 3 hr tolerance; text fallback = 4 hr
         if (departureTime && ride.departureTime) {
           const diffMin = Math.abs(new Date(departureTime) - new Date(ride.departureTime)) / 60000;
           const hasPassengerGPS = passengerCoords && passengerCoords.startLat != null;
-          const timeLimit = hasPassengerGPS ? 120 : 90; // minutes
+          const timeLimit = hasPassengerGPS ? 180 : 240; // minutes (3h GPS / 4h text)
           if (diffMin > timeLimit) return false;
         }
         return true;
       })
       .map((ride) => {
+      // ── Text/alias scoring — always computed as a baseline ──
+      let textScore = 0;
+      const rideStartArea = findAreaKey(ride.startLocation);
+      const rideEndArea = findAreaKey(ride.endLocation);
+
+      if (startArea && rideStartArea && startArea === rideStartArea) textScore += 45;
+      else if (normalize(ride.startLocation).includes(startNorm) || startNorm.includes(normalize(ride.startLocation))) textScore += 35;
+
+      if (endArea && rideEndArea && endArea === rideEndArea) textScore += 45;
+      else if (normalize(ride.endLocation).includes(endNorm) || endNorm.includes(normalize(ride.endLocation))) textScore += 35;
+
+      // Time already gated above — add full bonus if time data exists
+      if (departureTime && ride.departureTime) textScore += 10;
+
       // ── Attempt corridor matching if GPS coords exist ──
       if (
         passengerCoords &&
@@ -888,27 +908,20 @@ Do NOT include any text outside the JSON array.
           endLng: passengerCoords.endLng,
           departureTime,
         };
-        const score = matcher.calculateMatchScore(passengerRequest, ride);
-        return { ...ride, matchScore: Math.min(score, 98), _usedCorridor: true };
+        // Pass the ride with routeCoordinates so polyline matching is used when available
+        const corridorScore = matcher.calculateMatchScore(passengerRequest, ride);
+        if (corridorScore > 0) {
+          const usedPolyline = ride.routeCoordinates && ride.routeCoordinates.length >= 2;
+          return { ...ride, matchScore: Math.min(corridorScore, 98), _usedCorridor: true, _usedPolyline: usedPolyline };
+        }
+        // Corridor failed — fall through to use textScore as fallback
+        // (geocoded coords might be inaccurate, but text names still match)
       }
 
-      // ── Text/alias fallback (no GPS coords) ──
-      let score = 0;
-      const rideStartArea = findAreaKey(ride.startLocation);
-      const rideEndArea = findAreaKey(ride.endLocation);
-
-      if (startArea && rideStartArea && startArea === rideStartArea) score += 45;
-      else if (normalize(ride.startLocation).includes(startNorm) || startNorm.includes(normalize(ride.startLocation))) score += 35;
-
-      if (endArea && rideEndArea && endArea === rideEndArea) score += 45;
-      else if (normalize(ride.endLocation).includes(endNorm) || endNorm.includes(normalize(ride.endLocation))) score += 35;
-
-      // Time already gated above — add full bonus if time data exists
-      if (departureTime && ride.departureTime) score += 10;
-
-      return { ...ride, matchScore: Math.min(score, 98), _usedCorridor: false };
+      // ── Use text/alias score (either no GPS, or GPS corridor failed) ──
+      return { ...ride, matchScore: Math.min(textScore, 98), _usedCorridor: false, _usedPolyline: false };
     })
-      .filter((r) => r.matchScore > 20)
+      .filter((r) => r.matchScore > 40)
       .sort((a, b) => b.matchScore - a.matchScore);
 
     return scored.map((r) => {
@@ -916,34 +929,33 @@ Do NOT include any text outside the JSON array.
       const isFirstRider = (r.bookedSeats || 0) === 0;
 
       if (isFirstRider) {
+        const appTax = Math.floor(basePrice * this.APP_TAX_RATE);
+        const passengerCost = basePrice + appTax;
         return {
           ...r,
           isFirstRider: true,
-          discountedPrice: basePrice,
+          discountedPrice: passengerCost,
           fareShare: basePrice,
           driverBonusPerPassenger: 0,
-          appCommissionPerPassenger: 0,
+          appCommissionPerPassenger: appTax,
           driverEarnings: basePrice,
-          appCommissionTotal: 0,
+          appCommissionTotal: appTax,
           savings: 0,
         };
       }
 
       const totalPassengers = (r.bookedSeats || 0) + 1;
       const fareShare = Math.floor(basePrice / totalPassengers);
-      const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
-      const driverBonusPerPassenger = Math.floor(driverBonusTotal / totalPassengers);
-      const subtotal = fareShare + driverBonusPerPassenger;
-      const appCommissionPerPassenger = Math.floor(subtotal * this.APP_COMMISSION_RATE);
-      const passengerPrice = subtotal + appCommissionPerPassenger;
+      const appCommissionPerPassenger = Math.floor(fareShare * this.APP_TAX_RATE);
+      const passengerPrice = fareShare + appCommissionPerPassenger;
       return {
         ...r,
         isFirstRider: false,
         discountedPrice: passengerPrice,
         fareShare,
-        driverBonusPerPassenger,
+        driverBonusPerPassenger: 0,
         appCommissionPerPassenger,
-        driverEarnings: basePrice + driverBonusTotal,
+        driverEarnings: basePrice,
         appCommissionTotal: appCommissionPerPassenger * totalPassengers,
         savings: basePrice - passengerPrice,
       };
@@ -998,21 +1010,17 @@ Do NOT include any text outside the JSON array.
       driverPayment;
 
     if (isFirstRider) {
-      // First rider: standard fare, no bonus markup
+      // First rider: subtotal + 5% app tax
       fareShare = basePrice;
       driverBonusPerPassenger = 0;
-      appCommissionPerPassenger = 0;
-      driverPayment = basePrice; // Driver gets full base fare
+      appCommissionPerPassenger = Math.floor(basePrice * this.APP_TAX_RATE);
+      driverPayment = basePrice; // Driver gets full subtotal
     } else {
-      // Shared ride: split fare with bonus & commission
+      // Shared ride: split fare + 5% tax each
       fareShare = Math.floor(basePrice / totalPassengers);
-      const driverBonusTotal = Math.floor(basePrice * this.DRIVER_BONUS_RATE);
-      driverBonusPerPassenger = Math.floor(driverBonusTotal / totalPassengers);
-      const subtotal = fareShare + driverBonusPerPassenger;
-      appCommissionPerPassenger = Math.floor(
-        subtotal * this.APP_COMMISSION_RATE,
-      );
-      driverPayment = fareShare + driverBonusPerPassenger;
+      driverBonusPerPassenger = 0;
+      appCommissionPerPassenger = Math.floor(fareShare * this.APP_TAX_RATE);
+      driverPayment = fareShare; // Driver gets fare share
     }
 
     // Deduct total price from passenger (e-wallet only)
@@ -1056,7 +1064,7 @@ Do NOT include any text outside the JSON array.
       type: isCash ? "cash" : "debit",
       description: isCash
         ? `ငွေသား ${totalPrice.toLocaleString()} ကျပ် — ယာဉ်မောင်းနှင့် တွေ့မှ ပေးချေမည်`
-        : `ခရီးစဉ်ခ ${fareShare.toLocaleString()} + Bonus ${driverBonusPerPassenger.toLocaleString()} + ဝန်ဆောင်ခ ${appCommissionPerPassenger.toLocaleString()} ကျပ်`,
+        : `ခရီးစဉ်ခ ${fareShare.toLocaleString()} + App အခွန် ${appCommissionPerPassenger.toLocaleString()} ကျပ် (5%)`,
       createdAt: new Date().toISOString(),
     });
 
@@ -1067,7 +1075,7 @@ Do NOT include any text outside the JSON array.
         userId: driverId,
         amount: driverPayment,
         type: "credit",
-        description: `ခရီးသည်ခ ${fareShare.toLocaleString()} + Bonus ${driverBonusPerPassenger.toLocaleString()} ကျပ် ရရှိ`,
+        description: `ခရီးသည်ခ ${fareShare.toLocaleString()} ကျပ် ရရှိ (App အခွန် ${appCommissionPerPassenger.toLocaleString()} ကျပ် နုတ်)`,
         createdAt: new Date().toISOString(),
       });
     } else if (isCash && driverIndex !== -1) {

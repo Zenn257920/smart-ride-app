@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="/src/style.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
   <!-- Prevent dark mode flash -->
   <script>
     (function () {
@@ -153,16 +155,12 @@
             style="font-size: 0.72rem; color: var(--green-dark); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">
             💰 စျေးနှုန်းအသေးစိတ်</div>
           <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.25rem;">
-            <span style="color: var(--gray);">ခရီးစဉ်ခ (fare share)</span>
+            <span style="color: var(--gray);">ခရီးစဉ်ခ (1,500 + 500/km)</span>
             <span id="modalFareShare" style="font-weight: 600; color: var(--text-primary);">-</span>
           </div>
-          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.25rem;">
-            <span style="color: var(--gray);">ယာဉ်မောင်း Bonus</span>
-            <span id="modalDriverBonus" style="font-weight: 600; color: var(--amber);">-</span>
-          </div>
           <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.5rem;">
-            <span style="color: var(--gray);">Appဝန်ဆောင်ခ (5%)</span>
-            <span id="modalAppFee" style="font-weight: 600; color: var(--gray);">-</span>
+            <span style="color: var(--gray);">App အခွန် (5%)</span>
+            <span id="modalAppFee" style="font-weight: 600; color: var(--amber);">-</span>
           </div>
           <div
             style="border-top: 1px dashed rgba(29,158,117,0.2); padding-top: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
@@ -229,6 +227,7 @@
     import { db } from "../js/database.js";
     import { RideMap } from "../js/map.js";
     import { toggleTheme } from "../js/theme.js";
+    import { RouteMatcher } from "../js/matching.js";
 
     document.getElementById("themeToggleBtn")?.addEventListener("click", toggleTheme);
 
@@ -238,6 +237,7 @@
       const user = getCurrentUser();
       let currentSelectedRide = null;
       let rideMap;
+      const routeMatcher = new RouteMatcher();
 
       const startInput = document.getElementById("startLocation");
       const endInput = document.getElementById("endLocation");
@@ -303,13 +303,14 @@
         }
       });
 
-      // Default departure: tomorrow 8:30 AM
+      // Default departure: tomorrow 8:30 AM (local time)
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       tomorrow.setHours(8, 30, 0, 0);
-      document.getElementById("departureTime").value = tomorrow
-        .toISOString()
-        .slice(0, 16);
+      // datetime-local input needs LOCAL time format "YYYY-MM-DDTHH:MM", NOT UTC via toISOString()
+      const pad = n => n.toString().padStart(2, '0');
+      document.getElementById("departureTime").value =
+        `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}T${pad(tomorrow.getHours())}:${pad(tomorrow.getMinutes())}`;
 
       // Search Trigger — sends user input to AI matcher and renders results
       document
@@ -319,7 +320,9 @@
 
           const startLocation = document.getElementById("startLocation").value;
           const endLocation = document.getElementById("endLocation").value;
-          const departureTime = document.getElementById("departureTime").value;
+          // Convert datetime-local value (local time) to ISO string for consistent comparison
+          const rawTime = document.getElementById("departureTime").value;
+          const departureTime = rawTime ? new Date(rawTime).toISOString() : "";
 
           const resultsSection = document.getElementById("resultsSection");
           const resultsList = document.getElementById("resultsList");
@@ -443,9 +446,12 @@
           }
 
           const totalMatches = matchedRides.length;
-          const matcherLabel = usingCorridor
-            ? `🛣️ Corridor Match`
-            : `🤖 AI Match`;
+          const hasPolylineMatch = matchedRides.some(r => r._usedPolyline);
+          const matcherLabel = hasPolylineMatch
+            ? `🛣️ Route Polyline Match`
+            : usingCorridor
+              ? `🛣️ Corridor Match`
+              : `🤖 AI Match`;
 
           // Header showing total matches
           let htmlContent = `
@@ -483,7 +489,7 @@
               const appFee = ride.appCommissionPerPassenger || 0;
 
               return `
-              <div class="glass-card animate-fade-in-up" style="padding: 1.5rem; position: relative; cursor: pointer;" onclick="window.showRideOnMap('${ride.startLocation}', '${ride.endLocation}')">
+              <div class="glass-card animate-fade-in-up" style="padding: 1.5rem; position: relative; cursor: pointer;" onclick="window.showRideOnMap(${rideIndex})">
                 <!-- Match Score Badge -->
                 <div style="position: absolute; top: 12px; right: 12px; background: linear-gradient(135deg, var(--green-dark), var(--green)); color: #fff; padding: 0.3rem 0.75rem; font-size: 0.72rem; font-weight:700; border-radius: 20px; box-shadow: 0 2px 8px rgba(29,158,117,0.3);">
                   ${usingCorridor ? '🛣️' : '🔥'} ${ride.matchScore}% Match
@@ -557,7 +563,7 @@
                       </span>
                       <!-- Fair pricing breakdown -->
                       <div style="margin-top: 0.4rem; font-size: 0.65rem; color: var(--gray); line-height: 1.5;">
-                        ${ride.passengerDistanceKm ? `📏 ${ride.passengerDistanceKm} km (${ride.passengerWeightPercent}%) · ` : ''}ခရီးစဉ်ခ ${fareShare.toLocaleString()} + Bonus ${driverBonus.toLocaleString()} + ဝန်ဆောင်ခ ${appFee.toLocaleString()}
+                        ${ride.passengerDistanceKm ? `📏 ${ride.passengerDistanceKm} km · ` : ''}ခရီးစဉ်ခ ${fareShare.toLocaleString()} + App အခွန် ${appFee.toLocaleString()}
                       </div>
                       ` : `
                       <!-- Full -->
@@ -587,6 +593,10 @@
 
           resultsList.innerHTML = htmlContent;
 
+          // Store matchedRides so showRideOnMap can access them
+          window._matchedRides = matchedRides;
+          window._passengerCoords = passengerCoords;
+
           // Scroll to results
           resultsSection.scrollIntoView({
             behavior: "smooth",
@@ -594,11 +604,116 @@
           });
         });
 
-      // Show a specific ride route on the map
-      window.showRideOnMap = async function (startLoc, endLoc) {
+      // Show a specific ride route on the map, with detour through passenger stops
+      window.showRideOnMap = async function (rideIndex) {
         if (!rideMap) return;
         rideMap.clearAll();
-        await rideMap.showRouteByNames(startLoc, endLoc);
+
+        const rides = window._matchedRides;
+        const passengerCoords = window._passengerCoords;
+        if (!rides || !rides[rideIndex]) return;
+
+        const ride = rides[rideIndex];
+
+        // If we have passenger coords, show both original (dim) and detour (bright) routes
+        if (passengerCoords && ride.startLat != null && ride.endLat != null) {
+          const driverStart = { lat: ride.startLat, lng: ride.startLng };
+          const driverEnd = { lat: ride.endLat, lng: ride.endLng };
+
+          // 1️⃣ Draw ORIGINAL driver route — dim/faded green
+          rideMap.drawRouteWithWaypoints(driverStart, driverEnd, [], {
+            color: '#1d9e75',
+            opacity: 0.25,
+            weight: 3,
+            glowOpacity: 0.08,
+            glowWeight: 7,
+          });
+
+          // Add dim start/end markers for original route
+          const origStartM = L.marker([ride.startLat, ride.startLng], {
+            icon: L.divIcon({
+              className: 'smartride-marker',
+              html: `<div class="marker-pin" style="background: rgba(29,158,117,0.4); box-shadow: 0 2px 8px rgba(29,158,117,0.15);"><div class="marker-icon-inner" style="font-size: 12px; opacity: 0.6;">🟢</div></div><div class="marker-label" style="color: rgba(29,158,117,0.5); font-size: 0.65rem;">Driver Start</div>`,
+              iconSize: [32, 42],
+              iconAnchor: [16, 42],
+            }),
+            zIndexOffset: 800,
+          }).addTo(rideMap.map);
+
+          const origEndM = L.marker([ride.endLat, ride.endLng], {
+            icon: L.divIcon({
+              className: 'smartride-marker',
+              html: `<div class="marker-pin" style="background: rgba(231,76,60,0.4); box-shadow: 0 2px 8px rgba(231,76,60,0.15);"><div class="marker-icon-inner" style="font-size: 12px; opacity: 0.6;">🔴</div></div><div class="marker-label" style="color: rgba(231,76,60,0.5); font-size: 0.65rem;">Driver End</div>`,
+              iconSize: [32, 42],
+              iconAnchor: [16, 42],
+            }),
+            zIndexOffset: 800,
+          }).addTo(rideMap.map);
+
+          rideMap.rideMarkers.push(origStartM, origEndM);
+
+          // 2️⃣ Build detour waypoints (passenger pickup & dropoff)
+          const detourWaypoints = routeMatcher.buildDetourWaypoints(
+            {
+              startLat: passengerCoords.startLat,
+              startLng: passengerCoords.startLng,
+              endLat: passengerCoords.endLat,
+              endLng: passengerCoords.endLng,
+            },
+            ride
+          );
+
+          // 3️⃣ Draw DETOUR route — bright orange (driver start → pickup → dropoff → driver end)
+          rideMap.drawRouteWithWaypoints(driverStart, driverEnd, detourWaypoints, {
+            color: '#e67e22',
+            opacity: 0.9,
+            weight: 5,
+            glowOpacity: 0.25,
+            glowWeight: 12,
+          });
+
+          // 4️⃣ Add bright markers for passenger pickup and dropoff
+          const pickupMarker = L.marker(
+            [passengerCoords.startLat, passengerCoords.startLng],
+            {
+              icon: L.divIcon({
+                className: 'smartride-marker',
+                html: `<div class="marker-pin" style="background: #e67e22; box-shadow: 0 3px 12px rgba(230,126,34,0.5);"><div class="marker-icon-inner" style="font-size: 13px;">🧑</div></div><div class="marker-label" style="color: #e67e22; font-weight: 700;">Pickup</div>`,
+                iconSize: [40, 52],
+                iconAnchor: [20, 52],
+              }),
+              zIndexOffset: 1000,
+            }
+          ).addTo(rideMap.map);
+
+          const dropoffMarker = L.marker(
+            [passengerCoords.endLat, passengerCoords.endLng],
+            {
+              icon: L.divIcon({
+                className: 'smartride-marker',
+                html: `<div class="marker-pin" style="background: #9b59b6; box-shadow: 0 3px 12px rgba(155,89,182,0.5);"><div class="marker-icon-inner" style="font-size: 13px;">🏁</div></div><div class="marker-label" style="color: #9b59b6; font-weight: 700;">Dropoff</div>`,
+                iconSize: [40, 52],
+                iconAnchor: [20, 52],
+              }),
+              zIndexOffset: 1000,
+            }
+          ).addTo(rideMap.map);
+
+          rideMap.rideMarkers.push(pickupMarker, dropoffMarker);
+
+          // Fit map to show all points
+          const allPoints = [
+            [ride.startLat, ride.startLng],
+            [ride.endLat, ride.endLng],
+            [passengerCoords.startLat, passengerCoords.startLng],
+            [passengerCoords.endLat, passengerCoords.endLng],
+          ];
+          const bounds = L.latLngBounds(allPoints);
+          rideMap.map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+        } else {
+          // No passenger coords — just show driver route normally
+          await rideMap.showRouteByNames(ride.startLocation, ride.endLocation);
+        }
 
         // Scroll to map
         document.getElementById("map").scrollIntoView({
@@ -684,13 +799,9 @@
         document.getElementById("modalPassengers").textContent =
           isFirstRider ? "ပထမဆုံးခရီးသည် (သင်) 🎉" : (passengers || "—");
         document.getElementById("modalFareShare").textContent =
-          isFirstRider
-            ? price.toLocaleString() + " ကျပ် (ပုံမှန်)"
-            : (fareShare || 0).toLocaleString() + " ကျပ်" + (passengerDistanceKm ? ` (${passengerDistanceKm} km · ${passengerWeightPercent}%)` : '');
-        document.getElementById("modalDriverBonus").textContent =
-          isFirstRider ? "— ကျပ်" : "+" + (driverBonus || 0).toLocaleString() + " ကျပ်";
+          (fareShare || 0).toLocaleString() + " ကျပ်" + (passengerDistanceKm ? ` (${passengerDistanceKm} km)` : '');
         document.getElementById("modalAppFee").textContent =
-          isFirstRider ? "— ကျပ်" : "+" + (appFee || 0).toLocaleString() + " ကျပ်";
+          "+" + (appFee || 0).toLocaleString() + " ကျပ်";
         document.getElementById("modalPrice").textContent =
           price.toLocaleString() + " ကျပ်";
         document.getElementById("bookingModal").style.display = "flex";

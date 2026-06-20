@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
   <script>
     (function () {
       const t = localStorage.getItem("smartride_theme") || "light";
@@ -987,8 +989,8 @@
               <div class="value" id="earnBaseFare">0 ကျပ်</div>
             </div>
             <div class="earnings-row">
-              <div class="label">🎁 ဘိုနပ်စ်ငွေ (+10%)</div>
-              <div class="value positive" id="earnBonus">0 ကျပ်</div>
+              <div class="label">📱 App အခွန် (5%)</div>
+              <div class="value" id="earnBonus" style="color:var(--amber);">0 ကျပ်</div>
             </div>
             <div class="earnings-row" style="
                   border-top: 2px solid var(--green);
@@ -1017,7 +1019,7 @@
                 font-weight: 600;
                 text-align: center;
               ">
-            🚀 SmartRide ဖြင့် ပုံမှန်ခရီးစဉ်ခထက် 10% ပိုမိုရရှိပါသည်
+            💰 ခရီးစဉ်ခ (1,500 + 500/km) — ခရီးသည် 5% App အခွန်ပေးပြီး ယာဉ်မောင်းထံ ရောက်ပါသည်
           </div>
         </div>
       </div>
@@ -1061,12 +1063,11 @@
       // Get driver's rides
       const driverRides = db.getRidesByDriver(user.id) || [];
 
-      // Calculate stats with driver bonus
-      const DRIVER_BONUS_RATE = 0.1;
+      // Calculate stats — no driver bonus, driver earns base fare
       let totalPassengers = 0;
       let totalAvailableSeats = 0;
       let totalBaseFare = 0;
-      let totalBonus = 0;
+      let totalAppTax = 0;
 
       driverRides.forEach((ride) => {
         const booked = ride.bookedSeats || 0;
@@ -1075,11 +1076,11 @@
         totalAvailableSeats += (ride.availableSeats || 4) - booked;
         if (booked > 0) {
           totalBaseFare += basePrice;
-          totalBonus += Math.floor(basePrice * DRIVER_BONUS_RATE);
+          totalAppTax += Math.floor(basePrice * 0.05);
         }
       });
 
-      const estimatedEarnings = totalBaseFare + totalBonus;
+      const estimatedEarnings = totalBaseFare;
 
       document.getElementById("statActiveRides").textContent =
         driverRides.length;
@@ -1098,7 +1099,7 @@
       document.getElementById("earnBaseFare").textContent =
         totalBaseFare.toLocaleString() + " ကျပ်";
       document.getElementById("earnBonus").textContent =
-        "+" + totalBonus.toLocaleString() + " ကျပ်";
+        "-" + totalAppTax.toLocaleString() + " ကျပ်";
       document.getElementById("earnEstimated").textContent =
         estimatedEarnings.toLocaleString() + " ကျပ်";
 

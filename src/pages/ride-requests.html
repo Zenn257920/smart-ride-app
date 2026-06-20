@@ -10,6 +10,8 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
     <script>
       (function () {
         const t = localStorage.getItem("smartride_theme") || "light";
@@ -1545,8 +1547,7 @@
 
           if (breakdown.length > 0) {
             breakdown.forEach(b => {
-              const driverBonus = b.driverBonus || 0;
-              totalDriverEarnings += b.fareShare + driverBonus;
+              totalDriverEarnings += b.fareShare;
               tableHtml += `
               <div style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid rgba(29,158,117,0.08); font-size:0.78rem;">
                 <div>
@@ -1566,10 +1567,10 @@
             });
           }
 
-          const driverBonusTotal = Math.floor(totalDriverEarnings * 0.1);
+          const appTaxTotal = Math.floor(totalDriverEarnings * 0.05);
           document.getElementById('acceptBreakdownTable').innerHTML = tableHtml;
           document.getElementById('acceptDriverEarnings').textContent =
-            (totalDriverEarnings + driverBonusTotal).toLocaleString() + ' ကျပ် (+ bonus)';
+            totalDriverEarnings.toLocaleString() + ' ကျပ် (App အခွန် ' + appTaxTotal.toLocaleString() + ' ကျပ် နုတ်ပြီး)';
           document.getElementById("acceptModal").style.display = "flex";
         };
 

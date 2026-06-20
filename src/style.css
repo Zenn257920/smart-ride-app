@@ -1585,3 +1585,195 @@ footer ul a:hover {
     width: 100%;
   }
 }
+
+/* ── Leaflet Routing Machine — Custom Styling ── */
+.leaflet-routing-container {
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+  padding: 0.75rem !important;
+  font-family: var(--font-body) !important;
+  max-height: 350px !important;
+  overflow-y: auto !important;
+  margin: 8px !important;
+  width: 320px !important;
+}
+
+.leaflet-routing-container h2 {
+  font-family: var(--font-heading) !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  color: var(--green-dark) !important;
+  margin-bottom: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  border-bottom: 1px solid rgba(29, 158, 117, 0.12) !important;
+}
+
+.leaflet-routing-container h3 {
+  font-family: var(--font-heading) !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  color: var(--green-dark) !important;
+  margin: 0.5rem 0 0.25rem !important;
+}
+
+/* Route summary (distance + time) */
+.leaflet-routing-alt {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.leaflet-routing-alt h2 span {
+  font-family: var(--font-heading) !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  color: var(--green) !important;
+}
+
+/* Direction steps table */
+.leaflet-routing-alt table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+.leaflet-routing-alt table tr {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
+  transition: background 0.15s ease !important;
+}
+
+.leaflet-routing-alt table tr:hover {
+  background: rgba(29, 158, 117, 0.05) !important;
+}
+
+.leaflet-routing-alt table tr:last-child {
+  border-bottom: none !important;
+}
+
+.leaflet-routing-alt table td {
+  padding: 0.45rem 0.35rem !important;
+  font-size: 0.72rem !important;
+  color: var(--text-primary) !important;
+  vertical-align: middle !important;
+  line-height: 1.4 !important;
+}
+
+/* Direction icon column */
+.leaflet-routing-alt table td:first-child {
+  width: 28px !important;
+  text-align: center !important;
+}
+
+/* Direction text column */
+.leaflet-routing-alt table td:nth-child(2) {
+  font-weight: 500 !important;
+}
+
+/* Distance column */
+.leaflet-routing-alt table td:last-child {
+  text-align: right !important;
+  font-size: 0.68rem !important;
+  color: var(--gray) !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+}
+
+/* Direction icons */
+.leaflet-routing-icon {
+  background-size: contain !important;
+  width: 18px !important;
+  height: 18px !important;
+  opacity: 0.7 !important;
+}
+
+/* Scrollbar styling */
+.leaflet-routing-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.leaflet-routing-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.leaflet-routing-container::-webkit-scrollbar-thumb {
+  background: rgba(29, 158, 117, 0.2);
+  border-radius: 4px;
+}
+
+.leaflet-routing-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(29, 158, 117, 0.4);
+}
+
+/* Collapse button */
+.leaflet-routing-collapse-btn {
+  border-radius: 8px !important;
+  background: var(--green) !important;
+  color: #fff !important;
+  border: none !important;
+  width: 28px !important;
+  height: 28px !important;
+  font-size: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 8px rgba(29, 158, 117, 0.25) !important;
+  transition: all 0.2s ease !important;
+}
+
+.leaflet-routing-collapse-btn:hover {
+  background: var(--green-dark) !important;
+  transform: scale(1.05) !important;
+}
+
+/* ── Dark Mode — Routing Machine ── */
+[data-theme="dark"] .leaflet-routing-container {
+  background: rgba(30, 32, 40, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .leaflet-routing-container h2 {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .leaflet-routing-alt table tr {
+  border-bottom-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+[data-theme="dark"] .leaflet-routing-alt table tr:hover {
+  background: rgba(29, 158, 117, 0.08) !important;
+}
+
+[data-theme="dark"] .leaflet-routing-alt table td {
+  color: #e8e8e8 !important;
+}
+
+[data-theme="dark"] .leaflet-routing-icon {
+  filter: invert(1) brightness(0.85) !important;
+}
+
+[data-theme="dark"] .leaflet-routing-container::-webkit-scrollbar-thumb {
+  background: rgba(29, 158, 117, 0.3);
+}
+
+/* ── Responsive — Routing Machine ── */
+@media (max-width: 768px) {
+  .leaflet-routing-container {
+    width: 220px !important;
+    max-height: 250px !important;
+    padding: 0.5rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  .leaflet-routing-container h2 {
+    font-size: 0.75rem !important;
+  }
+
+  .leaflet-routing-alt table td {
+    padding: 0.35rem 0.25rem !important;
+    font-size: 0.65rem !important;
+  }
+}

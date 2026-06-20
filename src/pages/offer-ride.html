@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="/src/style.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
   <!-- Prevent dark mode flash -->
   <script>
     (function () {
@@ -161,8 +163,8 @@
                   font-size: 0.8rem;
                   margin-bottom: 0.2rem;
                 ">
-              <span style="color: var(--gray)">ဘိုနပ်စ် (+10%)</span>
-              <span id="earningsBonus" style="font-weight: 600; color: var(--green)">— ကျပ်</span>
+              <span style="color: var(--gray)">App အခွန် (5%)</span>
+              <span id="earningsBonus" style="font-weight: 600; color: var(--amber)">— ကျပ်</span>
             </div>
             <div style="
                   border-top: 1px dashed rgba(29, 158, 117, 0.2);
@@ -356,14 +358,14 @@
             rideMap.startLocation.lat, rideMap.startLocation.lng,
             rideMap.endLocation.lat, rideMap.endLocation.lng
           );
-          const base = result.price;
-          const bonus = Math.floor(base * 0.1);
-          const total = base + bonus;
+          const subtotal = result.price;
+          const appTax = result.appTax;
+          const passengerCost = result.passengerCost;
 
-          baseEl.textContent = base.toLocaleString() + ' ကျပ် (' + result.distanceKm + ' km)';
-          bonusEl.textContent = '+' + bonus.toLocaleString() + ' ကျပ်';
-          totalEl.textContent = total.toLocaleString() + ' ကျပ်';
-          noteEl.textContent = result.distanceKm + ' km ခရီးစဉ် — ပုံမှန်ခရီးစဉ်ခထက် 10% ပိုမိုရရှိပါသည်!';
+          baseEl.textContent = subtotal.toLocaleString() + ' ကျပ် (' + result.distanceKm + ' km)';
+          bonusEl.textContent = '-' + appTax.toLocaleString() + ' ကျပ်';
+          totalEl.textContent = passengerCost.toLocaleString() + ' ကျပ်';
+          noteEl.textContent = result.distanceKm + ' km ခရီးစဉ် — ခရီးသည် ' + passengerCost.toLocaleString() + ' ကျပ် ပေးချေမည် (5% App အခွန်ပါ)';
         } else {
           baseEl.textContent = '— ကျပ်';
           bonusEl.textContent = '— ကျပ်';
@@ -544,6 +546,8 @@
           startLng: startCoords?.lng ?? null,
           endLat: endCoords?.lat ?? null,
           endLng: endCoords?.lng ?? null,
+          // Actual road polyline for polyline-based matching
+          routeCoordinates: rideMap?.getRouteCoordinates() ?? null,
           departureTime,
           availableSeats,
           // Price is auto-calculated by db.offerRide() from GPS coords
@@ -554,8 +558,11 @@
 
         db.offerRide(rideData);
 
+        const hasPolyline = rideMap?.getRouteCoordinates()?.length > 0;
         const coordsNote = (startCoords && endCoords)
-          ? " (GPS corridor matching enabled ✅)"
+          ? hasPolyline
+            ? " (Route polyline + GPS matching enabled ✅)"
+            : " (GPS corridor matching enabled ✅)"
           : " (GPS မပါ — text matching သာ အသုံးပြုမည်)";
         document.getElementById("successMessage").textContent =
           `${startLocation} → ${endLocation} ခရီးစဉ်ကို အောင်မြင်စွာ ကမ်းလှမ်းပြီးပါပြီ။` + coordsNote;
