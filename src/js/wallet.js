@@ -9,38 +9,38 @@ export class WalletManager {
   }
   async addFunds(amount, paymentMethod = "cash") {
     if (!amount || amount < 1000) {
-      throw new Error("အနည်းဆုံး 1,000 ကျပ် ဖြည့်သွင်းပါ");
+      throw new Error("Minimun 1000Kyats");
     }
     const newBalance = db.updateBalance(
       this.user.id,
       amount,
-      `ငွေသွင်း ${amount.toLocaleString()} ကျပ် (${paymentMethod})`,
+      `Deposite ${amount.toLocaleString()} Kyats (${paymentMethod})`,
     );
-    // Refresh user data
+    
     this.user = getCurrentUser();
     return {
       success: true,
       balance: newBalance,
-      message: `✅ ငွေသွင်းပြီးပါပြီ။ လက်ကျန်ငွေ ${newBalance.toLocaleString()} ကျပ်`,
+      message: ` Deposite Complete. Remain Balance ${newBalance.toLocaleString()} Kyats`,
     };
   }
   async withdrawFunds(amount) {
     if (!amount || amount < 1000) {
-      throw new Error("အနည်းဆုံး 1,000 ကျပ် ထုတ်ယူပါ");
+      throw new Error("Minimum 1000Kyats");
     }
     if (amount > this.getBalance()) {
-      throw new Error("လက်ကျန်ငွေ မလုံလောက်ပါ");
+      throw new Error("Insufficient Balance");
     }
     const newBalance = db.updateBalance(
       this.user.id,
       -amount,
-      `ငွေထုတ် ${amount.toLocaleString()} ကျပ်`,
+      `Withdraw ${amount.toLocaleString()} Kyats`,
     );
     this.user = getCurrentUser();
     return {
       success: true,
       balance: newBalance,
-      message: `✅ ငွေထုတ်ပြီးပါပြီ။ လက်ကျန်ငွေ ${newBalance.toLocaleString()} ကျပ်`,
+      message: ` Withdraw Complete! Remain Balance ${newBalance.toLocaleString()} Kyats`,
     };
   }
   getTransactionHistory(limit = 50) {
@@ -49,18 +49,18 @@ export class WalletManager {
   }
   async payForRide(rideId, amount) {
     if (amount > this.getBalance()) {
-      throw new Error("လက်ကျန်ငွေ မလုံလောက်ပါ");
+      throw new Error("Insufficient balance");
     }
     const newBalance = db.updateBalance(
       this.user.id,
       -amount,
-      `ခရီးစဉ်အတွက် ပေးချေမှု #${rideId}`,
+      `Paid for ride request #${rideId}`,
     );
     this.user = getCurrentUser();
     return {
       success: true,
       balance: newBalance,
-      message: `✅ ငွေပေးချေပြီးပါပြီ။ လက်ကျန်ငွေ ${newBalance.toLocaleString()} ကျပ်`,
+      message: ` paid Complete! Remain Balance ${newBalance.toLocaleString()} Kyats`,
     };
   }
   async receivePayment(amount, description) {
@@ -69,7 +69,7 @@ export class WalletManager {
     return {
       success: true,
       balance: newBalance,
-      message: `✅ ငွေလက်ခံရရှိပါပြီ။ လက်ကျန်ငွေ ${newBalance.toLocaleString()} ကျပ်`,
+      message: `Transition received! Remain Balance ${newBalance.toLocaleString()} Kyats`,
     };
   }
 }

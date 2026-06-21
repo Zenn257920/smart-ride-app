@@ -1,5 +1,4 @@
-// map.js — Interactive Leaflet Map Module for SmartRide
-// Provides: markers, click-to-select, geocoding, route lines, multi-ride display
+
 
 export class RideMap {
   constructor(elementId, options = {}) {
@@ -11,14 +10,14 @@ export class RideMap {
     this.endLocation = null;
     this.routeLine = null;
     this.routeDecorator = null;
-    this.routeCoordinates = null; // Actual road polyline from OSRM [[lat,lng], ...]
-    this.routingControl = null; // Leaflet Routing Machine control
-    this.selectMode = null; // 'start' | 'end' | null
+    this.routeCoordinates = null; 
+    this.routingControl = null; 
+    this.selectMode = null;
     this.activeInput = null;
     this.hintElement = null;
     this.hintTextElement = null;
-    this.rideRoutes = []; // For multi-ride display on dashboard
-    this.rideMarkers = []; // For multi-ride markers
+    this.rideRoutes = []; 
+    this.rideMarkers = [];
     this.onLocationSelected = options.onLocationSelected || null;
     this.init();
   }
@@ -28,7 +27,7 @@ export class RideMap {
       console.warn('Leaflet not loaded');
       return;
     }
-    // Yangon center coordinates
+  
     const yangon = [16.8661, 96.1951];
     this.map = L.map(this.elementId, {
       zoomControl: true,
@@ -40,11 +39,11 @@ export class RideMap {
       maxZoom: 19,
     }).addTo(this.map);
 
-    // Map click handler
+    
     this.map.on('click', (e) => this._onMapClick(e));
   }
 
-  // ─── Create styled marker icons ───
+  
   _createStartIcon() {
     return L.divIcon({
       className: 'smartride-marker smartride-marker--start',
@@ -105,7 +104,7 @@ export class RideMap {
     });
   }
 
-  // ─── Set start location with styled marker ───
+  
   setStartLocation(lat, lng, address) {
     if (this.startMarker) {
       this.map.removeLayer(this.startMarker);
@@ -127,7 +126,7 @@ export class RideMap {
     this._drawRoute();
   }
 
-  // ─── Set end location with styled marker ───
+  
   setEndLocation(lat, lng, address) {
     if (this.endMarker) {
       this.map.removeLayer(this.endMarker);
@@ -149,17 +148,17 @@ export class RideMap {
     this._drawRoute();
   }
 
-  // ─── Draw route using Leaflet Routing Machine (real road routing) ───
+  
   _drawRoute() {
     if (!this.startLocation || !this.endLocation) return;
 
-    // Remove previous routing control
+    
     if (this.routingControl) {
       this.map.removeControl(this.routingControl);
       this.routingControl = null;
     }
 
-    // Remove old fallback polyline if any
+    
     if (this.routeLine) {
       this.map.removeLayer(this.routeLine);
       this.routeLine = null;
@@ -172,7 +171,7 @@ export class RideMap {
     const start = L.latLng(this.startLocation.lat, this.startLocation.lng);
     const end = L.latLng(this.endLocation.lat, this.endLocation.lng);
 
-    // Check if Leaflet Routing Machine is available
+    
     if (typeof L.Routing === 'undefined') {
       console.warn('Leaflet Routing Machine not loaded — falling back to straight line');
       this._drawFallbackRoute();
@@ -182,36 +181,36 @@ export class RideMap {
     this.routingControl = L.Routing.control({
       waypoints: [start, end],
       routeWhileDragging: false,
-      addWaypoints: false,         // Prevent adding waypoints by clicking on route
-      draggableWaypoints: false,   // Prevent dragging waypoints
+      addWaypoints: false,         
+      draggableWaypoints: false,   
       fitSelectedRoutes: true,
       showAlternatives: false,
       show: false,
-      createMarker: () => null,    // We use our own custom markers
+      createMarker: () => null,    
       lineOptions: {
         styles: [
-          { color: '#1d9e75', opacity: 0.2, weight: 10 },   // Shadow/glow
-          { color: '#1d9e75', opacity: 0.85, weight: 5 },   // Main route
+          { color: '#1d9e75', opacity: 0.2, weight: 10 },   
+          { color: '#1d9e75', opacity: 0.85, weight: 5 },   
         ],
         addWaypoints: false,
       },
       router: L.Routing.osrmv1({
         serviceUrl: 'https://router.project-osrm.org/route/v1',
-        language: 'my',  // Myanmar language for instructions
+        language: 'my', 
       }),
     }).addTo(this.map);
 
-    // Capture route polyline coordinates when route is found
+    
     this.routingControl.on('routesfound', (e) => {
       if (e.routes && e.routes.length > 0) {
         const route = e.routes[0];
-        // Store the full polyline as [[lat, lng], ...]
+        
         this.routeCoordinates = route.coordinates.map(c => [c.lat, c.lng]);
         console.log(`✅ Route captured: ${this.routeCoordinates.length} points`);
       }
     });
 
-    // Handle routing errors — fall back to straight line
+    
     this.routingControl.on('routingerror', () => {
       console.warn('Routing failed — falling back to straight line');
       if (this.routingControl) {
@@ -223,7 +222,7 @@ export class RideMap {
     });
   }
 
-  // ─── Fallback: draw a curved polyline when routing is unavailable ───
+  
   _drawFallbackRoute() {
     if (!this.startLocation || !this.endLocation) return;
 
@@ -243,7 +242,7 @@ export class RideMap {
       lineJoin: 'round',
     }).addTo(this.map);
 
-    // Shadow line
+    
     this._shadowLine = L.polyline(points, {
       color: '#1d9e75',
       weight: 8,
@@ -256,19 +255,19 @@ export class RideMap {
   }
 
   _generateCurvePath(start, end) {
-    // Create a slight arc between two points
+  
     const midLat = (start[0] + end[0]) / 2;
     const midLng = (start[1] + end[1]) / 2;
 
-    // Offset the midpoint perpendicular to the line to create a curve
+    
     const dx = end[1] - start[1];
     const dy = end[0] - start[0];
     const dist = Math.sqrt(dx * dx + dy * dy);
-    const offset = dist * 0.08; // curve intensity
+    const offset = dist * 0.08; 
 
     const curvedMid = [midLat + offset * (dx / dist || 0), midLng - offset * (dy / dist || 0)];
 
-    // Generate smooth points along the curve
+    
     const points = [];
     const steps = 30;
     for (let i = 0; i <= steps; i++) {
@@ -300,7 +299,7 @@ export class RideMap {
     }
   }
 
-  // ─── Update map view to fit markers ───
+  
   _updateView() {
     if (this.startLocation && this.endLocation) {
       const bounds = L.latLngBounds(
@@ -315,14 +314,14 @@ export class RideMap {
     }
   }
 
-  // ─── Click-to-select mode ───
+ 
   enableClickToSelect(mode, inputElement, hintEl, hintTextEl) {
-    this.selectMode = mode; // 'start' or 'end'
+    this.selectMode = mode;
     this.activeInput = inputElement;
     this.hintElement = hintEl;
     this.hintTextElement = hintTextEl;
 
-    // Show hint
+    
     if (this.hintElement) {
       this.hintElement.style.opacity = '1';
       this.hintElement.style.transform = 'translateY(0)';
@@ -334,7 +333,7 @@ export class RideMap {
           : '🔴 Select End-Point';
     }
 
-    // Change cursor
+    
     const container = this.map.getContainer();
     container.style.cursor = 'crosshair';
   }
@@ -357,11 +356,11 @@ export class RideMap {
 
     const { lat, lng } = e.latlng;
 
-    // Reverse geocode
+    
     const address = await this._reverseGeocode(lat, lng);
     const displayAddr = address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
-    // Set marker and fill input
+    
     if (this.selectMode === 'start') {
       this.setStartLocation(lat, lng, displayAddr);
       this.activeInput.value = displayAddr;
@@ -370,16 +369,16 @@ export class RideMap {
       this.activeInput.value = displayAddr;
     }
 
-    // Trigger callback
+    
     if (this.onLocationSelected) {
       this.onLocationSelected(this.selectMode, { lat, lng, address: displayAddr });
     }
 
-    // Disable select mode after placing
+    
     this.disableClickToSelect();
   }
 
-  // ─── Geocoding: address → coordinates ───
+  
   async geocodeAddress(address) {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ', Yangon, Myanmar')}&limit=1`;
     try {
@@ -398,14 +397,14 @@ export class RideMap {
     return null;
   }
 
-  // ─── Reverse geocoding: coordinates → address ───
+  
   async _reverseGeocode(lat, lng) {
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`;
     try {
       const response = await fetch(url);
       const data = await response.json();
       if (data && data.display_name) {
-        // Shorten the display name
+        
         const parts = data.display_name.split(',');
         return parts.slice(0, 3).join(',').trim();
       }
@@ -415,7 +414,7 @@ export class RideMap {
     return null;
   }
 
-  // ─── Show route by geocoding location names ───
+ 
   async showRouteByNames(startName, endName) {
     const startResult = await this.geocodeAddress(startName);
     const endResult = await this.geocodeAddress(endName);
@@ -428,7 +427,7 @@ export class RideMap {
     }
   }
 
-  // ─── Multi-ride display (for driver dashboard) ───
+ 
   addRideRoute(ride, color = '#1d9e75', index = 0) {
     const colors = ['#1d9e75', '#3498db', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c'];
     const routeColor = colors[index % colors.length];
@@ -442,7 +441,7 @@ export class RideMap {
         return;
       }
 
-      // Start marker
+      
       const startM = L.marker([startResult.lat, startResult.lng], {
         icon: this._createRideStartIcon(routeColor),
       }).addTo(this.map);
@@ -454,7 +453,7 @@ export class RideMap {
         </div>
       `);
 
-      // End marker
+      
       const endM = L.marker([endResult.lat, endResult.lng], {
         icon: this._createRideEndIcon(routeColor),
       }).addTo(this.map);
@@ -466,7 +465,7 @@ export class RideMap {
         </div>
       `);
 
-      // Route line — use Routing Machine if available, otherwise fallback
+      
       if (typeof L.Routing !== 'undefined') {
         const routingCtrl = L.Routing.control({
           waypoints: [
@@ -476,9 +475,9 @@ export class RideMap {
           routeWhileDragging: false,
           addWaypoints: false,
           draggableWaypoints: false,
-          fitSelectedRoutes: false,  // Don't auto-fit for multi-ride
+          fitSelectedRoutes: false,  
           showAlternatives: false,
-          show: false,               // Hide the itinerary panel for multi-ride
+          show: false,              
           createMarker: () => null,
           lineOptions: {
             styles: [
@@ -492,7 +491,7 @@ export class RideMap {
           }),
         }).addTo(this.map);
 
-        // Hide the itinerary container that gets auto-created
+        
         routingCtrl.on('routesfound', () => {
           const container = routingCtrl.getContainer();
           if (container) container.style.display = 'none';
@@ -500,7 +499,7 @@ export class RideMap {
 
         this.rideRoutes.push(routingCtrl);
       } else {
-        // Fallback to curved polyline
+        
         const points = this._generateCurvePath(
           [startResult.lat, startResult.lng],
           [endResult.lat, endResult.lng]
@@ -524,32 +523,32 @@ export class RideMap {
     });
   }
 
-  // Fit map to show all ride routes
+ 
   fitAllRoutes() {
     if (this.rideMarkers.length === 0) return;
     const group = L.featureGroup(this.rideMarkers);
     this.map.fitBounds(group.getBounds(), { padding: [50, 50], maxZoom: 14 });
   }
 
-  // Highlight a specific ride route
+  
   highlightRide(index) {
-    // Dim all routes — handle both polyline and routing control objects
+    
     this.rideRoutes.forEach((route, i) => {
       if (route.setStyle) {
-        // It's a polyline
+       
         route.setStyle({ opacity: i === index ? 0.9 : 0.2, weight: i === index ? 5 : 2 });
       }
-      // For routing controls, we can't easily change style after creation
+     
     });
 
-    // Zoom to highlighted route markers
+    
     if (this.rideMarkers[index * 2] && this.rideMarkers[index * 2 + 1]) {
       const group = L.featureGroup([this.rideMarkers[index * 2], this.rideMarkers[index * 2 + 1]]);
       this.map.fitBounds(group.getBounds(), { padding: [60, 60], maxZoom: 15 });
     }
   }
 
-  // Reset all ride highlights
+  
   resetHighlights() {
     this.rideRoutes.forEach((route) => {
       if (route.setStyle) {
@@ -559,13 +558,12 @@ export class RideMap {
     this.fitAllRoutes();
   }
 
-  // ─── Get captured route polyline ───
+  
   getRouteCoordinates() {
     return this.routeCoordinates;
   }
 
-  // ─── Draw a route with intermediate waypoints (for detour routes) ───
-  // waypoints = [{lat, lng}, ...] — intermediate stops to insert between start and end
+  
   drawRouteWithWaypoints(start, end, waypoints = [], options = {}) {
     const color = options.color || '#e67e22';
     const opacity = options.opacity ?? 0.85;
@@ -579,7 +577,7 @@ export class RideMap {
       return null;
     }
 
-    // Build waypoint list: start → intermediate stops → end
+    
     const allWaypoints = [
       L.latLng(start.lat, start.lng),
       ...waypoints.map(wp => L.latLng(wp.lat, wp.lng)),
@@ -594,7 +592,7 @@ export class RideMap {
       fitSelectedRoutes: false,
       showAlternatives: false,
       show: showItinerary,
-      createMarker: () => null, // We use our own markers
+      createMarker: () => null,
       lineOptions: {
         styles: [
           { color: color, opacity: glowOpacity, weight: glowWeight },
@@ -607,7 +605,7 @@ export class RideMap {
       }),
     }).addTo(this.map);
 
-    // Hide itinerary panel if not needed
+    
     if (!showItinerary) {
       ctrl.on('routesfound', () => {
         const container = ctrl.getContainer();
@@ -619,7 +617,7 @@ export class RideMap {
     return ctrl;
   }
 
-  // ─── Get user's current location ───
+  
   getCurrentLocation() {
     return new Promise((resolve, reject) => {
       if (navigator.geolocation) {
@@ -640,7 +638,7 @@ export class RideMap {
     });
   }
 
-  // ─── Clear everything ───
+  
   clearAll() {
     if (this.startMarker) this.map.removeLayer(this.startMarker);
     if (this.endMarker) this.map.removeLayer(this.endMarker);
@@ -648,19 +646,19 @@ export class RideMap {
     if (this._shadowLine) this.map.removeLayer(this._shadowLine);
     if (this._animFrame) cancelAnimationFrame(this._animFrame);
 
-    // Remove Leaflet Routing Machine control
+    
     if (this.routingControl) {
       this.map.removeControl(this.routingControl);
       this.routingControl = null;
     }
 
-    // Clean up ride routes — handle both polylines and routing controls
+    
     this.rideMarkers.forEach((m) => this.map.removeLayer(m));
     this.rideRoutes.forEach((r) => {
       if (r.remove) {
-        r.remove();  // Routing control
+        r.remove();  
       } else if (this.map.removeLayer) {
-        this.map.removeLayer(r);  // Polyline
+        this.map.removeLayer(r);  
       }
     });
 
@@ -677,7 +675,7 @@ export class RideMap {
     this.disableClickToSelect();
   }
 
-  // Invalidate map size (useful after container becomes visible)
+ 
   invalidateSize() {
     if (this.map) {
       setTimeout(() => this.map.invalidateSize(), 100);

@@ -19,7 +19,7 @@
       })();
     </script>
     <style>
-      /* ── Tab Navigation ── */
+      
       .tab-nav {
         display: flex;
         gap: 0.25rem;
@@ -93,7 +93,7 @@
         }
       }
 
-      /* ── Request Card ── */
+     
       .req-card {
         position: relative;
         background: rgba(255, 255, 255, 0.75);
@@ -279,7 +279,7 @@
         background: rgba(239, 68, 68, 0.15);
       }
 
-      /* ── Notification Panel ── */
+      
       .notif-panel {
         position: relative;
       }
@@ -359,14 +359,14 @@
         margin-top: 0.2rem;
       }
 
-      /* ── Create form grid ── */
+      
       .create-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 2rem;
       }
 
-      /* ── Empty state ── */
+      
       .empty-state-req {
         text-align: center;
         padding: 2.5rem 1rem;
@@ -382,7 +382,7 @@
         line-height: 1.6;
       }
 
-      /* ── Dark mode ── */
+      
       [data-theme="dark"] .tab-nav {
         background: rgba(255, 255, 255, 0.05);
         border-color: rgba(255, 255, 255, 0.08);
@@ -422,7 +422,7 @@
         color: rgba(255, 255, 255, 0.5);
       }
 
-      /* ── Responsive ── */
+      
       @media (max-width: 768px) {
         .create-grid {
           grid-template-columns: 1fr;
@@ -477,12 +477,12 @@
           </div>
         </a>
         <div class="nav-links">
-          <a href="find-ride.html" class="nav-link">ကားစီးမည်</a>
+          <a href="find-ride.html" class="nav-link">Find Ride</a>
           <a href="ride-requests.html" class="nav-link nav-cta"
-            >🙋 Ride Requests</a
+            >Ride Requests</a
           >
           <a href="dashboard.html" class="nav-link">Dashboard</a>
-          <!-- Notification Bell -->
+          
           <div
             class="notif-panel"
             style="display: inline-flex; align-items: center"
@@ -509,7 +509,7 @@
                     font-weight: 700;
                     color: var(--green-dark);
                   "
-                  >🔔 အသိပေးချက်များ</span
+                  >🔔 Noti</span
                 >
                 <button
                   id="markAllReadBtn"
@@ -522,7 +522,7 @@
                     font-weight: 600;
                   "
                 >
-                  အားလုံးဖတ်ပြီး
+                  Mark as read
                 </button>
               </div>
               <div id="notifList"></div>
@@ -531,7 +531,7 @@
           <button id="themeToggleBtn" class="theme-toggle" title="Dark Mode">
             🌙
           </button>
-          <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
+          <a href="#" id="logoutBtn" class="nav-link">Logout</a>
         </div>
         <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
           <span></span><span></span><span></span>
@@ -540,7 +540,7 @@
     </nav>
 
     <div class="container" style="padding: 2rem">
-      <!-- Page Header -->
+      
       <div class="animate-fade-in-up" style="margin-bottom: 1.5rem">
         <h1
           style="
@@ -551,38 +551,38 @@
             margin-bottom: 0.3rem;
           "
         >
-          🙋 ခရီးစဉ် တောင်းဆိုချက်များ
+          Ride requests List
         </h1>
         <p style="color: var(--gray); font-size: 0.85rem">
-          ခရီးသည်များ ခရီးစဉ်တောင်းဆို၍ ယာဉ်မောင်းများ လက်ခံနိုင်ပါသည်
+          Passenger can request ride and Driver can accept ride
         </p>
       </div>
 
-      <!-- Tab Navigation -->
+      
       <div class="tab-nav animate-fade-in-up animate-delay-1" id="tabNav">
         <button class="tab-btn active" data-tab="all-requests">
-          📋 <span class="tab-text">Request အားလုံး</span>
+           <span class="tab-text">Requested List</span>
           <span class="tab-badge" id="allReqCount">0</span>
         </button>
         <button class="tab-btn" data-tab="create-request" id="tabCreateBtn">
-          ✏️ <span class="tab-text">Request အသစ်</span>
+        <span class="tab-text">New Request</span>
         </button>
         <button class="tab-btn" data-tab="my-requests">
-          👤 <span class="tab-text">ကျွန်ုပ်၏ Requests</span>
+        <span class="tab-text">My Requests</span>
           <span class="tab-badge" id="myReqCount">0</span>
         </button>
       </div>
 
-      <!-- TAB 1: All Requests -->
+      
       <div class="tab-content active" id="tab-all-requests">
         <div id="allRequestsList"></div>
       </div>
 
-      <!-- TAB 2: Create Request (Passenger only) -->
+      
       <div class="tab-content" id="tab-create-request">
         <div id="createFormArea">
           <div class="create-grid">
-            <!-- Form -->
+          
             <div class="glass-card animate-fade-in-up">
               <h2
                 style="
@@ -592,11 +592,11 @@
                   font-size: 1.15rem;
                 "
               >
-                ✏️ ခရီးစဉ် Request အသစ်ဖန်တီးမည်
+                 Create new Ride request
               </h2>
               <form id="createRequestForm">
                 <div class="input-group">
-                  <label class="input-label">ထွက်ခွာမည့်နေရာ</label>
+                  <label class="input-label">Pickup</label>
                   <input
                     type="text"
                     id="reqStartLocation"
@@ -606,7 +606,7 @@
                   />
                 </div>
                 <div class="input-group">
-                  <label class="input-label">ဦးတည်ရာ</label>
+                  <label class="input-label">Dropoff</label>
                   <input
                     type="text"
                     id="reqEndLocation"
@@ -616,7 +616,7 @@
                   />
                 </div>
                 <div class="input-group">
-                  <label class="input-label">ထွက်ခွာမည့်အချိန်</label>
+                  <label class="input-label">Departure Time</label>
                   <input
                     type="datetime-local"
                     id="reqDepartureTime"
@@ -624,7 +624,7 @@
                     required
                   />
                 </div>
-                <!-- Price Preview -->
+                
                 <div
                   id="reqPricePreview"
                   style="
@@ -648,7 +648,7 @@
                     "
                   >
                     <span style="font-size: 0.78rem; color: var(--gray)"
-                      >ခန့်မှန်းခရီးစဉ်ခ</span
+                      >Cost Estimate</span
                     >
                     <span
                       id="reqEstPrice"
@@ -671,7 +671,7 @@
                     id="reqDistNote"
                   ></div>
                 </div>
-                <!-- Wallet Balance + Payment Info -->
+                
                 <div id="reqWalletInfo" style="
                   margin-bottom: 1rem;
                   padding: 0.6rem 0.85rem;
@@ -700,7 +700,7 @@
                 </button>
               </form>
             </div>
-            <!-- Map -->
+            
             <div class="glass-card animate-fade-in-up animate-delay-2">
               <h3
                 style="
@@ -710,7 +710,7 @@
                   font-size: 1rem;
                 "
               >
-                🗺️ မြေပုံပေါ်တွင် နေရာရွေးပါ
+                <i data-lucide="map-pinned"></i> Choose on map
               </h3>
               <div
                 id="mapClickHint"
@@ -732,7 +732,7 @@
               >
                 <span style="font-size: 1rem">👆</span>
                 <span id="mapClickHintText"
-                  >မြေပုံပေါ်တွင် နှိပ်၍ နေရာရွေးပါ</span
+                  >Choose on map by clicking</span
                 >
               </div>
               <div id="map" class="map-container" style="height: 380px"></div>
@@ -742,18 +742,18 @@
                   class="btn-outline"
                   style="font-size: 0.75rem"
                 >
-                  📍 လက်ရှိတည်နေရာ
+                  <i data-lucide="map-pin"></i>Current Location
                 </button>
               </div>
             </div>
           </div>
         </div>
-        <!-- Driver can't create -->
+        
         <div id="driverCreateMsg" style="display: none">
           <div class="glass-card" style="text-align: center; padding: 2.5rem">
-            <div style="font-size: 3rem; margin-bottom: 1rem">🚗</div>
+            <div style="font-size: 3rem; margin-bottom: 1rem"><i data-lucide="car"></i></div>
             <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
-              ယာဉ်မောင်းများအတွက်
+              For Driver
             </h3>
             <p
               style="
@@ -762,7 +762,7 @@
                 margin-bottom: 1rem;
               "
             >
-              Request အသစ် ဖန်တီးရန် ခရီးသည်အဖြစ် Login ဝင်ပါ။<br />
+              Request ဖန်တီးရန် ခရီးသည်အဖြစ် Login ဝင်ပါ။<br />
               ယာဉ်မောင်းများအနေဖြင့် "Request အားလုံး" tab မှ လက်ခံနိုင်ပါသည်။
             </p>
             <button
@@ -771,23 +771,23 @@
                 document.querySelector('[data-tab=all-requests]').click()
               "
             >
-              📋 Request များကြည့်မည်
+               Show Request
             </button>
           </div>
         </div>
       </div>
 
-      <!-- TAB 3: My Requests -->
+     
       <div class="tab-content" id="tab-my-requests">
         <div id="myRequestsList"></div>
       </div>
     </div>
 
-    <!-- Success Modal -->
+    
     <div id="requestSuccessModal" class="modal">
       <div class="modal-content">
         <h3 style="color: var(--green); margin-bottom: 1rem">
-          ✅ Request ပို့ပြီးပါပြီ
+        Request sent <i data-lucide="badge-check"></i>
         </h3>
         <p
           id="requestSuccessMsg"
@@ -803,34 +803,34 @@
             class="btn-primary"
             style="width: 100%"
           >
-            Request များကြည့်မည်
+            Show Request
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Join Request Modal -->
+    
     <div id="joinModal" class="modal">
       <div class="modal-content" style="max-width:520px; max-height:90vh; overflow-y:auto;">
-        <h3 style="color: var(--green); margin-bottom: 0.5rem">🤝 ခရီးစဉ်တွင် ပါဝင်မည်</h3>
+        <h3 style="color: var(--green); margin-bottom: 0.5rem">Join ride</h3>
         <p style="font-size:0.8rem; color:var(--gray); margin-bottom:0.75rem; line-height:1.5;">
-          သင်၏ မိမိ Pickup နှင့် Dropoff နေရာ GPS ပါပြီးပါက လမ်ကြောင်း ကိုက်ညညိ မှသပြီး ပါဝင်လိမည်။
+          လမ်းကြောင်းကိုက်ညီမှသာ ပါဝင်လိမ့်မည်
         </p>
-        <!-- Map for GPS selection -->
+        
         <div style="margin-bottom:0.75rem; font-size:0.72rem; color:var(--green-dark); font-weight:600; padding:0.4rem 0.75rem; background:var(--green-light); border-radius:8px;">
-          🗺️ မြေပုံပေါ်တွင် နှင့်ပါက မိိမိမှတ် Pickup → Dropoff ရွေးပါက အလပ်သာ ကည့်မွေသား</div>
+          Choose Pickup and Dripoff on map or Text</div>
         <div id="joinMap" style="height:200px; border-radius:12px; overflow:hidden; margin-bottom:0.75rem; border:1px solid var(--border-subtle);"></div>
         <div class="input-group">
-          <label class="input-label">📍 Pickup နေရာ</label>
+          <label class="input-label">Pickup</label>
           <input type="text" id="joinStartLocation" class="input-field" placeholder="e.g. သံလျင်, ဒဂုံ" required />
         </div>
         <div class="input-group">
-          <label class="input-label">🏁 Dropoff နေရာ</label>
+          <label class="input-label">Dropoff</label>
           <input type="text" id="joinEndLocation" class="input-field" placeholder="e.g. ဗဟန်း, ဆူးလေ" required />
         </div>
-        <!-- Route validation status -->
+        
         <div id="joinRouteStatus" style="display:none; margin:0.5rem 0; padding:0.6rem 0.85rem; border-radius:10px; font-size:0.78rem; font-weight:600;"></div>
-        <!-- Price Preview -->
+       
         <div id="joinPricePreview" style="
           margin: 0.5rem 0;
           padding: 0.85rem;
@@ -839,7 +839,7 @@
           border: 1px solid rgba(29,158,117,0.15);
           display: none;
         ">
-          <div style="font-size:0.68rem; color:var(--green-dark); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.5rem;">💰 သင်ပေးသင့်သောငွေ (ခန့်မှန်း)</div>
+          <div style="font-size:0.68rem; color:var(--green-dark); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.5rem;">Estimate Cost</div>
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <span id="joinDistNote" style="font-size:0.78rem; color:var(--gray);"></span>
             <span id="joinEstPrice" style="font-family:var(--font-heading); font-size:1.3rem; font-weight:800; color:var(--green);"></span>
@@ -847,33 +847,33 @@
           <div id="joinWeightNote" style="font-size:0.68rem; color:var(--gray); margin-top:0.2rem;"></div>
         </div>
         <div class="modal-actions">
-          <button id="confirmJoinBtn" class="btn-primary">🤝 ပါဝင်မည်</button>
-          <button onclick="document.getElementById('joinModal').style.display='none'; if(window._joinMap){window._joinMap.clearAll();}" class="btn-outline">မယ်တော့ဘူး</button>
+          <button id="confirmJoinBtn" class="btn-primary">Join</button>
+          <button onclick="document.getElementById('joinModal').style.display='none'; if(window._joinMap){window._joinMap.clearAll();}" class="btn-outline">Cancle</button>
         </div>
       </div>
     </div>
 
-    <!-- Accept Confirmation Modal -->
+    
     <div id="acceptModal" class="modal">
       <div class="modal-content">
         <h3 style="color: var(--green); margin-bottom: 1rem">
-          ✅ Request လက်ခံမည်
+          Request Acception
         </h3>
         <div style="margin-bottom: 1rem; line-height: 1.8">
           <p>
-            <span style="color: var(--gray)">ခရီးစဉ်:</span>
+            <span style="color: var(--gray)">Ride:</span>
             <strong id="acceptRoute">—</strong>
           </p>
           <p>
-            <span style="color: var(--gray)">ထွက်ခွာချိန်:</span>
+            <span style="color: var(--gray)">Pickup time:</span>
             <span id="acceptTime">—</span>
           </p>
-          <!-- Per-passenger price breakdown table -->
+         
           <div id="acceptBreakdownWrap" style="margin-top:0.75rem; padding:0.85rem; background:var(--green-light); border-radius:12px; border:1px solid rgba(29,158,117,0.15);">
-            <div style="font-size:0.7rem; font-weight:700; color:var(--green-dark); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.6rem;">💰 ခရီးသည်အလိုက် ကျသင့်ငွေ</div>
+            <div style="font-size:0.7rem; font-weight:700; color:var(--green-dark); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.6rem;">Cost per passenger</div>
             <div id="acceptBreakdownTable"></div>
             <div style="border-top:1px dashed rgba(29,158,117,0.25); margin-top:0.5rem; padding-top:0.5rem; display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:0.78rem; font-weight:700; color:var(--green-dark);">🚗 ယာဉ်မောင်းရရှိမည်</span>
+              <span style="font-size:0.78rem; font-weight:700; color:var(--green-dark);">Driver Got</span>
               <span id="acceptDriverEarnings" style="font-family:var(--font-heading); font-size:1.1rem; font-weight:800; color:var(--amber);">—</span>
             </div>
           </div>
@@ -882,14 +882,14 @@
           ⚠️ လက်ခံပါက ခရီးစဉ်အသစ် ဖန်တီးပြီး ခရီးသည်များကို အကြောင်းကြားပါမည်။
         </p>
         <div class="modal-actions">
-          <button id="confirmAcceptBtn" class="btn-primary">လက်ခံမည် ✅</button>
+          <button id="confirmAcceptBtn" class="btn-primary">Accept <i data-lucide="badge-check"></i></button>
           <button
             onclick="
               document.getElementById('acceptModal').style.display = 'none'
             "
             class="btn-outline"
           >
-            မယ်တော့ဘူး
+            Cancle
           </button>
         </div>
       </div>
@@ -907,19 +907,19 @@
         ?.addEventListener("click", toggleTheme);
 
       if (!requireAuth()) {
-        // redirect
+        
       } else {
         const user = getCurrentUser();
         const isDriver = user.userType === "driver";
         let rideMap;
         const priceMatcher = new RouteMatcher();
 
-        // Initialize wallet balance display
+       
         const _walBalEl = document.getElementById('reqWalletBalance');
         if (_walBalEl && user) {
           _walBalEl.textContent = (user.balance || 0).toLocaleString() + ' ကျပ်';
         }
-        // ── Tab switching ──
+        
         document.querySelectorAll(".tab-btn").forEach((btn) => {
           btn.addEventListener("click", () => {
             document
@@ -935,13 +935,13 @@
           });
         });
 
-        // ── Show/hide create form based on user type ──
+        
         if (isDriver) {
           document.getElementById("createFormArea").style.display = "none";
           document.getElementById("driverCreateMsg").style.display = "block";
         }
 
-        // ── Notification system ──
+       
         function loadNotifications() {
           const notifications = db.getNotifications(user.id);
           const unreadCount = notifications.filter((n) => !n.read).length;
@@ -984,11 +984,11 @@
         function getTimeAgo(dateStr) {
           const diff = Date.now() - new Date(dateStr).getTime();
           const mins = Math.floor(diff / 60000);
-          if (mins < 1) return "ယခု";
-          if (mins < 60) return `${mins} မိနစ်အကြာ`;
+          if (mins < 1) return "Now";
+          if (mins < 60) return `${mins} mins Ago`;
           const hours = Math.floor(mins / 60);
-          if (hours < 24) return `${hours} နာရီအကြာ`;
-          return `${Math.floor(hours / 24)} ရက်အကြာ`;
+          if (hours < 24) return `${hours} Hours Ago`;
+          return `${Math.floor(hours / 24)} Days Ago`;
         }
 
         document.getElementById("notifBell").addEventListener("click", (e) => {
@@ -1007,7 +1007,7 @@
             loadNotifications();
           });
 
-        // ── Render all pending requests ──
+        
         function renderAllRequests() {
           const requests = db.getActivePendingRequests();
           const container = document.getElementById("allRequestsList");
@@ -1018,7 +1018,7 @@
             <div class="empty-state-req">
               <div class="empty-icon">📭</div>
               <p>လက်ရှိ Pending Ride Request မရှိသေးပါ<br>
-                ${!isDriver ? '<a href="#" onclick="document.querySelector(\'[data-tab=create-request]\').click(); return false;" style="color:var(--green); font-weight:600;">✏️ Request အသစ် ဖန်တီးမည်</a>' : ""}
+                ${!isDriver ? '<a href="#" onclick="document.querySelector(\'[data-tab=create-request]\').click(); return false;" style="color:var(--green); font-weight:600;"> Create new ride request</a>' : ""}
               </p>
             </div>`;
             return;
@@ -1029,7 +1029,7 @@
             .join("");
         }
 
-        // ── Render my requests ──
+        
         function renderMyRequests() {
           const requests = db.getRideRequestsByPassenger(user.id);
           const container = document.getElementById("myRequestsList");
@@ -1041,8 +1041,8 @@
           if (requests.length === 0) {
             container.innerHTML = `
             <div class="empty-state-req">
-              <div class="empty-icon">📋</div>
-              <p>သင့်တွင် Ride Request မရှိသေးပါ</p>
+              <div class="empty-icon"><i data-lucide="clipboard-list"></i></div>
+              <p>Request is Empty</p>
             </div>`;
             return;
           }
@@ -1053,7 +1053,7 @@
             .join("");
         }
 
-        // ── Request card renderer ──
+        
         function renderRequestCard(req, context) {
           const statusLabels = {
             pending: "🟡 Pending",
@@ -1070,18 +1070,18 @@
           });
           const totalPassengers = 1 + (req.joinedPassengers?.length || 0);
 
-          // Build per-passenger price rows (uses priceBreakdown if available)
+          
           const breakdown = req.priceBreakdown || [];
           const getBreakdownFor = (pid) => breakdown.find(b => b.passengerId === pid);
 
-          // Requester pill
+          
           const reqBD = getBreakdownFor(req.passengerId);
           let passengerPills = `
           <div class="req-passenger-pill">
             <span class="avatar">${req.passengerName.charAt(0)}</span>
             <div>
               <div>${req.passengerName} <span style="font-size:0.6rem; color:var(--green); margin-left:2px;">(requester)</span></div>
-              ${reqBD ? `<div style="font-size:0.65rem; color:var(--gray); margin-top:1px;">📏 ${reqBD.distanceKm} km &nbsp;·&nbsp; <span style="color:var(--green); font-weight:700;">💰 ${reqBD.price.toLocaleString()} ကျပ် (${reqBD.weightPercent}%)</span></div>` : ''}
+              ${reqBD ? `<div style="font-size:0.65rem; color:var(--gray); margin-top:1px;">📏 ${reqBD.distanceKm} km &nbsp;·&nbsp; <span style="color:var(--green); font-weight:700;"> ${reqBD.price.toLocaleString()} Kyats (${reqBD.weightPercent}%)</span></div>` : ''}
             </div>
           </div>`;
 
@@ -1094,40 +1094,40 @@
               <span class="avatar">${p.name.charAt(0)}</span>
               <div>
                 <div>${p.name}</div>
-                ${bd ? `<div style="font-size:0.65rem; color:var(--gray); margin-top:1px;">📏 ${bd.distanceKm} km &nbsp;·&nbsp; <span style="color:var(--green); font-weight:700;">💰 ${bd.price.toLocaleString()} ကျပ် (${bd.weightPercent}%)</span></div>` : ''}
+                ${bd ? `<div style="font-size:0.65rem; color:var(--gray); margin-top:1px;">📏 ${bd.distanceKm} km &nbsp;·&nbsp; <span style="color:var(--green); font-weight:700;">${bd.price.toLocaleString()} Kyats (${bd.weightPercent}%)</span></div>` : ''}
               </div>
             </div>`;
               })
               .join("");
           }
 
-          // Action buttons
+        
           let actions = "";
           const isOwner = req.passengerId === user.id;
           const hasJoined = req.joinedPassengers?.some((p) => p.id === user.id);
 
           if (req.status === "pending") {
             if (isDriver) {
-              // Driver sees Accept / Skip
+              
               actions = `
-              <button class="req-btn req-btn-accept" onclick="window.showAcceptModal('${req.id}')">✅ လက်ခံမည်</button>
-              <button class="req-btn req-btn-skip" onclick="window.skipRequest('${req.id}')">⏭️ ကျော်မည်</button>`;
+              <button class="req-btn req-btn-accept" onclick="window.showAcceptModal('${req.id}')">Accept</button>
+              <button class="req-btn req-btn-skip" onclick="window.skipRequest('${req.id}')">Skip</button>`;
             } else if (isOwner) {
-              // Owner sees Cancel
+              
               actions = `
-              <button class="req-btn req-btn-cancel" onclick="window.cancelRequest('${req.id}')">❌ ပယ်ဖျက်မည်</button>`;
+              <button class="req-btn req-btn-cancel" onclick="window.cancelRequest('${req.id}')">Cancel</button>`;
             } else if (hasJoined) {
-              // Already joined — can leave
+              
               actions = `
-              <button class="req-btn req-btn-leave" onclick="window.leaveRequest('${req.id}')">🚪 ထွက်မည်</button>`;
+              <button class="req-btn req-btn-leave" onclick="window.leaveRequest('${req.id}')">Leave</button>`;
             } else {
-              // Other passenger — can join (opens modal to enter their own route)
+              
               actions = `
-              <button class="req-btn req-btn-join" onclick="window.showJoinModal('${req.id}')">🤝 ပါဝင်မည်</button>`;
+              <button class="req-btn req-btn-join" onclick="window.showJoinModal('${req.id}')">Join</button>`;
             }
           }
 
-          // Accepted info
+          
           let acceptedInfo = "";
           if (req.status === "accepted" && req.acceptedDriverId) {
             const users = db.getUsers();
@@ -1136,26 +1136,26 @@
               acceptedInfo = `
               <div style="margin-top:0.6rem; padding:0.6rem 0.85rem; background:rgba(16,185,129,0.08); border-radius:10px; border:1px solid rgba(16,185,129,0.15);">
                 <span style="font-size:0.75rem; color:#059669; font-weight:600;">
-                  🚗 ${driver.name} (${driver.carModel || ""} - ${driver.carPlate || ""}) လက်ခံပြီး
+                  <i data-lucide="car"></i> ${driver.name} (${driver.carModel || ""} - ${driver.carPlate || ""}) Accepted
                 </span>
               </div>`;
             }
           }
 
-          // Payment status badge
+          
           let paymentBadge = '';
           if (req.status === 'pending' || req.status === 'accepted') {
             const totalPaid = (req.priceBreakdown || []).reduce((s, b) => s + (b.paidAmount || 0), 0);
             if (totalPaid > 0) {
               paymentBadge = `
               <div style="margin-top:0.4rem; padding:0.35rem 0.7rem; border-radius:8px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.12); display:inline-flex; align-items:center; gap:0.3rem;">
-                <span style="font-size:0.68rem; color:#059669; font-weight:600;">💳 ပေးချေပြီး ${totalPaid.toLocaleString()} ကျပ်</span>
+                <span style="font-size:0.68rem; color:#059669; font-weight:600;">💳 Paid ${totalPaid.toLocaleString()} Kyats</span>
               </div>`;
             }
           } else if (req.status === 'cancelled' && req.totalRefunded) {
             paymentBadge = `
             <div style="margin-top:0.4rem; padding:0.35rem 0.7rem; border-radius:8px; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.12); display:inline-flex; align-items:center; gap:0.3rem;">
-              <span style="font-size:0.68rem; color:#2563eb; font-weight:600;">💰 ပြန်အမ်းပြီး ${req.totalRefunded.toLocaleString()} ကျပ်</span>
+              <span style="font-size:0.68rem; color:#2563eb; font-weight:600;">Refund ${req.totalRefunded.toLocaleString()} Kyats</span>
             </div>`;
           }
 
@@ -1171,12 +1171,12 @@
               <span>👥 ${totalPassengers} ဦး</span>
               ${req.distanceKm ? `<span>📏 ${req.distanceKm} km</span>` : ""}
               ${breakdown.length > 0
-                ? `<span style="color:var(--green); font-weight:600;">💰 ${breakdown.map(b => b.price.toLocaleString()).join(' + ')} ကျပ်</span>`
-                : `<span>💰 ${(req.estimatedPrice || 0).toLocaleString()} ကျပ်</span>`
+                ? `<span style="color:var(--green); font-weight:600;">💰 ${breakdown.map(b => b.price.toLocaleString()).join(' + ')} Kyats</span>`
+                : `<span>💰 ${(req.estimatedPrice || 0).toLocaleString()} Kyats</span>`
               }
             </div>
             <div style="font-size:0.7rem; color:var(--gray); font-weight:600; margin-bottom:0.35rem; text-transform:uppercase; letter-spacing:0.04em;">
-              🧑‍🤝‍🧑 ခရီးသည်များ
+              🧑‍🤝‍🧑 Passengers
             </div>
             <div class="req-passengers-row">${passengerPills}</div>
             ${paymentBadge}
@@ -1186,33 +1186,31 @@
         `;
         }
 
-        // ── Window actions ──
-
-        // ── Join Request: open modal, init mini-map, validate corridor, preview price ──
+        
         let pendingJoinRequestId = null;
-        let pendingJoinReq = null;    // the full request object for validation preview
-        window._joinMap = null;       // mini map instance inside join modal
+        let pendingJoinReq = null;    
+        window._joinMap = null;      
 
         window.showJoinModal = function(requestId) {
           pendingJoinRequestId = requestId;
           const requests = db.getRideRequests();
           pendingJoinReq = requests.find(r => r.id === requestId);
 
-          // Reset UI
+         
           document.getElementById('joinStartLocation').value = '';
           document.getElementById('joinEndLocation').value = '';
           document.getElementById('joinPricePreview').style.display = 'none';
           document.getElementById('joinRouteStatus').style.display = 'none';
           document.getElementById('joinModal').style.display = 'flex';
 
-          // Init mini-map (must be after display:flex so Leaflet can measure size)
+          
           setTimeout(() => {
             if (window._joinMap) {
               window._joinMap.clearAll();
             } else if (typeof L !== 'undefined') {
               window._joinMap = new RideMap('joinMap', {
                 onLocationSelected: (mode) => {
-                  // Update input fields from map selection
+                 
                   if (mode === 'start' && window._joinMap.startLocation) {
                     document.getElementById('joinStartLocation').value =
                       window._joinMap.startLocationName || `${window._joinMap.startLocation.lat.toFixed(4)}, ${window._joinMap.startLocation.lng.toFixed(4)}`;
@@ -1225,7 +1223,7 @@
                 }
               });
             }
-            // Enable click-to-select: first click = start, second = end (toggle)
+           
             if (window._joinMap) {
               const startInput = document.getElementById('joinStartLocation');
               const endInput = document.getElementById('joinEndLocation');
@@ -1234,7 +1232,7 @@
           }, 100);
         };
 
-        // Focus toggles map mode
+        
         document.getElementById('joinStartLocation')?.addEventListener('focus', () => {
           if (window._joinMap) window._joinMap.enableClickToSelect('start', document.getElementById('joinStartLocation'), null, null);
         });
@@ -1242,9 +1240,7 @@
           if (window._joinMap) window._joinMap.enableClickToSelect('end', document.getElementById('joinEndLocation'), null, null);
         });
 
-        // Live price + corridor preview (GPS corridor check only — text alias matching removed)
-        // Logic: geocode joiner's typed text → get GPS coords → draw line from request start→end
-        //        → check joiner's start is within 2km of that line AND same direction → ✅ match
+        
         async function updateJoinPreview() {
           const jm = window._joinMap;
           const statusEl = document.getElementById('joinRouteStatus');
@@ -1258,8 +1254,7 @@
             return;
           }
 
-          // ── Step 1: Resolve GPS coordinates ──
-          // Use cached coords only when the text hasn't changed (avoids stale map data)
+          
           let jStartLat = null, jStartLng = null, jEndLat = null, jEndLng = null;
 
           const cacheValid = jm &&
@@ -1268,16 +1263,16 @@
             jm._geocodedEndText   === endText;
 
           if (cacheValid) {
-            // Re-use previously geocoded result for this exact text
+           
             jStartLat = jm.startLocation.lat; jStartLng = jm.startLocation.lng;
             jEndLat   = jm.endLocation.lat;   jEndLng   = jm.endLocation.lng;
           } else if (jm) {
-            // Geocode the typed place names to GPS coordinates
+            
             statusEl.style.display = 'block';
             statusEl.style.background = 'rgba(59,130,246,0.08)';
             statusEl.style.color      = '#2563eb';
             statusEl.style.border     = '1px solid rgba(59,130,246,0.2)';
-            statusEl.textContent      = '📍 GPS တည်နေရာ ရှာဖွေနေသည်...';
+            statusEl.textContent      = 'GPS Searching...';
             priceEl.style.display = 'none';
 
             try {
@@ -1291,19 +1286,19 @@
                 statusEl.style.color      = '#dc2626';
                 statusEl.style.border     = '1px solid rgba(239,68,68,0.2)';
                 statusEl.textContent = !sg
-                  ? `❌ "${startText}" GPS မတွေ့ပါ — ပိုမိုအသေးစိတ် ထည့်ပါ`
-                  : `❌ "${endText}" GPS မတွေ့ပါ — ပိုမိုအသေးစိတ် ထည့်ပါ`;
+                  ? `❌ "${startText}" Location not found`
+                  : `❌ "${endText}"Location not found `;
                 return;
               }
 
               jStartLat = sg.lat; jStartLng = sg.lng;
               jEndLat   = eg.lat; jEndLng   = eg.lng;
 
-              // Show joiner's route on the mini-map
+              
               jm.setStartLocation(jStartLat, jStartLng, startText);
               jm.setEndLocation(jEndLat,   jEndLng,   endText);
 
-              // Cache: avoid re-geocoding if text hasn't changed
+              
               jm._geocodedStartText = startText;
               jm._geocodedEndText   = endText;
 
@@ -1314,17 +1309,14 @@
               return;
             }
           } else {
-            // Map not ready yet — wait for 100ms init
+            
             statusEl.style.display = 'none';
             priceEl.style.display  = 'none';
             return;
           }
 
-          // ── Step 2: Geometric corridor check ──
-          // Text-typed area names geocode to area CENTRES (not precise streets).
-          // Nominatim "Hledan" may be 3-4km from the stored GPS point — so we use
-          // a 5km tolerance for text input while still enforcing direction.
-          const TEXT_PICKUP_KM  = 5.0;  // tolerant threshold for area-level geocoding
+          
+          const TEXT_PICKUP_KM  = 5.0;  
           const TEXT_DROPOFF_KM = 5.0;
 
           let corridorOk   = false;
@@ -1334,7 +1326,7 @@
           let directionOk  = false;
 
           if (pendingJoinReq && pendingJoinReq.startLat != null) {
-            // Bearing check: must travel in roughly the same direction
+            
             const jBearing = priceMatcher._bearing(jStartLat, jStartLng, jEndLat, jEndLng);
             const rBearing = priceMatcher._bearing(
               pendingJoinReq.startLat, pendingJoinReq.startLng,
@@ -1344,7 +1336,7 @@
             directionOk = bearingDiff <= priceMatcher.BEARING_MAX_DIFF_DEG;
 
             if (directionOk) {
-              // Point-to-segment distances: joiner's start/end vs request's route line
+              
               const pu = priceMatcher._pointToSegment(
                 jStartLng, jStartLat,
                 pendingJoinReq.startLng, pendingJoinReq.startLat,
@@ -1358,7 +1350,7 @@
               pickupDist  = pu.distance;
               dropoffDist = dr.distance;
 
-              // Direction check: joiner's pickup must come before dropoff along the route
+              
               const dirOk = pu.t < dr.t;
 
               corridorOk = pickupDist  <= TEXT_PICKUP_KM &&
@@ -1366,10 +1358,10 @@
                            dirOk;
             }
           } else {
-            corridorOk = true; // No stored GPS — allow join
+            corridorOk = true; 
           }
 
-          // ── Step 3: Show result with actual distances ──
+          
           statusEl.style.display = 'block';
           if (corridorOk) {
             statusEl.style.background = 'rgba(16,185,129,0.1)';
@@ -1377,17 +1369,17 @@
             statusEl.style.border     = '1px solid rgba(16,185,129,0.25)';
             const pKm = pickupDist  != null ? `${Math.round(pickupDist  * 10) / 10} km` : '?';
             const dKm = dropoffDist != null ? `${Math.round(dropoffDist * 10) / 10} km` : '?';
-            statusEl.textContent = `✅ လမ်ကြောင်း ကိုက်ညညိပါသည် — Pickup ${pKm} · Dropoff ${dKm} (လမ်ကြောင်းမှ)`;
+            statusEl.textContent = `✅ Same Route — Pickup ${pKm} · Dropoff ${dKm} (From Route)`;
           } else {
             let reason;
             if (!directionOk && bearingDiff != null) {
-              reason = `ဦးတည်ရာ မတူပါ — ${Math.round(bearingDiff)}° ကွာဟနေသည် (${priceMatcher.BEARING_MAX_DIFF_DEG}° ထက် မကျော်ရ)`;
+              reason = `Diff Direation — ${Math.round(bearingDiff)}° Diff (${priceMatcher.BEARING_MAX_DIFF_DEG}° need to same at least)`;
             } else if (pickupDist != null && dropoffDist != null) {
               const pKm = Math.round(pickupDist  * 10) / 10;
               const dKm = Math.round(dropoffDist * 10) / 10;
-              reason = `လမ်ကြောင်းမှ အကွာအဝေး — Pickup ${pKm} km · Dropoff ${dKm} km (${TEXT_PICKUP_KM} km အတွင်း မဝင်ပါ)`;
+              reason = `distance from route — Pickup ${pKm} km · Dropoff ${dKm} km (${TEXT_PICKUP_KM} km အတွင်း မဝင်ပါ)`;
             } else {
-              reason = 'လမ်ကြောင်း တိုက်ဆိုင်မှု မရှိပါ';
+              reason = 'not the same route';
             }
             statusEl.style.background = 'rgba(239,68,68,0.08)';
             statusEl.style.color      = '#dc2626';
@@ -1395,7 +1387,7 @@
             statusEl.textContent      = `❌ ${reason}`;
           }
 
-          // ── Step 4: Price preview (always show when GPS is available) ──
+          
           const myDist = priceMatcher.calculateDistance(jStartLat, jStartLng, jEndLat, jEndLng);
           const existingDists = (pendingJoinReq?.priceBreakdown || []).map(b => b.distanceKm);
           const allDists   = [...existingDists, myDist];
@@ -1406,28 +1398,28 @@
 
           document.getElementById('joinDistNote').textContent   = `📏 ${Math.round(myDist * 10) / 10} km (${myBD.weightPercent}%)`;
           document.getElementById('joinEstPrice').textContent   = myBD.passengerPrice.toLocaleString() + ' ကျပ်';
-          document.getElementById('joinWeightNote').textContent = `ခရီးသည် ${existingDists.length + 1} ဦးနှင့် ကျသင့်ငွေ`;
+          document.getElementById('joinWeightNote').textContent = `Passenger ${existingDists.length + 1} ဦးနှင့် ကျသင့်ငွေ`;
           priceEl.style.display = 'block';
         }
 
-        // Debounce helper so geocoding doesn't fire on every keystroke
+        
         let _joinPreviewTimer = null;
         function debouncedUpdateJoinPreview() {
           clearTimeout(_joinPreviewTimer);
           _joinPreviewTimer = setTimeout(() => updateJoinPreview(), 600);
         }
 
-        // Text input change triggers geocoded preview
+       
         ['joinStartLocation','joinEndLocation'].forEach(id => {
           document.getElementById(id)?.addEventListener('input', () => debouncedUpdateJoinPreview());
         });
 
-        // Confirm join
+        
         document.getElementById('confirmJoinBtn').addEventListener('click', () => {
           if (!pendingJoinRequestId) return;
           const startLoc = document.getElementById('joinStartLocation').value.trim();
           const endLoc   = document.getElementById('joinEndLocation').value.trim();
-          if (!startLoc || !endLoc) { alert('ကျေးဇူးပြု၍ Pickup နှင့် Dropoff နေရာ ဖြည့်ပါ'); return; }
+          if (!startLoc || !endLoc) { alert('Please fill Pickup and Dropoff'); return; }
           const jm = window._joinMap;
           try {
             const updatedReq = db.joinRideRequest(pendingJoinRequestId, user.id, {
@@ -1440,7 +1432,7 @@
             });
             document.getElementById('joinModal').style.display = 'none';
             if (jm) jm.clearAll();
-            // Find how much was deducted
+            
             const myBD = (updatedReq.priceBreakdown || []).find(b => b.passengerId === user.id);
             const deducted = myBD ? (myBD.paidAmount || myBD.price || 0) : 0;
             pendingJoinRequestId = null;
@@ -1448,80 +1440,80 @@
             renderAllRequests();
             renderMyRequests();
             loadNotifications();
-            // Update wallet balance display
+            
             const freshUser = getCurrentUser();
             const wBal = document.getElementById('reqWalletBalance');
-            if (wBal && freshUser) wBal.textContent = (freshUser.balance || 0).toLocaleString() + ' ကျပ်';
-            showToast(`🤝 ပါဝင်ပြီး! 💳 ${deducted.toLocaleString()} ကျပ် Wallet မှ ဖြတ်ယူပြီး`);
+            if (wBal && freshUser) wBal.textContent = (freshUser.balance || 0).toLocaleString() + ' Kyats';
+            showToast(`Joined! 💳 ${deducted.toLocaleString()} Kyats Wallet မှ ဖြတ်ယူပြီး`);
           } catch (err) {
             alert('❌ ' + err.message);
           }
         });
 
-        // Alias: direct join opens modal
+        
         window.joinRequest = function(requestId) { window.showJoinModal(requestId); };
 
-        // Leave a request
+       
         window.leaveRequest = function (requestId) {
           const requests = db.getRideRequests();
           const req = requests.find(r => r.id === requestId);
           const myBD = req ? (req.priceBreakdown || []).find(b => b.passengerId === user.id) : null;
           const refundAmt = myBD ? (myBD.paidAmount || myBD.price || 0) : 0;
-          if (!confirm(`Request မှ ထွက်ခွာမှာ သေချာပါသလား?\n\n💰 ပြန်အမ်းမည့်ငွေ: ${refundAmt.toLocaleString()} ကျပ်`)) return;
+          if (!confirm(`Are u sure to leave from request?\n\n Refund amount: ${refundAmt.toLocaleString()} Kyats`)) return;
           try {
             db.leaveRideRequest(requestId, user.id);
             renderAllRequests();
             renderMyRequests();
-            // Update wallet balance
+            
             const freshUser = getCurrentUser();
             const wBal = document.getElementById('reqWalletBalance');
-            if (wBal && freshUser) wBal.textContent = (freshUser.balance || 0).toLocaleString() + ' ကျပ်';
-            showToast(`💰 ထွက်ခွာပြီး ${refundAmt.toLocaleString()} ကျပ် ပြန်အမ်းပြီး`);
+            if (wBal && freshUser) wBal.textContent = (freshUser.balance || 0).toLocaleString() + ' Kyats';
+            showToast(` Left ${refundAmt.toLocaleString()} Kyats Refund`);
           } catch (err) {
             alert("❌ " + err.message);
           }
         };
 
-        // Skip/reject a request (driver)
+      
         window.skipRequest = function (requestId) {
           try {
             db.rejectRideRequest(requestId, user.id);
             renderAllRequests();
-            showToast("⏭️ Request ကျော်ပြီးပါပြီ");
+            showToast("Skipped Request");
           } catch (err) {
             alert("❌ " + err.message);
           }
         };
 
-        // Cancel own request
+        
         window.cancelRequest = function (requestId) {
           const requests = db.getRideRequests();
           const req = requests.find(r => r.id === requestId);
           if (!req) return;
 
-          // Check 3-hour policy before confirming
+          
           const depDate = new Date(req.departureTime);
           const hoursLeft = (depDate - new Date()) / (1000 * 60 * 60);
 
           if (hoursLeft < 3) {
-            alert(`⏰ ထွက်ခွာမည့်အချိန် ${Math.round(hoursLeft * 10) / 10} နာရီသာ ကျန်တော့သဖြင့် Cancel မရတော့ပါ။\n(3 နာရီ အလိုမှ Cancel နိုင်ပါသည်)`);
+            alert(`⏰ ထွက်ခွာမည့်အချိန် ${Math.round(hoursLeft * 10) / 10} နာရီသာ ကျန်တော့သဖြင့် Cancel မရတော့ပါ။\n(3 နာရီ မတိုင်ခင် Cancel နိုင်ပါသည်)`);
             return;
           }
 
-          // Show refund info in confirm
+          
           const totalRefund = (req.priceBreakdown || []).reduce((sum, b) => sum + (b.paidAmount || b.price || 0), 0);
-          if (!confirm(`ဤ Request ကို ပယ်ဖျက်မှာ သေချာပါသလား?\n\n💰 ပြန်အမ်းမည့်ငွေ: ${totalRefund.toLocaleString()} ကျပ်\n(ခရီးသည် ${(req.joinedPassengers||[]).length + 1} ဦးစလုံးကို ပြန်အမ်းမည်)`)) return;
+          if (!confirm(`Are u sure to cancel  this request\n\n Refund amount: ${totalRefund.toLocaleString()} Kyats\n(Passenger ${(req.joinedPassengers||[]).length + 1} ဦးစလုံးကို ပြန်အမ်းမည်)`)) return;
           try {
             db.cancelRideRequest(requestId, user.id);
             renderAllRequests();
             renderMyRequests();
-            showToast(`💰 Request ပယ်ဖျက်ပြီး ${totalRefund.toLocaleString()} ကျပ် ပြန်အမ်းပြီး`);
+            showToast(`Canceled Request ${totalRefund.toLocaleString()} Kyats Refund`);
           } catch (err) {
             alert('❌ ' + err.message);
           }
         };
 
-        // Show accept confirmation modal with per-passenger price breakdown
+        
         let pendingAcceptId = null;
         window.showAcceptModal = function (requestId) {
           const requests = db.getRideRequests();
@@ -1540,7 +1532,7 @@
             day: "numeric",
           });
 
-          // Build per-passenger breakdown table
+          
           const breakdown = req.priceBreakdown || [];
           let tableHtml = '';
           let totalDriverEarnings = 0;
@@ -1554,15 +1546,15 @@
                   <span style="font-weight:600; color:var(--text-primary);">${b.name}</span>
                   <span style="color:var(--gray); margin-left:0.4rem;">📏 ${b.distanceKm} km (${b.weightPercent}%)</span>
                 </div>
-                <span style="font-family:var(--font-heading); font-weight:700; color:var(--green);">${b.price.toLocaleString()} ကျပ်</span>
+                <span style="font-family:var(--font-heading); font-weight:700; color:var(--green);">${b.price.toLocaleString()} Kyats</span>
               </div>`;
             });
           } else {
-            // Fallback if no breakdown
+            
             const allNames = [req.passengerName, ...(req.joinedPassengers||[]).map(p=>p.name)];
             allNames.forEach(name => {
               tableHtml += `<div style="display:flex; justify-content:space-between; font-size:0.78rem; padding:0.25rem 0;">
-                <span>${name}</span><span style="color:var(--green); font-weight:600;">${(req.estimatedPrice||0).toLocaleString()} ကျပ်</span></div>`;
+                <span>${name}</span><span style="color:var(--green); font-weight:600;">${(req.estimatedPrice||0).toLocaleString()} Kyats</span></div>`;
               totalDriverEarnings += req.estimatedPrice || 0;
             });
           }
@@ -1570,7 +1562,7 @@
           const appTaxTotal = Math.floor(totalDriverEarnings * 0.05);
           document.getElementById('acceptBreakdownTable').innerHTML = tableHtml;
           document.getElementById('acceptDriverEarnings').textContent =
-            totalDriverEarnings.toLocaleString() + ' ကျပ် (App အခွန် ' + appTaxTotal.toLocaleString() + ' ကျပ် နုတ်ပြီး)';
+            totalDriverEarnings.toLocaleString() + ' Kyats (App tax ' + appTaxTotal.toLocaleString() + ' Kyats Reduce)';
           document.getElementById("acceptModal").style.display = "flex";
         };
 
@@ -1585,13 +1577,13 @@
               renderAllRequests();
               renderMyRequests();
               loadNotifications();
-              showToast("✅ Request လက်ခံပြီး ခရီးစဉ်အသစ် ဖန်တီးပြီးပါပြီ!");
+              showToast("Request accepted and new ride created");
             } catch (err) {
               alert("❌ " + err.message);
             }
           });
 
-        // ── Toast notification ──
+        
         function showToast(message) {
           const toast = document.createElement("div");
           toast.style.cssText = `
@@ -1614,7 +1606,7 @@
           }, 3000);
         }
 
-        // ── Map initialization for create form ──
+      
         function initMap() {
           if (typeof L === "undefined" || isDriver) return;
 
@@ -1658,14 +1650,14 @@
           });
         }
 
-        // Current location button
+        
         document
           .getElementById("getCurrentLocation")
           ?.addEventListener("click", async (e) => {
             e.preventDefault();
             if (!rideMap) return;
             const btn = e.currentTarget;
-            btn.textContent = "⏳ ရှာဖွေနေသည်...";
+            btn.textContent = "⏳ Searching...";
             btn.disabled = true;
             try {
               const pos = await rideMap.getCurrentLocation();
@@ -1674,21 +1666,21 @@
                 address || `${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)}`;
               rideMap.setStartLocation(pos.lat, pos.lng, displayAddr);
               reqStartInput.value = displayAddr;
-              btn.textContent = "✅ တည်နေရာရပြီ";
+              btn.textContent = "✅ Founded";
               setTimeout(() => {
-                btn.textContent = "📍 လက်ရှိတည်နေရာ";
+                btn.textContent = " Current Location";
                 btn.disabled = false;
               }, 2000);
             } catch {
-              btn.textContent = "❌ ရှာမတွေ့ပါ";
+              btn.textContent = "❌ Not Found";
               setTimeout(() => {
-                btn.textContent = "📍 လက်ရှိတည်နေရာ";
+                btn.textContent = " Current Location";
                 btn.disabled = false;
               }, 2000);
             }
           });
 
-        // Price preview
+        
         function updatePricePreview() {
           const preview = document.getElementById("reqPricePreview");
           if (!rideMap || !rideMap.startLocation || !rideMap.endLocation) {
@@ -1702,32 +1694,32 @@
             rideMap.endLocation.lng,
           );
           document.getElementById("reqEstPrice").textContent =
-            result.price.toLocaleString() + " ကျပ်";
+            result.price.toLocaleString() + " Kyats";
           document.getElementById("reqDistNote").textContent =
-            `📏 ${result.distanceKm} km ခရီးစဉ်`;
+            `📏 ${result.distanceKm} km ride`;
           preview.style.display = "block";
-          // Show payment note when price is visible
+          
           document.getElementById('reqPaymentNote').style.display = 'block';
-          // Check if wallet balance is sufficient
+          
           const curUser = getCurrentUser();
           const bal = curUser?.balance || 0;
           const walBalEl = document.getElementById('reqWalletBalance');
-          if (walBalEl) walBalEl.textContent = bal.toLocaleString() + ' ကျပ်';
+          if (walBalEl) walBalEl.textContent = bal.toLocaleString() + ' Kyats';
           if (bal < result.price) {
-            walBalEl.style.color = '#dc2626'; // red
+            walBalEl.style.color = '#dc2626'; 
           } else {
-            walBalEl.style.color = '#2563eb'; // blue
+            walBalEl.style.color = '#2563eb'; 
           }
         }
 
-        // Default departure time
+        
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(8, 30, 0, 0);
         const depInput = document.getElementById("reqDepartureTime");
         if (depInput) depInput.value = tomorrow.toISOString().slice(0, 16);
 
-        // ── Create request form submit ──
+        
         document
           .getElementById("createRequestForm")
           ?.addEventListener("submit", (e) => {
@@ -1739,7 +1731,7 @@
               document.getElementById("reqDepartureTime").value;
 
             if (!startLocation || !endLocation || !departureTime) {
-              alert("ကျေးဇူးပြု၍ လိုအပ်သော အချက်များ ဖြည့်ပါ။");
+              alert("Please fill all fields");
               return;
             }
 
@@ -1757,15 +1749,15 @@
                 endLng: endCoords?.lng ?? null,
               });
 
-              // Update wallet balance display
+             
               const updatedUser = getCurrentUser();
               const walletBalEl = document.getElementById('reqWalletBalance');
               if (walletBalEl && updatedUser) {
-                walletBalEl.textContent = (updatedUser.balance || 0).toLocaleString() + ' ကျပ်';
+                walletBalEl.textContent = (updatedUser.balance || 0).toLocaleString() + ' Kyats';
               }
 
               document.getElementById("requestSuccessMsg").textContent =
-                `"${startLocation} → ${endLocation}" ခရီးစဉ် Request အောင်မြင်ပါပြီ။ 💳 ${newReq.estimatedPrice.toLocaleString()} ကျပ် Wallet မှ ဖြတ်ယူပြီး။ ယာဉ်မောင်း လက်ခံသည်နှင့် အကြောင်းကြားပါမည်။`;
+                `"${startLocation} → ${endLocation}" Ride Request success! 💳 ${newReq.estimatedPrice.toLocaleString()} Kyats Wallet မှ ဖြတ်ယူပြီး။ Noti when driver accept`;
               document.getElementById("requestSuccessModal").style.display =
                 "flex";
 
@@ -1782,19 +1774,19 @@
             }
           });
 
-        // ── Initialize everything ──
+       
         renderAllRequests();
         renderMyRequests();
         loadNotifications();
         initMap();
 
-        // ── Pre-fill from URL params (e.g. coming from find-ride no-results) ──
+       
         if (!isDriver) {
           const urlParams = new URLSearchParams(window.location.search);
           const prefillStart = urlParams.get("start");
           const prefillEnd = urlParams.get("end");
           if (prefillStart || prefillEnd) {
-            // Switch to create tab
+            
             document
               .querySelectorAll(".tab-btn")
               .forEach((b) => b.classList.remove("active"));
@@ -1807,7 +1799,7 @@
             document
               .getElementById("tab-create-request")
               .classList.add("active");
-            // Pre-fill inputs
+            
             if (prefillStart)
               document.getElementById("reqStartLocation").value = prefillStart;
             if (prefillEnd)
@@ -1815,7 +1807,7 @@
           }
         }
 
-        // Logout
+        
         document.getElementById("logoutBtn")?.addEventListener("click", (e) => {
           e.preventDefault();
           logout();
@@ -1823,7 +1815,7 @@
       }
     </script>
     <script>
-      // Mobile hamburger menu toggle
+      
       (function () {
         const btn = document.getElementById("mobileMenuBtn");
         const nav = document.querySelector(".nav-links");
@@ -1841,5 +1833,9 @@
         }
       })();
     </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+  lucide.createIcons();
+</script>
   </body>
 </html>

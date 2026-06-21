@@ -1,10 +1,8 @@
-/* style.css - Combined design from both reference files with SmartRide colors */
-/* Import fonts */
+
 @import "./font.css";
 
-/* CSS Variables - SmartRide color palette */
 :root {
-  /* Colors of my project */
+
   --green: #1d9e75;
   --green-light: #e1f5ee;
   --green-dark: #085041;
@@ -12,7 +10,7 @@
   --amber-light: #faeeda;
   --gray: #5f5e5a;
   --gray-light: #f1efe8;
-  /* Extended from reference CSS files */
+  
   --bg-primary: #f8f9f4;
   --bg-card: rgba(0, 0, 0, 0.03);
   --border-subtle: rgba(0, 0, 0, 0.08);
@@ -20,12 +18,12 @@
   --text-secondary: rgba(26, 26, 46, 0.55);
   --text-muted: rgba(26, 26, 46, 0.35);
   --accent-glow: rgba(29, 158, 117, 0.08);
-  /* Typography */
+
   --font-heading: "MiSans Latin", "MiSans Myanmar", "Syne", sans-serif;
   --font-body: "MiSans Latin", "MiSans Myanmar", "Inter", sans-serif;
 }
 
-/* ── Dark Mode Theme ── */
+
 [data-theme="dark"] {
   --bg-primary: #0f1117;
   --bg-card: rgba(255, 255, 255, 0.04);
@@ -189,7 +187,7 @@
   border-color: var(--green);
 }
 
-/* Mobile nav dark mode */
+
 @media (max-width: 768px) {
   [data-theme="dark"] .nav-links {
     background: rgba(15, 17, 23, 0.97);
@@ -202,7 +200,7 @@
   }
 }
 
-/* ── Theme Toggle Button ── */
+
 .theme-toggle {
   width: 36px;
   height: 36px;
@@ -224,7 +222,7 @@
   transform: rotate(20deg) scale(1.1);
 }
 
-/* Reset & Base */
+
 *,
 *::before,
 *::after {
@@ -253,7 +251,7 @@ body {
   color: var(--text-primary);
 }
 
-/* ── Animated Background Grid ── */
+
 .bg-grid {
   position: fixed;
   inset: 0;
@@ -320,7 +318,7 @@ body {
   }
 }
 
-/* ── Fade In Animation ── */
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -357,7 +355,7 @@ body {
   animation-delay: 0.5s;
 }
 
-/* ── Pulse Animation ── */
+
 @keyframes pulse {
   0%,
   100% {
@@ -379,7 +377,7 @@ body {
   animation: pulse 2s ease-in-out infinite;
 }
 
-/* ── Navigation (Glassmorphic) ── */
+
 .nav-wrapper {
   position: sticky;
   top: 0;
@@ -478,7 +476,7 @@ body {
   transform: translateY(-1px);
 }
 
-/* ── Glassmorphic Card ── */
+
 .glass-card {
   position: relative;
   background: rgba(255, 255, 255, 0.7);
@@ -497,7 +495,7 @@ body {
   box-shadow: 0 12px 40px rgba(29, 158, 117, 0.08);
 }
 
-/* ── Badge Pill ── */
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -513,7 +511,7 @@ body {
   color: var(--text-secondary);
 }
 
-/* ── Buttons ── */
+
 .btn-primary {
   background: var(--green);
   color: #fff;
@@ -526,6 +524,14 @@ body {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
   display: inline-block;
+}
+
+.ai-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 .btn-primary:hover {
@@ -573,7 +579,7 @@ body {
   background: rgba(29, 158, 117, 0.05);
 }
 
-/* ── Form Inputs (Glassmorphic) ── */
+
 .input-group {
   margin-bottom: 1.25rem;
 }
@@ -604,7 +610,7 @@ body {
   box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.1);
 }
 
-/* ── Map Container ── */
+
 .map-container {
   width: 100%;
   height: 400px;
@@ -616,7 +622,7 @@ body {
   z-index: 1;
 }
 
-/* Leaflet overrides for glass-card compatibility */
+
 .map-container .leaflet-control-container .leaflet-top,
 .map-container .leaflet-control-container .leaflet-bottom {
   z-index: 10;
@@ -645,7 +651,7 @@ body {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
-/* ── SmartRide Map Markers ── */
+
 .smartride-marker {
   position: relative;
   display: flex;
@@ -696,7 +702,7 @@ body {
   white-space: nowrap;
 }
 
-/* Marker pulse animation */
+
 .marker-pulse {
   position: absolute;
   width: 100%;
@@ -726,7 +732,7 @@ body {
   }
 }
 
-/* Map input active state (when user is selecting on map) */
+
 .input-field.map-select-active {
   border-color: var(--green) !important;
   background: rgba(29, 158, 117, 0.06) !important;
@@ -751,7 +757,7 @@ body {
   }
 }
 
-/* Map click hint banner */
+
 .map-click-hint {
   margin-bottom: 0.75rem;
   padding: 0.6rem 1rem;
@@ -773,7 +779,7 @@ body {
   transform: translateY(0);
 }
 
-/* Dashboard ride map section */
+
 .ride-map-section {
   margin-bottom: 2rem;
 }
@@ -832,7 +838,7 @@ body {
   }
 }
 
-/* ── Stats Row ── */
+
 .stats-row {
   background: #fff;
   border-top: 1px solid #f0f0e8;
@@ -862,7 +868,7 @@ body {
   margin-top: 4px;
 }
 
-/* ── Section Styles ── */
+
 .section {
   padding: 5rem 5%;
   max-width: 1280px;
@@ -897,7 +903,7 @@ body {
   margin-bottom: 3rem;
 }
 
-/* ── Step Cards ── */
+
 .steps-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -963,7 +969,7 @@ body {
   color: var(--muted);
 }
 
-/* ── Price Cards ── */
+
 .pricing-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1038,7 +1044,7 @@ body {
   line-height: 1.5;
 }
 
-/* ── Benefit Items ── */
+
 .benefits-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1095,7 +1101,7 @@ body {
   line-height: 1.5;
 }
 
-/* ── Modal (Glassmorphic) ── */
+
 .modal {
   display: none;
   position: fixed;
@@ -1228,7 +1234,7 @@ body {
   margin-bottom: 0.5rem;
 }
 
-/* ── Footer ── */
+
 footer {
   background: #2c2c2a;
   padding: 3rem 5%;
@@ -1281,7 +1287,7 @@ footer ul a:hover {
   font-size: 0.75rem;
 }
 
-/* ── Container Utility ── */
+
 .container {
   max-width: 1280px;
   margin: 0 auto;
@@ -1290,7 +1296,7 @@ footer ul a:hover {
   z-index: 1;
 }
 
-/* ── Mobile Hamburger Menu Button ── */
+
 .mobile-menu-btn {
   display: none;
   flex-direction: column;
@@ -1336,7 +1342,7 @@ footer ul a:hover {
   transform: translateY(-7px) rotate(-45deg);
 }
 
-/* ── Mobile Nav Overlay ── */
+
 .nav-overlay {
   display: none;
   position: fixed;
@@ -1353,7 +1359,7 @@ footer ul a:hover {
   opacity: 1;
 }
 
-/* ── Responsive ── */
+
 @media (max-width: 1024px) {
   .steps-grid,
   .pricing-grid {
@@ -1459,7 +1465,7 @@ footer ul a:hover {
     padding: 0 1rem;
   }
 
-  /* Map page 2-column layout → single column on mobile */
+
   .container > div[style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
@@ -1494,9 +1500,7 @@ footer ul a:hover {
   }
 }
 
-/* ==========================
-   SPLASH SCREEN
-========================== */
+
 
 #splash-screen {
   position: fixed;
@@ -1586,7 +1590,7 @@ footer ul a:hover {
   }
 }
 
-/* ── Leaflet Routing Machine — Custom Styling ── */
+
 .leaflet-routing-container {
   background: rgba(255, 255, 255, 0.92) !important;
   backdrop-filter: blur(12px) !important;
@@ -1620,7 +1624,7 @@ footer ul a:hover {
   margin: 0.5rem 0 0.25rem !important;
 }
 
-/* Route summary (distance + time) */
+
 .leaflet-routing-alt {
   padding: 0 !important;
   margin: 0 !important;
@@ -1633,7 +1637,7 @@ footer ul a:hover {
   color: var(--green) !important;
 }
 
-/* Direction steps table */
+
 .leaflet-routing-alt table {
   width: 100% !important;
   border-collapse: collapse !important;
@@ -1660,18 +1664,18 @@ footer ul a:hover {
   line-height: 1.4 !important;
 }
 
-/* Direction icon column */
+
 .leaflet-routing-alt table td:first-child {
   width: 28px !important;
   text-align: center !important;
 }
 
-/* Direction text column */
+
 .leaflet-routing-alt table td:nth-child(2) {
   font-weight: 500 !important;
 }
 
-/* Distance column */
+
 .leaflet-routing-alt table td:last-child {
   text-align: right !important;
   font-size: 0.68rem !important;
@@ -1680,7 +1684,7 @@ footer ul a:hover {
   white-space: nowrap !important;
 }
 
-/* Direction icons */
+
 .leaflet-routing-icon {
   background-size: contain !important;
   width: 18px !important;
@@ -1688,7 +1692,7 @@ footer ul a:hover {
   opacity: 0.7 !important;
 }
 
-/* Scrollbar styling */
+
 .leaflet-routing-container::-webkit-scrollbar {
   width: 4px;
 }
@@ -1706,7 +1710,7 @@ footer ul a:hover {
   background: rgba(29, 158, 117, 0.4);
 }
 
-/* Collapse button */
+
 .leaflet-routing-collapse-btn {
   border-radius: 8px !important;
   background: var(--green) !important;
@@ -1728,7 +1732,7 @@ footer ul a:hover {
   transform: scale(1.05) !important;
 }
 
-/* ── Dark Mode — Routing Machine ── */
+
 [data-theme="dark"] .leaflet-routing-container {
   background: rgba(30, 32, 40, 0.92) !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
@@ -1759,7 +1763,7 @@ footer ul a:hover {
   background: rgba(29, 158, 117, 0.3);
 }
 
-/* ── Responsive — Routing Machine ── */
+
 @media (max-width: 768px) {
   .leaflet-routing-container {
     width: 220px !important;

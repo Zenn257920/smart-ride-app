@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Innovix SharedRide Myanmar</title>
     <link rel="stylesheet" href="/src/style.css" />
-    <!-- Prevent dark mode flash -->
+    
     <script>
       (function () {
         const t = localStorage.getItem("smartride_theme") || "light";
@@ -41,11 +41,11 @@
         </div>
       </div>
     </div>
-    <!-- Animated Background -->
+    
     <div class="bg-grid"></div>
     <div class="bg-glow bg-glow--1"></div>
     <div class="bg-glow bg-glow--2"></div>
-    <!-- Navigation -->
+   
     <nav class="nav-wrapper">
       <div class="nav-inner">
         <a href="/" class="logo">
@@ -71,14 +71,14 @@
         </a>
 
         <div class="nav-links">
-          <a href="/src/pages/find-ride.html" class="nav-link">ကားစီးမည်</a>
-          <a href="/src/pages/offer-ride.html" class="nav-link">ကားမောင်းမည်</a>
+          <a href="/src/pages/find-ride.html" class="nav-link">Find Ride</a>
+          <a href="/src/pages/offer-ride.html" class="nav-link">Drive</a>
           <a href="/src/pages/dashboard.html" class="nav-link">Dashboard</a>
           <button id="themeToggleBtn" class="theme-toggle" title="Dark Mode">
             🌙
           </button>
           <a href="/src/pages/login.html" class="nav-link nav-cta"
-            >အကောင့်ဝင်ရန်</a
+            >Login</a
           >
         </div>
         <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
@@ -86,7 +86,7 @@
         </button>
       </div>
     </nav>
-    <!-- Hero Section -->
+    
     <div
       class="hero-section"
       style="padding: 4rem 5%; max-width: 1280px; margin: 0 auto"
@@ -133,10 +133,10 @@
           </p>
           <div style="display: flex; gap: 1rem; flex-wrap: wrap">
             <a href="/src/pages/find-ride.html" class="btn-primary"
-              >ယခုပဲ စီးနင်းမည်</a
+              >Ride Now</a
             >
             <a href="/src/pages/offer-ride.html" class="btn-secondary"
-              >ယာဉ်မောင်းအဖြစ် ဆောင်ရွက်မည်</a
+              >Register as Driver</a
             >
           </div>
         </div>
@@ -295,7 +295,7 @@
                   တစ်ဦးချင်းစီ ပေးရမည့်ငွေ
                 </div>
                 <div style="font-size: 0.7rem; color: var(--gray)">
-                  ~10 km ခရီးစဉ်: 6,500 ကျပ်
+                  10 km ခရီးစဉ်: 6,500 ကျပ်
                 </div>
               </div>
               <div style="text-align: right">
@@ -306,7 +306,7 @@
                     font-weight: 800;
                     color: var(--green);
                   "
-                  >~2,200 ကျပ်</span
+                  >2,200 ကျပ်</span
                 >
                 <div
                   style="
@@ -315,7 +315,7 @@
                     text-decoration: line-through;
                   "
                 >
-                  ~67% သက်သာ
+                  67% သက်သာ
                 </div>
               </div>
             </div>
@@ -427,11 +427,11 @@
           ဘာကြောင့် SharedRide ကို ရွေးသနည်း
         </h2>
         <p class="section-sub" style="text-align: center; margin: 0 auto 0">
-          ဘတ်စ်ကားထက် ကောင်းပြီး တက္ကစီထက် ဈေးသာသော ကြားလမ်းဖြေရှင်းချက်
+          ဘတ်စ်ကားထက် ပိုကောင်းပြီး တက္ကစီထက် ဈေးသက်သာသော ဝန်ဆောင်မှူ
         </p>
         <div class="pricing-compare">
           <div class="price-card disabled">
-            <div class="price-icon">🚌</div>
+            <div class="price-icon"><i data-lucide="bus" style="width:60px;height:60px;"></i></div>
             <h3>ဘတ်စ်ကား</h3>
             <div class="price-amount" style="color: var(--muted)">500</div>
             <div class="price-unit">ကျပ်</div>
@@ -442,9 +442,9 @@
           </div>
           <div class="price-card featured">
             <div class="popular-badge">⭐ SharedRide — အကောင်းဆုံး</div>
-            <div class="price-icon">🚗</div>
+            <div class="price-icon"><i data-lucide="car-taxi-front" style="width:60px;height:60px;"></i></div>
             <h3>SmartRide Carpool (၃ ဦး)</h3>
-            <div class="price-amount">~2,200</div>
+            <div class="price-amount">2,200</div>
             <div class="price-unit">ကျပ် / တစ်ဦး (~10km)</div>
             <div class="price-desc">
               AC ကား၊ Door-to-Door ဝန်ဆောင်မှု<br />တက္ကစီနှင့် ယှဉ်လျှင်
@@ -452,10 +452,10 @@
             </div>
           </div>
           <div class="price-card">
-            <div class="price-icon">🚕</div>
+            <div class="price-icon"><i data-lucide="car" style="width:60px;height:60px;"></i></div>
             <h3>ပုံမှန် တက္ကစီ (တစ်ဦး)</h3>
             <div class="price-amount">6,500</div>
-            <div class="price-unit">ကျပ် (~10km)</div>
+            <div class="price-unit">ကျပ် (10km)</div>
             <div class="price-desc">
               သီးသန့်ဝန်ဆောင်မှု၊ သက်သောင့်သက်သာ သော်လည်း နေ့တိုင်းစီးရန်
               ဈေးကြီးလွန်း
@@ -465,7 +465,7 @@
       </div>
     </div>
 
-    <!-- Footer -->
+    
     <footer>
       <div class="footer-inner">
         <div>
@@ -512,27 +512,27 @@
           </p>
         </div>
         <div>
-          <h5>ဝန်ဆောင်မှု</h5>
+          <h5>OKOK</h5>
           <ul>
-            <li><a href="/src/pages/find-ride.html">ကားစီးမည်</a></li>
-            <li><a href="/src/pages/offer-ride.html">ကားမောင်းမည်</a></li>
+            <li><a href="/src/pages/find-ride.html">Find Ride</a></li>
+            <li><a href="/src/pages/offer-ride.html">Drive</a></li>
             <li><a href="#">Business Plan</a></li>
           </ul>
         </div>
         <div>
-          <h5>ကုမ္ပဏီ</h5>
+          <h5>Company</h5>
           <ul>
             <li><a href="#">About us</a></li>
             <li><a href="#">Career</a></li>
-            <li><a href="#">သတင်းများ</a></li>
+            <li><a href="#">News</a></li>
           </ul>
         </div>
         <div>
-          <h5>အကူအညီ</h5>
+          <h5>Help</h5>
           <ul>
             <li><a href="#">FAQ</a></li>
-            <li><a href="#">ဆက်သွယ်ရန်</a></li>
-            <li><a href="#">ကိုယ်ရေးအချက်အလက်</a></li>
+            <li><a href="#">Contact</a></li>
+            <li><a href="#">Facts</a></li>
           </ul>
         </div>
       </div>
@@ -542,5 +542,9 @@
       </div>
     </footer>
     <script type="module" src="/src/main.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+  lucide.createIcons();
+</script>
   </body>
 </html>

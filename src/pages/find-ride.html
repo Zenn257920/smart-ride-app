@@ -10,7 +10,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
   <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
-  <!-- Prevent dark mode flash -->
+  
   <script>
     (function () {
       const t = localStorage.getItem("smartride_theme") || "light";
@@ -40,11 +40,11 @@
         </div>
       </a>
       <div class="nav-links">
-        <a href="find-ride.html" class="nav-link nav-cta">ကားစီးမည်</a>
-        <a href="ride-requests.html" class="nav-link">🙋 Ride Requests</a>
+        <a href="find-ride.html" class="nav-link nav-cta">Find Ride</a>
+        <a href="ride-requests.html" class="nav-link">Ride Requests</a>
         <a href="dashboard.html" class="nav-link">Dashboard</a>
         <button id="themeToggleBtn" class="theme-toggle" title="Dark Mode">🌙</button>
-        <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
+        <a href="#" id="logoutBtn" class="nav-link">LogOut</a>
       </div>
       <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
         <span></span><span></span><span></span>
@@ -53,43 +53,43 @@
   </nav>
   <div class="container" style="padding: 2rem">
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem">
-      <!-- Search Form -->
+      
       <div class="glass-card animate-fade-in-up">
         <h2 style="
               font-family: var(--font-heading);
               color: var(--green-dark);
               margin-bottom: 1.5rem;
             ">
-          🔍 ခရီးစဉ်ရှာမည်
+           <i data-lucide="user-round-search"></i> Find Ride
         </h2>
         <form id="searchForm">
           <div class="input-group">
-            <label class="input-label">ထွက်ခွာမည့်နေရာ</label>
+            <label class="input-label">Pickup</label>
             <input type="text" id="startLocation" class="input-field" placeholder="e.g. သံလျင်, လှိုင်, ဒဂုံ"
               required />
           </div>
           <div class="input-group">
-            <label class="input-label">ဦးတည်ရာ</label>
-            <input type="text" id="endLocation" class="input-field" placeholder="e.g. ဗဟန်း, လမ်းမတော်, ရန်ကင်း"
+            <label class="input-label">Drop-off</label>
+            <input type="text" id="endLocation" class="input-field" placeholder="e.g. ဗဟန်း, လှည်းတန်း, မြေနီကုန်း"
               required />
           </div>
           <div class="input-group">
-            <label class="input-label">ထွက်ခွာမည့်အချိန်</label>
+            <label class="input-label">Departure Time</label>
             <input type="datetime-local" id="departureTime" class="input-field" required />
           </div>
-          <button type="submit" class="btn-primary" style="width: 100%">
-            🤖 AI ဖြင့်ရှာမည်
+          <button type="submit" class="btn-primary ai-btn" style="width: 100%">
+            <i data-lucide="bot"></i>Search Using Ai
           </button>
         </form>
       </div>
-      <!-- Map -->
+    
       <div class="glass-card animate-fade-in-up animate-delay-2">
         <h3 style="
               font-family: var(--font-heading);
               color: var(--green-dark);
               margin-bottom: 1rem;
             ">
-          🗺️ မြေပုံ
+          <i data-lucide="map-pinned"></i> Map
         </h3>
         <div id="mapClickHint" style="
               margin-bottom: 0.75rem;
@@ -107,12 +107,12 @@
               transform: translateY(-4px);
             ">
           <span style="font-size: 1rem">👆</span>
-          <span id="mapClickHintText">မြေပုံပေါ်တွင် နှိပ်၍ နေရာရွေးပါ</span>
+          <span id="mapClickHintText">Choose on Map</span>
         </div>
         <div id="map" class="map-container" style="height: 400px"></div>
         <div style="margin-top: 1rem; display: flex; gap: 0.5rem">
           <button id="getCurrentLocation" class="btn-outline" style="font-size: 0.75rem">
-            📍 လက်ရှိတည်နေရာ
+            <i data-lucide="map-pin"></i> Current Location
           </button>
         </div>
       </div>
@@ -867,6 +867,10 @@
       }
     })();
   </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+  lucide.createIcons();
+</script>
 </body>
 
 </html>

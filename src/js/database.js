@@ -1,33 +1,32 @@
-//LocalStorage & Geminii
+
 import { RouteMatcher } from "./matching.js";
 
 class DatabaseManager {
   constructor() {
     this.initDatabase();
-    //GeminiKey
+    
     this.apiKey = "AIzaSyAQ-Ab8RN6ICmmw0YVmfI0xeyC78lLvzCO";
-    //Price constants — aligned with RouteMatcher
-    this.DRIVER_BONUS_RATE = 0;     // No separate driver bonus
-    this.APP_TAX_RATE = 0.05;       // 5% app tax on subtotal
-    this.APP_COMMISSION_RATE = 0.05; // Legacy alias
-    // Shared matcher for distance-based pricing
+    
+    this.DRIVER_BONUS_RATE = 0;    
+    this.APP_TAX_RATE = 0.05;      
+    this.APP_COMMISSION_RATE = 0.05; 
+    
     this._matcher = new RouteMatcher();
   }
 
-  // ─── Calculate ride price from GPS coordinates ───
+  
   _calcPriceFromCoords(startLat, startLng, endLat, endLng) {
     const result = this._matcher.calculatePriceFromCoords(startLat, startLng, endLat, endLng);
     return result ? result.price : this._matcher.DEFAULT_PRICE;
   }
 
-  // Bump this version string whenever sample data schema changes.
-  // Forces re-seed in any browser that has an older version cached.
+  
   static get DATA_VERSION() { return 'v8-future-times'; }
 
   initDatabase() {
     const storedVersion = localStorage.getItem('smartride_data_version');
     if (!localStorage.getItem('smartride_users') || storedVersion !== DatabaseManager.DATA_VERSION) {
-      // Clear stale data so new GPS-enabled rides seed correctly
+      
       localStorage.removeItem('smartride_users');
       localStorage.removeItem('smartride_rides');
       localStorage.removeItem('smartride_bookings');
@@ -35,7 +34,7 @@ class DatabaseManager {
       localStorage.removeItem('smartride_ride_requests');
       localStorage.removeItem('smartride_notifications');
       localStorage.setItem('smartride_data_version', DatabaseManager.DATA_VERSION);
-      //Sample Users JSON Data / Passengers & Drivers
+     
       const sampleUsers = [
         {
           id: "u-1",
@@ -149,22 +148,20 @@ class DatabaseManager {
         },
       ];
 
-      // Helper to create timestamps — always relative to NOW so rides are always in the future.
-      // Each call returns a time within the next 1-23 hours from now, spread across the day.
+     
       const now = new Date();
       const setTime = (hours, minutes) => {
-        // Try to set the time on today first; if already past, move to tomorrow
+       
         const d = new Date(now);
         d.setHours(hours, minutes, 0, 0);
         if (d <= now) {
-          // Time already passed today — push to tomorrow
+          
           d.setDate(d.getDate() + 1);
         }
         return d.toISOString();
       };
 
-      //  Sample Rides — Covering major Yangon routes
-      //  All rides include real GPS coordinates for corridor matching
+      
       const sampleRides = [
         {
           id: "ride-101",
@@ -172,13 +169,13 @@ class DatabaseManager {
           driverName: "ဦးလှမောင်",
           startLocation: "Thanlyin (သန်လျင်)",
           endLocation: "Bahan (ဗဟန်း)",
-          // Thanlyin → Bahan (south-east to center)
+          
           startLat: 16.7784, startLng: 96.2504,
           endLat: 16.8275, endLng: 96.1623,
           departureTime: setTime(8, 30),
           availableSeats: 4,
           bookedSeats: 1,
-          price: null, // auto-calculated below
+          price: null, 
           carModel: "Toyota Probox",
           carPlate: "YGN 3Q/1122",
           passengers: [
@@ -191,13 +188,13 @@ class DatabaseManager {
           driverName: "ကိုကျော်စွာ",
           startLocation: "Hledan (လှည်းတန်း)",
           endLocation: "Sule (ဆူးလေ)",
-          // Hledan → Sule (west to downtown)
+          
           startLat: 16.8737, startLng: 96.1317,
           endLat: 16.7747, endLng: 96.1561,
           departureTime: setTime(9, 0),
           availableSeats: 4,
           bookedSeats: 2,
-          price: null, // auto-calculated below
+          price: null, 
           carModel: "Honda Shuttle",
           carPlate: "YGN 2P/5566",
           passengers: [
@@ -211,13 +208,13 @@ class DatabaseManager {
           driverName: "ဒေါ်အေးအေး",
           startLocation: "Thanlyin Star City",
           endLocation: "Hledan Centre",
-          // Star City → Hledan (south → north-west)
+          
           startLat: 16.7634, startLng: 96.2812,
           endLat: 16.8737, endLng: 96.1317,
           departureTime: setTime(7, 45),
           availableSeats: 4,
           bookedSeats: 2,
-          price: null, // auto-calculated below
+          price: null, 
           carModel: "Suzuki Ertiga",
           carPlate: "YGN 5R/9988",
           passengers: [
@@ -231,13 +228,13 @@ class DatabaseManager {
           driverName: "ကိုမင်းမင်း",
           startLocation: "North Dagon (မြောက်ဒဂုံ)",
           endLocation: "Botahtaung (ဗိုလ်တထောင်)",
-          // North Dagon → Botahtaung (north-east to downtown)
+        
           startLat: 16.9208, startLng: 96.2011,
           endLat: 16.7793, endLng: 96.1681,
           departureTime: setTime(8, 0),
           availableSeats: 3,
           bookedSeats: 1,
-          price: null, // auto-calculated below
+          price: null, 
           carModel: "Toyota Aqua",
           carPlate: "YGN 7T/3344",
           passengers: [{ id: "u-9", name: "မခင်ခင်", pickup: "Dagon Center" }],
@@ -248,13 +245,13 @@ class DatabaseManager {
           driverName: "ဦးထွန်းထွန်း",
           startLocation: "Insein (အင်းစိန်)",
           endLocation: "Kamayut (ကမာရွတ်)",
-          // Insein → Kamayut (north to center)
+          
           startLat: 16.9726, startLng: 96.1042,
           endLat: 16.8532, endLng: 96.1170,
           departureTime: setTime(8, 15),
           availableSeats: 4,
           bookedSeats: 2,
-          price: null, // auto-calculated below
+          price: null, 
           carModel: "Honda Fit",
           carPlate: "YGN 1M/7788",
           passengers: [
@@ -268,13 +265,13 @@ class DatabaseManager {
           driverName: "ဦးလှမောင်",
           startLocation: "South Okkalapa (တောင်ဥက္ကလာပ)",
           endLocation: "Sanchaung (စမ်းချောင်း)",
-          // South Okkalapa → Sanchaung (east to west)
+          
           startLat: 16.8493, startLng: 96.2176,
           endLat: 16.8392, endLng: 96.1226,
           departureTime: setTime(9, 30),
           availableSeats: 4,
           bookedSeats: 1,
-          price: null, // auto-calculated below
+          price: null, 
           carModel: "Toyota Probox",
           carPlate: "YGN 3Q/1122",
           passengers: [
@@ -287,13 +284,13 @@ class DatabaseManager {
           driverName: "ကိုကျော်စွာ",
           startLocation: "Mingalardon (မင်္ဂလာဒုံ)",
           endLocation: "Downtown (ဗဟန်း/လမ်းမတော်)",
-          // Mingalardon → Downtown (far north to center)
+          
           startLat: 17.0473, startLng: 96.1201,
           endLat: 16.7951, endLng: 96.1484,
           departureTime: setTime(7, 30),
           availableSeats: 3,
           bookedSeats: 0,
-          price: null, // auto-calculated below
+          price: null, 
           carModel: "Honda Shuttle",
           carPlate: "YGN 2P/5566",
           passengers: [],
@@ -304,13 +301,13 @@ class DatabaseManager {
           driverName: "U Kyaw Zaw",
           startLocation: "Thaketa (သာကေတ)",
           endLocation: "Tamwe (တာမွေ)",
-          // Thaketa → Tamwe (east to center)
+         
           startLat: 16.8198, startLng: 96.2268,
           endLat: 16.8333, endLng: 96.1649,
           departureTime: setTime(8, 45),
           availableSeats: 4,
           bookedSeats: 1,
-          price: null, // auto-calculated below
+          price: null, 
           carModel: "Suzuki Ertiga",
           carPlate: "YGN 5R/9988",
           passengers: [
@@ -323,13 +320,13 @@ class DatabaseManager {
           driverName: "ကိုမင်းမင်း",
           startLocation: "Dagon Myothit (ဒဂုံမြို့သစ်)",
           endLocation: "Yankin (ရန်ကင်း)",
-          // Dagon Myothit → Yankin (east to center)
+          
           startLat: 16.8705, startLng: 96.2433,
           endLat: 16.8438, endLng: 96.1783,
           departureTime: setTime(8, 30),
           availableSeats: 3,
           bookedSeats: 2,
-          price: null, // auto-calculated below
+          price: null, 
           carModel: "Toyota Aqua",
           carPlate: "YGN 7T/3344",
           passengers: [
@@ -343,13 +340,13 @@ class DatabaseManager {
           driverName: "ဦးထွန်းထွန်း",
           startLocation: "Shwepyithar (ရွှေပြည်သာ)",
           endLocation: "Sule (ဆူးလေ)",
-          // Shwepyithar → Sule (far north-west to downtown)
+         
           startLat: 17.0631, startLng: 96.0526,
           endLat: 16.7747, endLng: 96.1561,
           departureTime: setTime(7, 0),
           availableSeats: 4,
           bookedSeats: 1,
-          price: null, // auto-calculated below
+          price: null, 
           carModel: "Honda Fit",
           carPlate: "YGN 1M/7788",
           passengers: [
@@ -358,7 +355,7 @@ class DatabaseManager {
         },
       ];
 
-      // Auto-calculate distance-based prices for all sample rides
+      
       const priceMatcher = new RouteMatcher();
       sampleRides.forEach(ride => {
         if (ride.startLat != null && ride.endLat != null) {
@@ -373,7 +370,7 @@ class DatabaseManager {
         }
       });
 
-      // ── Sample Ride Requests (passengers requesting rides) ──
+     
       const sampleRideRequests = [
         {
           id: "req-1",
@@ -390,7 +387,7 @@ class DatabaseManager {
           joinedPassengers: [
             {
               id: "u-7", name: "ကိုသန့်ဇင်", phone: "09112233445", joinedAt: new Date().toISOString(),
-              // Shorter trip: Thanlyin → Tamwe (joins partway)
+              
               startLocation: "Thanlyin (သန်လျင်)", endLocation: "Tamwe (တာမွေ)",
               startLat: 16.7784, startLng: 96.2504,
               endLat: 16.8333, endLng: 96.1649,
@@ -432,7 +429,7 @@ class DatabaseManager {
           joinedPassengers: [
             {
               id: "u-1", name: "Demo Passenger", phone: "09123456789", joinedAt: new Date().toISOString(),
-              // Shorter trip: Dagon → Yankin (shorter route than requester)
+              
               startLocation: "North Dagon (မြောက်ဒဂုံ)", endLocation: "Yankin (ရန်ကင်း)",
               startLat: 16.9208, startLng: 96.2011,
               endLat: 16.8438, endLng: 96.1783,
@@ -444,7 +441,7 @@ class DatabaseManager {
         },
       ];
 
-      // Auto-calculate estimated prices + fair price breakdown for ride requests
+      
       sampleRideRequests.forEach(req => {
         if (req.startLat != null && req.endLat != null) {
           const result = priceMatcher.calculatePriceFromCoords(
@@ -456,11 +453,11 @@ class DatabaseManager {
           req.estimatedPrice = priceMatcher.DEFAULT_PRICE;
           req.distanceKm = 0;
         }
-        // Compute fair price breakdown for all passengers
+        
         _computeBreakdown(req, priceMatcher);
       });
 
-      // Helper: compute priceBreakdown for a request using fair proportional pricing
+     
       function _computeBreakdown(req, matcher) {
         const allPassengers = [
           { passengerId: req.passengerId, name: req.passengerName,
@@ -489,7 +486,7 @@ class DatabaseManager {
           driverBonus: breakdowns[i].driverBonusPerPassenger,
           appFee: breakdowns[i].appCommissionPerPassenger,
           weightPercent: breakdowns[i].weightPercent,
-          paidAmount: breakdowns[i].passengerPrice, // mark as pre-paid
+          paidAmount: breakdowns[i].passengerPrice, 
         }));
         req.totalRoutePrice = routePrice;
       }
@@ -543,7 +540,7 @@ class DatabaseManager {
 
     const users = this.getUsers();
 
-    // Check for duplicate email
+   
     const existingUser = users.find((u) => u.email === email);
     if (existingUser) {
       throw new Error("A user with this email already exists.");
@@ -569,12 +566,12 @@ class DatabaseManager {
   offerRide(rideData) {
     const rides = this.getRides();
 
-    // Auto-calculate distance-based price from GPS if available
+    
     const startLat = rideData.startLat ?? null;
     const startLng = rideData.startLng ?? null;
     const endLat = rideData.endLat ?? null;
     const endLng = rideData.endLng ?? null;
-    const routeCoordinates = rideData.routeCoordinates ?? null; // Actual road polyline
+    const routeCoordinates = rideData.routeCoordinates ?? null; 
     let price = rideData.price;
     let distanceKm = rideData.distanceKm || 0;
 
@@ -585,7 +582,7 @@ class DatabaseManager {
         distanceKm = result.distanceKm;
       }
     }
-    // Fallback if no GPS
+    
     if (!price) price = this._matcher.DEFAULT_PRICE;
 
     const newRide = {
@@ -595,7 +592,7 @@ class DatabaseManager {
       startLng,
       endLat,
       endLng,
-      routeCoordinates, // Store actual road polyline for polyline-based matching
+      routeCoordinates, 
       price,
       distanceKm,
       bookedSeats: 0,
@@ -606,12 +603,11 @@ class DatabaseManager {
     return newRide;
   }
 
-  // ─── Route Search: Local matcher always runs; Gemini supplements & re-ranks ───
-  // passengerCoords = { startLat, startLng, endLat, endLng } — optional, from map picker
+ 
   async searchRidesWithGemini(startLocation, endLocation, departureTime, passengerCoords) {
     const availableRides = this.getRides();
 
-    // ── ALWAYS run the local matcher first (guaranteed, deterministic) ──
+    
     const localResults = this._fallbackMatch(
       startLocation, endLocation, departureTime, availableRides, passengerCoords
     );
@@ -621,7 +617,7 @@ class DatabaseManager {
         startLocation,
         endLocation,
         departureTime,
-        // Include GPS coords when available so Gemini can use them
+        
         ...(passengerCoords ? passengerCoords : {}),
       },
     };
@@ -703,7 +699,7 @@ Do NOT include any text outside the JSON array.
 
       let rawText = data.candidates[0].content.parts[0].text.trim();
 
-      // Extract JSON array from response
+      
       const jsonStart = rawText.indexOf("[");
       const jsonEnd = rawText.lastIndexOf("]") + 1;
       if (jsonStart !== -1 && jsonEnd > jsonStart) {
@@ -713,12 +709,12 @@ Do NOT include any text outside the JSON array.
       console.log("✅ Gemini AI Response:", rawText);
       const results = JSON.parse(rawText);
 
-      // Normalize each Gemini result to ensure required fields with defaults
+      
       const geminiRides = results.map((ride) => {
         const basePrice = ride.price || this._matcher.DEFAULT_PRICE;
         const isFirstRider = (ride.bookedSeats || 0) === 0;
 
-        // First rider: pays subtotal + 5% app tax
+        
         if (isFirstRider) {
           const appTax = Math.floor(basePrice * this.APP_TAX_RATE);
           const passengerCost = basePrice + appTax;
@@ -751,7 +747,7 @@ Do NOT include any text outside the JSON array.
           };
         }
 
-        // Shared ride pricing — each pays fare share + 5% tax
+        
         const totalPassengers = (ride.bookedSeats || 0) + 1;
         const fareShare =
           ride.fareShare || Math.floor(basePrice / totalPassengers);
@@ -791,9 +787,7 @@ Do NOT include any text outside the JSON array.
         };
       });
 
-      // Merge Gemini results with the guaranteed local results.
-      // This means even if Gemini misses an obvious match (e.g. ride-101),
-      // the local matcher catches it and it still appears in results.
+     
       console.log(`✅ Gemini returned ${geminiRides.length} | Local returned ${localResults.length} → merging`);
       return this._mergeResults(geminiRides, localResults);
 
@@ -803,18 +797,16 @@ Do NOT include any text outside the JSON array.
     }
   }
 
-  // ─── Merge Gemini results with local results ───
-  // Gemini results take priority (higher matchScore preserved).
-  // Local results fill any gaps Gemini missed.
+  
   _mergeResults(geminiResults, localResults) {
     const merged = new Map();
 
-    // Add local first (baseline)
+    
     for (const ride of localResults) {
       merged.set(ride.id, ride);
     }
 
-    // Gemini results overwrite local where they exist (Gemini score takes priority)
+    
     for (const ride of geminiResults) {
       const existing = merged.get(ride.id);
       if (!existing || ride.matchScore >= existing.matchScore) {
@@ -822,15 +814,14 @@ Do NOT include any text outside the JSON array.
       }
     }
 
-    // Sort by matchScore descending, return top 5
+   
     return Array.from(merged.values())
       .sort((a, b) => b.matchScore - a.matchScore)
       .slice(0, 5);
   }
 
-  // ─── Fallback local matching when Gemini API is unavailable ───
-  // Uses corridor-based P2S algorithm when GPS coords are available,
-  // and gracefully degrades to text/alias matching when they are not.
+  
+  
   _fallbackMatch(startLocation, endLocation, departureTime, availableRides, passengerCoords) {
     const matcher = new RouteMatcher();
 
@@ -838,7 +829,7 @@ Do NOT include any text outside the JSON array.
     const startNorm = normalize(startLocation);
     const endNorm = normalize(endLocation);
 
-    // Yangon area aliases for text-based fallback
+   
     const areaAliases = {
       thanlyin: ["သန်လျင်", "thanlyin", "star city", "thanlyin star city"],
       bahan: ["ဗဟန်း", "bahan"],
@@ -871,17 +862,17 @@ Do NOT include any text outside the JSON array.
 
     const scored = availableRides
       .filter((ride) => {
-        // Time gate: corridor GPS match = 3 hr tolerance; text fallback = 4 hr
+        
         if (departureTime && ride.departureTime) {
           const diffMin = Math.abs(new Date(departureTime) - new Date(ride.departureTime)) / 60000;
           const hasPassengerGPS = passengerCoords && passengerCoords.startLat != null;
-          const timeLimit = hasPassengerGPS ? 180 : 240; // minutes (3h GPS / 4h text)
+          const timeLimit = hasPassengerGPS ? 180 : 240; 
           if (diffMin > timeLimit) return false;
         }
         return true;
       })
       .map((ride) => {
-      // ── Text/alias scoring — always computed as a baseline ──
+      
       let textScore = 0;
       const rideStartArea = findAreaKey(ride.startLocation);
       const rideEndArea = findAreaKey(ride.endLocation);
@@ -892,10 +883,10 @@ Do NOT include any text outside the JSON array.
       if (endArea && rideEndArea && endArea === rideEndArea) textScore += 45;
       else if (normalize(ride.endLocation).includes(endNorm) || endNorm.includes(normalize(ride.endLocation))) textScore += 35;
 
-      // Time already gated above — add full bonus if time data exists
+      
       if (departureTime && ride.departureTime) textScore += 10;
 
-      // ── Attempt corridor matching if GPS coords exist ──
+      
       if (
         passengerCoords &&
         passengerCoords.startLat != null &&
@@ -908,17 +899,16 @@ Do NOT include any text outside the JSON array.
           endLng: passengerCoords.endLng,
           departureTime,
         };
-        // Pass the ride with routeCoordinates so polyline matching is used when available
+        
         const corridorScore = matcher.calculateMatchScore(passengerRequest, ride);
         if (corridorScore > 0) {
           const usedPolyline = ride.routeCoordinates && ride.routeCoordinates.length >= 2;
           return { ...ride, matchScore: Math.min(corridorScore, 98), _usedCorridor: true, _usedPolyline: usedPolyline };
         }
-        // Corridor failed — fall through to use textScore as fallback
-        // (geocoded coords might be inaccurate, but text names still match)
+        
       }
 
-      // ── Use text/alias score (either no GPS, or GPS corridor failed) ──
+      
       return { ...ride, matchScore: Math.min(textScore, 98), _usedCorridor: false, _usedPolyline: false };
     })
       .filter((r) => r.matchScore > 40)
@@ -968,7 +958,7 @@ Do NOT include any text outside the JSON array.
     const rideIndex = rides.findIndex((r) => r.id === rideId);
     if (rideIndex === -1) return false;
 
-    // Check if ride is full
+    
     const seatsLeft =
       (rides[rideIndex].availableSeats || 4) -
       (rides[rideIndex].bookedSeats || 0);
@@ -982,16 +972,16 @@ Do NOT include any text outside the JSON array.
     const passengerIndex = users.findIndex((u) => u.id === passengerId);
     if (passengerIndex === -1) return false;
 
-    // For e-wallet: check sufficient balance
+    
     if (!isCash && users[passengerIndex].balance < totalPrice) {
       throw new Error(
-        "လက်ကျန်ငွေ မလုံလောက်ပါသဖြင့် ကျေးဇူးပြု၍ Innovix-Wallet တွင် ငွေ အရင်ဖြည့်ပေးပါ။",
+        "Insufficient Balance",
       );
     }
 
     rides[rideIndex].bookedSeats = (rides[rideIndex].bookedSeats || 0) + 1;
 
-    // Add passenger to ride's passenger list
+    
     if (!rides[rideIndex].passengers) rides[rideIndex].passengers = [];
     rides[rideIndex].passengers.push({
       id: users[passengerIndex].id,
@@ -999,7 +989,7 @@ Do NOT include any text outside the JSON array.
       pickup: "Requested via app",
     });
 
-    // Calculate pricing breakdown
+   
     const basePrice = rides[rideIndex].price || this._matcher.DEFAULT_PRICE;
     const totalPassengers = rides[rideIndex].bookedSeats;
     const isFirstRider = totalPassengers === 1;
@@ -1010,25 +1000,25 @@ Do NOT include any text outside the JSON array.
       driverPayment;
 
     if (isFirstRider) {
-      // First rider: subtotal + 5% app tax
+      
       fareShare = basePrice;
       driverBonusPerPassenger = 0;
       appCommissionPerPassenger = Math.floor(basePrice * this.APP_TAX_RATE);
-      driverPayment = basePrice; // Driver gets full subtotal
+      driverPayment = basePrice; 
     } else {
-      // Shared ride: split fare + 5% tax each
+      
       fareShare = Math.floor(basePrice / totalPassengers);
       driverBonusPerPassenger = 0;
       appCommissionPerPassenger = Math.floor(fareShare * this.APP_TAX_RATE);
       driverPayment = fareShare; // Driver gets fare share
     }
 
-    // Deduct total price from passenger (e-wallet only)
+    
     if (!isCash) {
       users[passengerIndex].balance -= totalPrice;
     }
 
-    // Credit driver (e-wallet only; cash handled in person)
+    
     const driverId = rides[rideIndex].driverId;
     const driverIndex = users.findIndex((u) => u.id === driverId);
     if (!isCash && driverIndex !== -1) {
@@ -1056,7 +1046,7 @@ Do NOT include any text outside the JSON array.
 
     const transactions = this.getTransactions();
 
-    // Passenger payment transaction
+    
     transactions.push({
       id: "tx-" + Math.random().toString(36).substr(2, 9),
       userId: passengerId,
@@ -1068,7 +1058,7 @@ Do NOT include any text outside the JSON array.
       createdAt: new Date().toISOString(),
     });
 
-    // Driver earnings transaction
+    
     if (!isCash && driverIndex !== -1) {
       transactions.push({
         id: "tx-" + Math.random().toString(36).substr(2, 9),
@@ -1089,7 +1079,7 @@ Do NOT include any text outside the JSON array.
       });
     }
 
-    // App commission transaction (recorded for tracking)
+    
     transactions.push({
       id: "tx-" + Math.random().toString(36).substr(2, 9),
       userId: "app-owner",
@@ -1099,32 +1089,30 @@ Do NOT include any text outside the JSON array.
       createdAt: new Date().toISOString(),
     });
 
-    // ─── Retroactive Fare Adjustment ───
-    // When a new passenger joins, existing passengers may have overpaid.
-    // Recalculate fair shares for everyone and refund the excess.
+    
     if (!isFirstRider) {
       const existingBookingsForRide = bookings.filter(
         (b) => b.rideId === rideId && b.status === "confirmed" && b.id !== newBooking.id
       );
 
-      // Gather all passengers' distances for fair proportional pricing
+      
       const allPassengers = rides[rideIndex].passengers || [];
       const allDistances = allPassengers.map((p) => {
-        // Try to find this passenger's booking to get their distance
+        
         const pBooking = bookings.find(
           (b) => b.rideId === rideId && b.passengerId === p.id && b.status === "confirmed"
         );
         if (pBooking && pBooking.passengerDistanceKm) {
           return pBooking.passengerDistanceKm;
         }
-        // Fallback: use ride distance or estimate
+        
         return rides[rideIndex].distanceKm || 10;
       });
 
-      // Calculate new fair breakdown for all passengers
+     
       const fairBreakdowns = this._matcher.calculateFairPriceBreakdown(basePrice, allDistances);
 
-      // Refund existing passengers who overpaid
+      
       existingBookingsForRide.forEach((oldBooking) => {
         const pIndex = allPassengers.findIndex((p) => p.id === oldBooking.passengerId);
         if (pIndex === -1) return;
@@ -1134,7 +1122,7 @@ Do NOT include any text outside the JSON array.
         const refundAmount = oldPaid - newFairPrice;
 
         if (refundAmount > 0) {
-          // Update the old booking with new fair price
+          
           const bookingIdx = bookings.findIndex((b) => b.id === oldBooking.id);
           if (bookingIdx !== -1) {
             bookings[bookingIdx].totalPrice = newFairPrice;
@@ -1144,18 +1132,18 @@ Do NOT include any text outside the JSON array.
             bookings[bookingIdx].refundedAmount = (bookings[bookingIdx].refundedAmount || 0) + refundAmount;
           }
 
-          // Refund to passenger's wallet (e-wallet bookings only)
+          
           if (oldBooking.paymentMethod !== "cash") {
             const refundUserIdx = users.findIndex((u) => u.id === oldBooking.passengerId);
             if (refundUserIdx !== -1) {
               users[refundUserIdx].balance += refundAmount;
 
-              // Deduct excess from driver (they received too much from first rider)
+              
               if (driverIndex !== -1) {
                 users[driverIndex].balance -= refundAmount;
               }
 
-              // Create refund transaction for passenger
+              
               transactions.push({
                 id: "tx-" + Math.random().toString(36).substr(2, 9),
                 userId: oldBooking.passengerId,
@@ -1165,14 +1153,14 @@ Do NOT include any text outside the JSON array.
                 createdAt: new Date().toISOString(),
               });
 
-              // Record driver adjustment transaction
+              
               if (driverIndex !== -1) {
                 transactions.push({
                   id: "tx-" + Math.random().toString(36).substr(2, 9),
                   userId: driverId,
                   amount: -refundAmount,
                   type: "adjustment",
-                  description: `↩ ခရီးသည်အသစ်ပါဝင်၍ ${users[refundUserIdx].name} အား ${refundAmount.toLocaleString()} ကျပ် ပြန်အမ်း`,
+                  description: `↩ Since new Passenger Joined ${users[refundUserIdx].name}  ${refundAmount.toLocaleString()} Kyats Refund`,
                   createdAt: new Date().toISOString(),
                 });
               }
@@ -1189,8 +1177,7 @@ Do NOT include any text outside the JSON array.
       "smartride_transactions",
       JSON.stringify(transactions),
     );
-    // Only refresh the session if the booking passenger IS the currently logged-in user.
-    // Avoid overwriting the session with another user's data (account switching bug).
+    
     const currentSession = this.getCurrentUser();
     if (currentSession && currentSession.id === passengerId) {
       localStorage.setItem("smartride_currentUser", JSON.stringify(users[passengerIndex]));
@@ -1220,8 +1207,7 @@ Do NOT include any text outside the JSON array.
       "smartride_transactions",
       JSON.stringify(transactions),
     );
-    // Only update the current session if it belongs to the same user.
-    // Do NOT overwrite the session with another user's data (causes account switching bug).
+    
     const currentSession = this.getCurrentUser();
     if (currentSession && currentSession.id === userId) {
       localStorage.setItem("smartride_currentUser", JSON.stringify(users[index]));
@@ -1245,19 +1231,19 @@ Do NOT include any text outside the JSON array.
       (b) => b.id === bookingId && b.passengerId === passengerId,
     );
     if (bookingIndex === -1) {
-      throw new Error("ဤBookingကို ရှာမတွေ့ပါ။");
+      throw new Error("Can't Find This Booking");
     }
 
     const booking = bookings[bookingIndex];
     if (booking.status === "cancelled") {
-      throw new Error("ဤခရီးစဉ်ကို ဖျက်သိမ်းပြီးသားဖြစ်ပါသည်။");
+      throw new Error("Already Cancel this Ride");
     }
 
-    // Mark booking as cancelled
+    
     bookings[bookingIndex].status = "cancelled";
     bookings[bookingIndex].cancelledAt = new Date().toISOString();
 
-    // Refund passenger
+    
     const users = this.getUsers();
     const passengerIndex = users.findIndex((u) => u.id === passengerId);
     if (passengerIndex !== -1) {
@@ -1265,7 +1251,7 @@ Do NOT include any text outside the JSON array.
         (users[passengerIndex].balance || 0) + booking.totalPrice;
     }
 
-    // Reverse driver payment
+    
     const rides = this.getRides();
     const rideIndex = rides.findIndex((r) => r.id === booking.rideId);
     if (rideIndex !== -1) {
@@ -1277,13 +1263,13 @@ Do NOT include any text outside the JSON array.
           (users[driverIndex].balance || 0) - driverRefund;
       }
 
-      // Decrement booked seats
+    
       rides[rideIndex].bookedSeats = Math.max(
         0,
         (rides[rideIndex].bookedSeats || 1) - 1,
       );
 
-      // Remove passenger from ride's passengers array
+      
       if (rides[rideIndex].passengers) {
         rides[rideIndex].passengers = rides[rideIndex].passengers.filter(
           (p) => p.id !== passengerId,
@@ -1291,14 +1277,14 @@ Do NOT include any text outside the JSON array.
       }
     }
 
-    // Record refund transactions
+    
     const transactions = this.getTransactions();
     transactions.push({
       id: "tx-" + Math.random().toString(36).substr(2, 9),
       userId: passengerId,
       amount: booking.totalPrice,
       type: "credit",
-      description: `ခရီးစဉ်ဖျက်သိမ်း ပြန်အမ်းငွေ ${booking.totalPrice.toLocaleString()} ကျပ်`,
+      description: `Ride Cancle Refund ${booking.totalPrice.toLocaleString()} Kyats`,
       createdAt: new Date().toISOString(),
     });
 
@@ -1310,12 +1296,12 @@ Do NOT include any text outside the JSON array.
         userId: driverId,
         amount: -driverRefund,
         type: "debit",
-        description: `ခရီးသည်ဖျက်သိမ်း ပြန်အမ်းငွေ ${driverRefund.toLocaleString()} ကျပ်`,
+        description: `Cancled Passenger refund ${driverRefund.toLocaleString()} ကျပ်`,
         createdAt: new Date().toISOString(),
       });
     }
 
-    // Save all changes
+    
     localStorage.setItem("smartride_bookings", JSON.stringify(bookings));
     localStorage.setItem("smartride_users", JSON.stringify(users));
     localStorage.setItem("smartride_rides", JSON.stringify(rides));
@@ -1332,9 +1318,7 @@ Do NOT include any text outside the JSON array.
 
     return booking.totalPrice;
   }
-  // ═══════════════════════════════════════════════════════
-  // ──── RIDE REQUEST SYSTEM ────
-  // ═══════════════════════════════════════════════════════
+
 
   getRideRequests() {
     return JSON.parse(localStorage.getItem('smartride_ride_requests')) || [];
@@ -1355,7 +1339,7 @@ Do NOT include any text outside the JSON array.
       id: 'notif-' + Math.random().toString(36).substr(2, 9),
       userId,
       message,
-      type, // 'accepted', 'joined', 'info'
+      type, 
       read: false,
       createdAt: new Date().toISOString(),
     };
@@ -1381,13 +1365,13 @@ Do NOT include any text outside the JSON array.
     localStorage.setItem('smartride_notifications', JSON.stringify(notifications));
   }
 
-  // ── Passenger creates a new ride request ──
+
   createRideRequest(data) {
     const requests = this.getRideRequests();
     const user = this.getCurrentUser();
-    if (!user) throw new Error('Login လိုအပ်ပါသည်။');
+    if (!user) throw new Error('Login First');
 
-    // Auto-calculate price from GPS
+    
     let estimatedPrice = 0;
     let distanceKm = 0;
     if (data.startLat != null && data.endLat != null) {
@@ -1400,14 +1384,14 @@ Do NOT include any text outside the JSON array.
       estimatedPrice = this._matcher.DEFAULT_PRICE;
     }
 
-    // ── E-Wallet: Check sufficient balance & deduct upfront ──
+    
     const users = this.getUsers();
     const userIdx = users.findIndex(u => u.id === user.id);
-    if (userIdx === -1) throw new Error('User ရှာမတွေ့ပါ။');
+    if (userIdx === -1) throw new Error('Cannot Find User');
     const currentBalance = users[userIdx].balance || 0;
     if (currentBalance < estimatedPrice) {
       throw new Error(
-        `💰 Wallet လက်ကျန်ငွေ မလုံလောက်ပါ။ လိုအပ်ငွေ: ${estimatedPrice.toLocaleString()} ကျပ် | လက်ကျန်: ${currentBalance.toLocaleString()} ကျပ်`
+        ` Wallet Balance Insufficient! Need: ${estimatedPrice.toLocaleString()} Kyats | Remain Balance: ${currentBalance.toLocaleString()} Kyats`
       );
     }
 
@@ -1430,7 +1414,7 @@ Do NOT include any text outside the JSON array.
       acceptedDriverId: null,
       rejectedByDrivers: [],
       createdAt: new Date().toISOString(),
-      // Initial solo price breakdown (1 passenger pays full fare)
+     
       priceBreakdown: [{
         passengerId: user.id,
         name: user.name || 'Passenger',
@@ -1440,16 +1424,16 @@ Do NOT include any text outside the JSON array.
         driverBonus: 0,
         appFee: 0,
         weightPercent: 100,
-        paidAmount: estimatedPrice,  // track actual amount deducted
+        paidAmount: estimatedPrice,  
       }],
       totalRoutePrice: estimatedPrice,
     };
 
-    // Deduct from wallet
+    
     this.updateBalance(
       user.id,
       -estimatedPrice,
-      `🚗 Ride Request: ${data.startLocation} → ${data.endLocation} (ကြိုတင်ပေးချေ)`
+      ` Ride Request: ${data.startLocation} → ${data.endLocation} (Pre-cash)`
     );
 
     requests.push(newRequest);
@@ -1457,8 +1441,7 @@ Do NOT include any text outside the JSON array.
     return newRequest;
   }
 
-  // ── Recalculate per-passenger price breakdown using fair proportional system ──
-  // Route price = based on the longest rider. Each passenger pays their km-weight × route price.
+  
   _recalculatePriceBreakdown(req) {
     const allPassengers = [
       {
@@ -1485,7 +1468,7 @@ Do NOT include any text outside the JSON array.
         : (req.distanceKm || 10)
     );
 
-    // Route price driven by the longest rider's distance
+   
     const maxDist = Math.max(...distances);
     const routePrice = this._matcher.calculateDistancePrice(maxDist);
     const breakdowns = this._matcher.calculateFairPriceBreakdown(routePrice, distances);
@@ -1502,37 +1485,34 @@ Do NOT include any text outside the JSON array.
     }));
     req.totalRoutePrice = routePrice;
 
-    // Keep estimatedPrice in sync with requester's current share
+   
     req.estimatedPrice = req.priceBreakdown[0]?.price ?? req.estimatedPrice;
   }
 
-  // ── Another passenger joins an existing request ──
-  // locationData = { startLocation, endLocation, startLat, startLng, endLat, endLng } (their own route)
+  
   joinRideRequest(requestId, passengerId, locationData = {}) {
     const requests = this.getRideRequests();
     const idx = requests.findIndex(r => r.id === requestId);
-    if (idx === -1) throw new Error('Ride Request ရှာမတွေ့ပါ။');
+    if (idx === -1) throw new Error('Cannot Find Ride Request ');
 
     const req = requests[idx];
-    if (req.status !== 'pending') throw new Error('ဤ Request ကို လက်ခံပြီးသား/ပယ်ဖျက်ပြီးသား ဖြစ်ပါသည်။');
+    if (req.status !== 'pending') throw new Error('Already Accepted/Canceled this request');
     if (req.passengerId === passengerId) throw new Error('ကိုယ့် Request ကိုယ် ပါဝင်၍ မရပါ။');
-    if (req.joinedPassengers.some(p => p.id === passengerId)) throw new Error('ပါဝင်ပြီးသား ဖြစ်ပါသည်။');
+    if (req.joinedPassengers.some(p => p.id === passengerId)) throw new Error('Already in this Request');
 
     const users = this.getUsers();
     const passenger = users.find(u => u.id === passengerId);
-    if (!passenger) throw new Error('User ရှာမတွေ့ပါ။');
+    if (!passenger) throw new Error('Cannot Find User');
 
-    // ── Corridor validation: joiner's route must align with the original request route ──
-    // Uses 5km tolerance because text-geocoded area names (Nominatim) can be 3-4km
-    // from the precise GPS point stored in the database.
+    
     const joinerHasGPS = locationData.startLat != null && locationData.endLat != null;
     const requestHasGPS = req.startLat != null && req.endLat != null;
 
     if (joinerHasGPS && requestHasGPS) {
-      const JOIN_PICKUP_KM  = 5.0;  // tolerant threshold for area-level geocoding
+      const JOIN_PICKUP_KM  = 5.0;  
       const JOIN_DROPOFF_KM = 5.0;
 
-      // 1. Bearing check — must travel in roughly the same direction
+      
       const jBearing = this._matcher._bearing(
         locationData.startLat, locationData.startLng,
         locationData.endLat,   locationData.endLng
@@ -1544,12 +1524,12 @@ Do NOT include any text outside the JSON array.
 
       if (bearingDiff > this._matcher.BEARING_MAX_DIFF_DEG) {
         throw new Error(
-          `❌ ဦးတည်ရာ မတူပါ (${Math.round(bearingDiff)}° ကွာ)။ ` +
-          'ကိုယ်ခရီးနှင့် ကိုက်ညိသော Request ကို ရှာပါ။'
+          `❌ Diff Direction (${Math.round(bearingDiff)}° Diff) ` +
+          'Find same direction request'
         );
       }
 
-      // 2. Point-to-segment distances: joiner's start/end vs request's route line
+      
       const pu = this._matcher._pointToSegment(
         locationData.startLng, locationData.startLat,
         req.startLng, req.startLat,
@@ -1561,21 +1541,21 @@ Do NOT include any text outside the JSON array.
         req.endLng,   req.endLat
       );
 
-      // 3. Direction order: pickup must come before dropoff along the route
+      
       const dirOk = pu.t < dr.t;
 
       if (pu.distance > JOIN_PICKUP_KM || dr.distance > JOIN_DROPOFF_KM || !dirOk) {
         const pKm = Math.round(pu.distance * 10) / 10;
         const dKm = Math.round(dr.distance * 10) / 10;
         throw new Error(
-          `❌ လမ်ကြောင်းမှ အကွာအဝေး — Pickup ${pKm} km · Dropoff ${dKm} km ` +
-          `(${JOIN_PICKUP_KM} km အတွင်း မဝင်ပါ)။ ` +
-          'ကိုယ်ခရီးနှင့် ကိုက်ညိသော Request ကို ရှာပါ။'
+          `❌ distance route — Pickup ${pKm} km · Dropoff ${dKm} km ` +
+          `(${JOIN_PICKUP_KM} km Different)။ ` +
+          'Find same route request'
         );
       }
     }
 
-    // ── Save old breakdown to compute refund diffs ──
+    
     const oldBreakdown = (req.priceBreakdown || []).map(b => ({ ...b }));
 
     req.joinedPassengers.push({
@@ -1583,7 +1563,7 @@ Do NOT include any text outside the JSON array.
       name: passenger.name,
       phone: passenger.phone || '',
       joinedAt: new Date().toISOString(),
-      // Store their own route coords for distance-based pricing
+      
       startLocation: locationData.startLocation || req.startLocation,
       endLocation: locationData.endLocation || req.endLocation,
       startLat: locationData.startLat ?? req.startLat,
@@ -1592,40 +1572,40 @@ Do NOT include any text outside the JSON array.
       endLng: locationData.endLng ?? req.endLng,
     });
 
-    // Recalculate fair price breakdown for all passengers
+    
     this._recalculatePriceBreakdown(req);
 
-    // ── E-Wallet: charge joiner & refund existing passengers ──
+    
     const newBreakdown = req.priceBreakdown || [];
 
-    // Find joiner's new share
+    
     const joinerBD = newBreakdown.find(b => b.passengerId === passengerId);
     const joinerPrice = joinerBD ? joinerBD.price : 0;
 
-    // Check joiner has sufficient balance
+    
     if (joinerPrice > 0) {
       const joinerBalance = passenger.balance || 0;
       if (joinerBalance < joinerPrice) {
-        // Rollback: remove from joinedPassengers
+        
         req.joinedPassengers = req.joinedPassengers.filter(p => p.id !== passengerId);
         this._recalculatePriceBreakdown(req);
         throw new Error(
-          `💰 Wallet လက်ကျန်ငွေ မလုံလောက်ပါ။ လိုအပ်ငွေ: ${joinerPrice.toLocaleString()} ကျပ် | လက်ကျန်: ${joinerBalance.toLocaleString()} ကျပ်`
+          ` Insufficient Balance in Wallet! Require Balance: ${joinerPrice.toLocaleString()} Kyats | Remain Balance: ${joinerBalance.toLocaleString()} Kyats`
         );
       }
 
-      // Deduct from joiner's wallet
+      
       this.updateBalance(
         passengerId,
         -joinerPrice,
-        `🤝 Ride Join: ${req.startLocation} → ${req.endLocation} (ကြိုတင်ပေးချေ)`
+        ` Ride Join: ${req.startLocation} → ${req.endLocation} (Pre Cash)`
       );
       if (joinerBD) joinerBD.paidAmount = joinerPrice;
     }
 
-    // Refund difference to existing passengers (their share decreased)
+    
     for (const newBD of newBreakdown) {
-      if (newBD.passengerId === passengerId) continue; // skip joiner
+      if (newBD.passengerId === passengerId) continue; 
       const oldBD = oldBreakdown.find(b => b.passengerId === newBD.passengerId);
       if (!oldBD) continue;
       const previousPaid = oldBD.paidAmount || oldBD.price || 0;
@@ -1635,81 +1615,81 @@ Do NOT include any text outside the JSON array.
         this.updateBalance(
           newBD.passengerId,
           refundDiff,
-          `💰 ခရီးသည်အသစ် ပါဝင်သဖြင့် ငွေပြန်အမ်း: ${req.startLocation} → ${req.endLocation} (-${refundDiff.toLocaleString()} ကျပ်)`
+          ` New Passenger Joined and  Refund: ${req.startLocation} → ${req.endLocation} (-${refundDiff.toLocaleString()} Kyats)`
         );
         this.addNotification(
           newBD.passengerId,
-          `💰 ${passenger.name} ပါဝင်လာသဖြင့် သင်၏ ကျသင့်ငွေ ${previousPaid.toLocaleString()} → ${newPrice.toLocaleString()} ကျပ် သို့ ကျဆင်း၊ ${refundDiff.toLocaleString()} ကျပ် ပြန်အမ်းပြီး`,
+          ` ${passenger.name} was Joined! Your Cost ${previousPaid.toLocaleString()} → ${newPrice.toLocaleString()} Kyats need to cash၊ ${refundDiff.toLocaleString()} Kyats Refund`,
           'refund'
         );
       }
-      newBD.paidAmount = newPrice; // update tracked paid amount
+      newBD.paidAmount = newPrice; 
     }
 
     localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
 
-    // Notify the request owner
+    
     this.addNotification(
       req.passengerId,
-      `${passenger.name} သည် သင်၏ "${req.startLocation} → ${req.endLocation}" ခရီးစဉ် Request တွင် ပါဝင်လာပါသည်။`,
+      `${passenger.name} was Joined Your "${req.startLocation} → ${req.endLocation}" Ride Request`,
       'joined'
     );
 
     return req;
   }
 
-  // ── A passenger leaves a request they joined ──
+  
   leaveRideRequest(requestId, passengerId) {
     const requests = this.getRideRequests();
     const idx = requests.findIndex(r => r.id === requestId);
-    if (idx === -1) throw new Error('Ride Request ရှာမတွေ့ပါ။');
+    if (idx === -1) throw new Error('Ride Request cannot find');
 
     const req = requests[idx];
-    if (req.status !== 'pending') throw new Error('ဤ Request ကို ပြင်ဆင်၍ မရတော့ပါ။');
+    if (req.status !== 'pending') throw new Error('Cannot Repair this request');
 
-    // ── E-Wallet: refund the leaving passenger ──
+    
     const leaverBD = (req.priceBreakdown || []).find(b => b.passengerId === passengerId);
     const refundAmount = leaverBD ? (leaverBD.paidAmount || leaverBD.price || 0) : 0;
     if (refundAmount > 0) {
       this.updateBalance(
         passengerId,
         refundAmount,
-        `💰 Request ထွက်ခွာ ငွေပြန်အမ်း: ${req.startLocation} → ${req.endLocation}`
+        ` Request leave refund: ${req.startLocation} → ${req.endLocation}`
       );
       this.addNotification(
         passengerId,
-        `💰 Request မှ ထွက်ခွာသဖြင့် ${refundAmount.toLocaleString()} ကျပ် ပြန်အမ်းပြီး`,
+        ` Since leave from Request ${refundAmount.toLocaleString()} Kyats Refund`,
         'refund'
       );
     }
 
     req.joinedPassengers = req.joinedPassengers.filter(p => p.id !== passengerId);
-    // Recalculate prices now that someone left (remaining passengers pay more)
+    
     this._recalculatePriceBreakdown(req);
     localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
     return req;
   }
 
-  // ── Driver accepts a ride request → creates a real ride ──
+  
   acceptRideRequest(requestId, driverId) {
     const requests = this.getRideRequests();
     const idx = requests.findIndex(r => r.id === requestId);
-    if (idx === -1) throw new Error('Ride Request ရှာမတွေ့ပါ။');
+    if (idx === -1) throw new Error('Cannot find Ride Request');
 
     const req = requests[idx];
-    if (req.status !== 'pending') throw new Error('ဤ Request ကို လက်ခံပြီးသား/ပယ်ဖျက်ပြီးသား ဖြစ်ပါသည်။');
+    if (req.status !== 'pending') throw new Error('Already Accepted/Canceled this request');
 
     const users = this.getUsers();
     const driver = users.find(u => u.id === driverId);
-    if (!driver) throw new Error('Driver ရှာမတွေ့ပါ။');
+    if (!driver) throw new Error('Driver cannot find');
 
-    // Mark request as accepted
+    
     req.status = 'accepted';
     req.acceptedDriverId = driverId;
     req.acceptedAt = new Date().toISOString();
     localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
 
-    // Create a real ride from this request
+    
     const allPassengers = [
       { id: req.passengerId, name: req.passengerName, pickup: req.startLocation },
       ...req.joinedPassengers.map(p => ({ id: p.id, name: p.name, pickup: req.startLocation })),
@@ -1732,7 +1712,7 @@ Do NOT include any text outside the JSON array.
 
     const newRide = this.offerRide(rideData);
 
-    // Add passengers to the ride
+    
     const rides = this.getRides();
     const rideIdx = rides.findIndex(r => r.id === newRide.id);
     if (rideIdx !== -1) {
@@ -1742,18 +1722,18 @@ Do NOT include any text outside the JSON array.
       localStorage.setItem('smartride_rides', JSON.stringify(rides));
     }
 
-    // Notify the original requester
+   
     this.addNotification(
       req.passengerId,
-      `🎉 ${driver.name} (${driver.carModel || ''} - ${driver.carPlate || ''}) သည် သင်၏ "${req.startLocation} → ${req.endLocation}" ခရီးစဉ်ကို လက်ခံပါသည်!`,
+      ` ${driver.name} (${driver.carModel || ''} - ${driver.carPlate || ''}) was accept your "${req.startLocation} → ${req.endLocation}" ride request`,
       'accepted'
     );
 
-    // Notify joined passengers
+  
     req.joinedPassengers.forEach(p => {
       this.addNotification(
         p.id,
-        `🎉 ${driver.name} (${driver.carModel || ''} - ${driver.carPlate || ''}) သည် "${req.startLocation} → ${req.endLocation}" ခရီးစဉ်ကို လက်ခံပါသည်!`,
+        ` ${driver.name} (${driver.carModel || ''} - ${driver.carPlate || ''}) was accepted "${req.startLocation} → ${req.endLocation}" your ride request`,
         'accepted'
       );
     });
@@ -1761,11 +1741,11 @@ Do NOT include any text outside the JSON array.
     return { request: req, ride: newRide };
   }
 
-  // ── Driver rejects/skips a ride request ──
+  
   rejectRideRequest(requestId, driverId) {
     const requests = this.getRideRequests();
     const idx = requests.findIndex(r => r.id === requestId);
-    if (idx === -1) throw new Error('Ride Request ရှာမတွေ့ပါ။');
+    if (idx === -1) throw new Error('Cannot find Ride Request');
 
     if (!requests[idx].rejectedByDrivers) requests[idx].rejectedByDrivers = [];
     if (!requests[idx].rejectedByDrivers.includes(driverId)) {
@@ -1775,28 +1755,28 @@ Do NOT include any text outside the JSON array.
     return requests[idx];
   }
 
-  // ── Original requester cancels their request ──
+  
   cancelRideRequest(requestId, passengerId) {
     const requests = this.getRideRequests();
     const idx = requests.findIndex(r => r.id === requestId);
-    if (idx === -1) throw new Error('Ride Request ရှာမတွေ့ပါ။');
+    if (idx === -1) throw new Error(' Cannot find Ride Request');
 
     const req = requests[idx];
-    if (req.passengerId !== passengerId) throw new Error('ဤ Request ကို ဖျက်သိမ်းခွင့် မရှိပါ။');
-    if (req.status !== 'pending') throw new Error('ဤ Request ကို ဖျက်သိမ်း၍ မရတော့ပါ။');
-    if (req.status === 'accepted') throw new Error('Driver လက်ခံပြီးသဖြင့် ဖျက်သိမ်း၍ မရတော့ပါ။');
+    if (req.passengerId !== passengerId) throw new Error('Cannot cancel this request');
+    if (req.status !== 'pending') throw new Error('Cannot cancel this request');
+    if (req.status === 'accepted') throw new Error('Since driver accepted , cannot cancel this request');
 
-    // ── 3-hour cancellation policy ──
+    
     const departureDate = new Date(req.departureTime);
     const now = new Date();
     const hoursUntilDeparture = (departureDate - now) / (1000 * 60 * 60);
     if (hoursUntilDeparture < 3) {
       throw new Error(
-        `⏰ ထွက်ခွာမည့်အချိန် ${Math.round(hoursUntilDeparture * 10) / 10} နာရီသာ ကျန်တော့သဖြင့် ဖျက်သိမ်း၍ မရတော့ပါ။ (3 နာရီ အလိုမှ ဖျက်သိမ်းနိုင်ပါသည်)`
+        ` Departure Time ${Math.round(hoursUntilDeparture * 10) / 10} Cannot cancel because departure time is too close! (U can cancle before 3 hours left)`
       );
     }
 
-    // ── E-Wallet: refund ALL passengers ──
+    
     const allToRefund = (req.priceBreakdown || []);
     let totalRefunded = 0;
     allToRefund.forEach(bd => {
@@ -1805,7 +1785,7 @@ Do NOT include any text outside the JSON array.
         this.updateBalance(
           bd.passengerId,
           refund,
-          `💰 Request ပယ်ဖျက် ငွေပြန်အမ်း: ${req.startLocation} → ${req.endLocation}`
+          ` Request cancel refund: ${req.startLocation} → ${req.endLocation}`
         );
         totalRefunded += refund;
       }
@@ -1816,13 +1796,13 @@ Do NOT include any text outside the JSON array.
     req.totalRefunded = totalRefunded;
     localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
 
-    // Notify joined passengers (with refund info)
+    
     req.joinedPassengers.forEach(p => {
       const pBD = allToRefund.find(b => b.passengerId === p.id);
       const pRefund = pBD ? (pBD.paidAmount || pBD.price || 0) : 0;
       this.addNotification(
         p.id,
-        `"${req.startLocation} → ${req.endLocation}" Request ပယ်ဖျက်ပြီး ${pRefund > 0 ? pRefund.toLocaleString() + ' ကျပ် ပြန်အမ်းပြီး' : ''}`,
+        `"${req.startLocation} → ${req.endLocation}" Request cancelled ${pRefund > 0 ? pRefund.toLocaleString() + ' Kyats Refund' : ''}`,
         'refund'
       );
     });
@@ -1830,28 +1810,28 @@ Do NOT include any text outside the JSON array.
     return req;
   }
 
-  // ── Get pending requests for drivers (excluding rejected ones) ──
+  
   getPendingRequestsForDriver(driverId) {
     const requests = this.getRideRequests();
     const now = new Date();
     return requests.filter(r => {
       if (r.status !== 'pending') return false;
-      // Exclude expired requests
+      
       if (new Date(r.departureTime) < now) return false;
-      // Exclude requests this driver rejected
+      
       if (r.rejectedByDrivers && r.rejectedByDrivers.includes(driverId)) return false;
       return true;
     }).sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
   }
 
-  // ── Get requests by a specific passenger ──
+ 
   getRideRequestsByPassenger(passengerId) {
     return this.getRideRequests().filter(
       r => r.passengerId === passengerId || r.joinedPassengers.some(p => p.id === passengerId)
     );
   }
 
-  // ── Get all active (pending) requests for browsing ──
+ 
   getActivePendingRequests() {
     const now = new Date();
     return this.getRideRequests().filter(r => {

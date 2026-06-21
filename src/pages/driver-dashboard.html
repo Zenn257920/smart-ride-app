@@ -18,7 +18,7 @@
     })();
   </script>
   <style>
-    /* Driver Dashboard Specific Styles */
+    
     .driver-hero {
       background: linear-gradient(135deg,
           var(--green-dark) 0%,
@@ -476,7 +476,7 @@
       color: var(--green);
     }
 
-    /* Responsive */
+    
     @media (max-width: 1024px) {
       .driver-stats-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -718,8 +718,7 @@
       }
     }
 
-    /* ── Dark Mode overrides for driver-specific elements ── */
-    /* Exactly matches [data-theme="dark"] .glass-card from style.css */
+    
     [data-theme="dark"] .driver-stat-card {
       background: rgba(255, 255, 255, 0.05);
       border-color: rgba(255, 255, 255, 0.08);
@@ -794,15 +793,15 @@
         </div>
       </a>
       <div class="nav-links">
-        <a href="offer-ride.html" class="nav-link">ခရီးစဉ်ကမ်းလှမ်းမည်</a>
-        <a href="ride-requests.html" class="nav-link" id="navRideRequests">🙋 Ride Requests <span id="navReqBadge" style="display:none; background:#ef4444; color:#fff; font-size:0.6rem; font-weight:700; padding:0.1rem 0.4rem; border-radius:8px; margin-left:2px;">0</span></a>
-        <a href="my-rides.html" class="nav-link">ခရီးစဉ်များ</a>
-        <a href="wallet.html" class="nav-link">ပိုက်ဆံအိတ်</a>
+        <a href="offer-ride.html" class="nav-link">Offer ride</a>
+        <a href="ride-requests.html" class="nav-link" id="navRideRequests">Ride Requests <span id="navReqBadge" style="display:none; background:#ef4444; color:#fff; font-size:0.6rem; font-weight:700; padding:0.1rem 0.4rem; border-radius:8px; margin-left:2px;">0</span></a>
+        <a href="my-rides.html" class="nav-link">Rides</a>
+        <a href="wallet.html" class="nav-link">Wallet</a>
         <a href="driver-dashboard.html" class="nav-link nav-cta">Driver Dashboard</a>
         <button id="themeToggleBtn" class="theme-toggle" title="Dark Mode">
           🌙
         </button>
-        <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
+        <a href="#" id="logoutBtn" class="nav-link">Logout</a>
       </div>
       <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
         <span></span><span></span><span></span>
@@ -811,11 +810,11 @@
   </nav>
 
   <div class="container" style="padding: 2rem">
-    <!-- Driver Hero Banner -->
+   
     <div class="driver-hero animate-fade-in-up" id="driverHero">
       <div class="driver-hero-content">
         <div style="display: flex; align-items: center; gap: 1rem">
-          <div class="driver-avatar">🚗</div>
+          <div class="driver-avatar"><i data-lucide="car"></i></div>
           <div class="driver-info">
             <h2 id="driverName">Loading...</h2>
             <p id="driverEmail">loading...</p>
@@ -833,32 +832,32 @@
       </div>
     </div>
 
-    <!-- Stats Grid -->
+    
     <div class="driver-stats-grid">
       <div class="driver-stat-card animate-fade-in-up animate-delay-1">
-        <div class="stat-icon">🚙</div>
+        <div class="stat-icon"><i data-lucide="car"></i></div>
         <div class="stat-value" id="statActiveRides">0</div>
-        <div class="stat-label">လက်ရှိခရီးစဉ်</div>
+        <div class="stat-label">Current ride</div>
         <div class="stat-trend">Active</div>
       </div>
       <div class="driver-stat-card animate-fade-in-up animate-delay-2">
-        <div class="stat-icon">👥</div>
+        <div class="stat-icon"><i data-lucide="users"></i></div>
         <div class="stat-value" id="statTotalPassengers">0</div>
         <div class="stat-label">Total Passenger</div>
       </div>
       <div class="driver-stat-card animate-fade-in-up animate-delay-3">
-        <div class="stat-icon">💰</div>
+        <div class="stat-icon"><i data-lucide="circle-dollar-sign"></i></div>
         <div class="stat-value" id="statTotalEarnings">0</div>
         <div class="stat-label">Income received</div>
       </div>
       <div class="driver-stat-card animate-fade-in-up animate-delay-4">
-        <div class="stat-icon">⭐</div>
+        <div class="stat-icon"><i data-lucide="user-plus"></i></div>
         <div class="stat-value" id="statAvailableSeats">0</div>
         <div class="stat-label">availableSeats</div>
       </div>
     </div>
 
-    <!-- Ride Map Section -->
+    
     <div class="glass-card animate-fade-in-up ride-map-section">
       <div class="section-header">
         <h3>📍 ခရီးစဉ်မြေပုံ</h3>
@@ -1172,7 +1171,7 @@
           activeHighlight = -1;
           legendItems.forEach((item) => item.classList.remove("active"));
         } else {
-          // Highlight selected
+          
           rideMap.highlightRide(index);
           activeHighlight = index;
           legendItems.forEach((item, i) => {
@@ -1181,7 +1180,7 @@
         }
       };
 
-      // Reset map view button
+      
       document
         .getElementById("resetMapView")
         ?.addEventListener("click", (e) => {
@@ -1194,7 +1193,7 @@
             .forEach((item) => item.classList.remove("active"));
         });
 
-      // Render active rides (with map interaction)
+      
       const activeRidesList = document.getElementById("activeRidesList");
       if (driverRides.length > 0) {
         activeRidesList.innerHTML = driverRides
@@ -1218,7 +1217,7 @@
                 <div class="ride-meta">
                   <span>🕐 ${time}</span>
                   <span>📅 ${date}</span>
-                  <span>💰 ${(ride.price || 0).toLocaleString()} ကျပ်</span>
+                  <span>💰 ${(ride.price || 0).toLocaleString()} Kyats</span>
                 </div>
               </div>
               <div class="ride-passengers-badge">${booked}/${total} ဦး</div>
@@ -1228,7 +1227,7 @@
           .join("");
       }
 
-      // Render passengers (collect from all rides)
+      
       const passengersList = document.getElementById("passengersList");
       const allPassengers = [];
       driverRides.forEach((ride) => {
@@ -1259,10 +1258,10 @@
           .join("");
       }
 
-      // Initialize map after page loads
+      
       initDriverMap();
 
-      // ─── Pending Ride Requests for Driver ───
+     
       function renderPendingRequests() {
         const pendingReqs = db.getPendingRequestsForDriver(user.id);
         const container = document.getElementById('pendingRequestsList');
@@ -1286,7 +1285,7 @@
           return;
         }
 
-        // Show top 5 requests
+        
         const display = pendingReqs.slice(0, 5);
         container.innerHTML = display.map(req => {
           const totalP = 1 + (req.joinedPassengers?.length || 0);
@@ -1314,7 +1313,7 @@
                 <div style="font-size:0.7rem; color:var(--gray); display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.4rem;">
                   <span>🕒 ${timeStr}</span>
                   <span>👥 ${totalP} ဦး</span>
-                  <span>💰 ${(req.estimatedPrice||0).toLocaleString()} ကျပ်</span>
+                  <span>💰 ${(req.estimatedPrice||0).toLocaleString()} Kyats</span>
                 </div>
                 <div style="font-size:0.68rem; color:var(--gray); margin-bottom:0.45rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                   🧑 ${names.join(', ')}
@@ -1325,7 +1324,7 @@
                     background:linear-gradient(135deg,var(--green-dark),var(--green)); color:#fff; cursor:pointer;
                     box-shadow:0 2px 8px rgba(29,158,117,0.25); transition:all 0.2s;"
                     onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
-                    ✅ လက်ခံမည်
+                    Accept
                   </button>
                   <button onclick="driverSkipReq('${req.id}')" style="
                     padding:0.3rem 0.75rem; border:1px solid var(--border-subtle); border-radius:8px;
@@ -1333,7 +1332,7 @@
                     cursor:pointer; transition:all 0.2s;"
                     onmouseover="this.style.borderColor='var(--amber)'; this.style.color='var(--amber)';"
                     onmouseout="this.style.borderColor='var(--border-subtle)'; this.style.color='var(--gray)';">
-                    ⏭️ ကျော်မည်
+                    Skip
                   </button>
                 </div>
               </div>
@@ -1348,32 +1347,32 @@
               text-decoration:none; border:1px dashed rgba(29,158,117,0.25);
               border-radius:10px; transition:all 0.2s;"
               onmouseover="this.style.background='var(--green-light)'" onmouseout="this.style.background='transparent'">
-              → နောက်ထပ် ${pendingReqs.length - 5} ခု ကြည့်မည်
+              → next ${pendingReqs.length - 5}  Show
             </a>`;
         }
       }
 
-      // Accept a request from the dashboard
+      
       window.driverAcceptReq = function(requestId) {
-        if (!confirm('ဤ Request ကို လက်ခံမှာ သေချာပါသလား? ခရီးစဉ်အသစ် ဖန်တီးပြီး ခရီးသည်များကို အကြောင်းကြားပါမည်။')) return;
+        if (!confirm('are u sure to accept this  ride? Noti to passengers')) return;
         try {
           db.acceptRideRequest(requestId, user.id);
           renderPendingRequests();
-          // Refresh stats
+          
           const updatedRides = db.getRidesByDriver(user.id) || [];
           document.getElementById('statActiveRides').textContent = updatedRides.length;
-          showDashToast('✅ Request လက်ခံပြီး ခရီးစဉ်အသစ် ဖန်တီးပြီးပါပြီ!');
+          showDashToast('ride request accept and new ride created');
         } catch(err) {
           alert('❌ ' + err.message);
         }
       };
 
-      // Skip/reject a request from the dashboard
+      
       window.driverSkipReq = function(requestId) {
         try {
           db.rejectRideRequest(requestId, user.id);
           renderPendingRequests();
-          showDashToast('⏭️ Request ကျော်ပြီးပါပြီ');
+          showDashToast('Skipped Request');
         } catch(err) {
           alert('❌ ' + err.message);
         }
@@ -1403,7 +1402,7 @@
 
       renderPendingRequests();
 
-      // Logout
+     
       document.getElementById("logoutBtn")?.addEventListener("click", (e) => {
         e.preventDefault();
         logout();
@@ -1411,7 +1410,7 @@
     }
   </script>
   <script>
-    // Mobile hamburger menu toggle
+    
     (function () {
       const btn = document.getElementById("mobileMenuBtn");
       const nav = document.querySelector(".nav-links");
@@ -1429,6 +1428,10 @@
       }
     })();
   </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+  lucide.createIcons();
+</script>
 </body>
 
 </html>

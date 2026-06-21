@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard - Innovix SharedRide</title>
     <link rel="stylesheet" href="/src/style.css" />
-    <!-- Prevent dark mode flash -->
+    
     <script>
       (function () {
         const t = localStorage.getItem("smartride_theme") || "light";
@@ -42,14 +42,14 @@
           </div>
         </a>
         <div class="nav-links">
-          <a href="find-ride.html" class="nav-link">ကားစီးမည်</a>
-          <a href="ride-requests.html" class="nav-link">🙋 Ride Requests</a>
+          <a href="find-ride.html" class="nav-link">Find Ride</a>
+          <a href="ride-requests.html" class="nav-link"> Ride Requests</a>
 
           <a href="dashboard.html" class="nav-link nav-cta">Dashboard</a>
           <button id="themeToggleBtn" class="theme-toggle" title="Dark Mode">
             🌙
           </button>
-          <a href="#" id="logoutBtn" class="nav-link">ထွက်ရန်</a>
+          <a href="#" id="logoutBtn" class="nav-link">LogOut</a>
         </div>
         <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
           <span></span><span></span><span></span>
@@ -85,7 +85,7 @@
             <p id="userEmail" style="color: var(--gray)"></p>
           </div>
           <div style="text-align: right">
-            <div style="font-size: 0.75rem; color: var(--gray)">လက်ကျန်ငွေ</div>
+            <div style="font-size: 0.75rem; color: var(--gray)">Remain Balance</div>
             <div
               style="
                 font-family: var(--font-heading);
@@ -97,7 +97,7 @@
             >
               0
             </div>
-            <div style="font-size: 0.7rem; color: var(--gray)">ကျပ်</div>
+            <div style="font-size: 0.7rem; color: var(--gray)">Kyats</div>
           </div>
         </div>
       </div>
@@ -114,12 +114,12 @@
           class="glass-card"
           style="text-decoration: none; text-align: center; padding: 2rem"
         >
-          <div style="font-size: 3rem; margin-bottom: 1rem">🚗</div>
+          <div style="font-size: 3rem; margin-bottom: 1rem"><i data-lucide="car" style="width:80px;height:80px;"></i></div>
           <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
-            ကားစီးမည်
+            Find Ride
           </h3>
           <p style="color: var(--gray); font-size: 0.85rem">
-            လမ်းကြောင်းတူသူများနှင့် အတူစီးပါ
+            Ride with same route Passenger
           </p>
         </a>
 
@@ -128,12 +128,12 @@
           class="glass-card"
           style="text-decoration: none; text-align: center; padding: 2rem"
         >
-          <div style="font-size: 3rem; margin-bottom: 1rem">💰</div>
+          <div style="font-size: 3rem; margin-bottom: 1rem"><i data-lucide="wallet" style="width:80px;height:80px;"></i></div>
           <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
-            ပိုက်ဆံအိတ်
+            Wallet
           </h3>
           <p style="color: var(--gray); font-size: 0.85rem">
-            ငွေသွင်း၊ ငွေထုတ်နှင့် မှတ်တမ်းများ
+            Depo/Withdraw and Transitions
           </p>
         </a>
         <a
@@ -141,12 +141,12 @@
           class="glass-card"
           style="text-decoration: none; text-align: center; padding: 2rem"
         >
-          <div style="font-size: 3rem; margin-bottom: 1rem">📋</div>
+          <div style="font-size: 3rem; margin-bottom: 1rem"><i data-lucide="notepad-text" style="width:80px;height:80px;"></i></div>
           <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
-            ခရီးစဉ်များ
+            Records
           </h3>
           <p style="color: var(--gray); font-size: 0.85rem">
-            သင်၏ ခရီးစဉ်မှတ်တမ်းများ
+            My Ride Records
           </p>
         </a>
         <a
@@ -154,12 +154,12 @@
           class="glass-card"
           style="text-decoration: none; text-align: center; padding: 2rem"
         >
-          <div style="font-size: 3rem; margin-bottom: 1rem">🙋</div>
+          <div style="font-size: 3rem; margin-bottom: 1rem"><i data-lucide="map-pinned" style="width:80px;height:80px;"></i></div>
           <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
-            ခရီးစဉ်တောင်းဆိုမည်
+            Request Ride
           </h3>
           <p style="color: var(--gray); font-size: 0.85rem">
-            ခရီးစဉ် Request ပို့၍ ယာဉ်မောင်း ရှာမည်
+            Find Driver by requesting ride
           </p>
         </a>
       </div>
@@ -182,7 +182,7 @@
         >
           <div>
             <div style="font-size: 0.75rem; color: var(--gray)">
-              စုစုပေါင်းခရီးစဉ်
+              Total Ride
             </div>
             <div
               style="font-size: 1.5rem; font-weight: 700; color: var(--green)"
@@ -193,7 +193,7 @@
           </div>
           <div>
             <div style="font-size: 0.75rem; color: var(--gray)">
-              သက်သာခဲ့သောငွေ
+              Money Saved
             </div>
             <div
               style="font-size: 1.5rem; font-weight: 700; color: var(--green)"
@@ -215,12 +215,12 @@
         ?.addEventListener("click", toggleTheme);
 
       if (!requireAuth()) {
-        // Redirect handled in requireAuth
+       
       } else {
-        //  user balance refreshed
+       
         const user = db.getCurrentUser() || getCurrentUser();
 
-        // move to driverDashboard
+        
         if (user.userType === "driver") {
           window.location.href = "/src/pages/driver-dashboard.html";
         } else {
@@ -230,18 +230,18 @@
           document.getElementById("userBalance").textContent =
             user.balance?.toLocaleString() || "0";
 
-          // Calculations
+          
           const bookings = db.getBookingsByPassenger(user.id) || [];
           document.getElementById("totalRides").textContent = bookings.length;
 
           let totalSaved = 0;
           bookings.forEach((booking) => {
-            // Saving Price — use the ride's original distance-based price
+           
             const origPrice = booking.originalPrice || booking.totalPrice;
             totalSaved += origPrice - booking.totalPrice;
           });
           document.getElementById("totalSaved").textContent =
-            totalSaved.toLocaleString() + " ကျပ်";
+            totalSaved.toLocaleString() + " Kyats";
         }
       }
 
@@ -251,7 +251,7 @@
       });
     </script>
     <script>
-      // Mobile menu toggle
+      
       (function () {
         const btn = document.getElementById("mobileMenuBtn");
         const nav = document.querySelector(".nav-links");
@@ -269,5 +269,10 @@
         }
       })();
     </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+  lucide.createIcons();
+</script>
   </body>
 </html>
