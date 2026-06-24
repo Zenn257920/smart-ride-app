@@ -1,40 +1,49 @@
-
 import { RouteMatcher } from "./matching.js";
 
 class DatabaseManager {
   constructor() {
     this.initDatabase();
-    
+
     this.apiKey = "AIzaSyAQ-Ab8RN6ICmmw0YVmfI0xeyC78lLvzCO";
-    
-    this.DRIVER_BONUS_RATE = 0;    
-    this.APP_TAX_RATE = 0.05;      
-    this.APP_COMMISSION_RATE = 0.05; 
-    
+
+    this.DRIVER_BONUS_RATE = 0;
+    this.APP_TAX_RATE = 0.05;
+    this.APP_COMMISSION_RATE = 0.05;
+
     this._matcher = new RouteMatcher();
   }
 
-  
   _calcPriceFromCoords(startLat, startLng, endLat, endLng) {
-    const result = this._matcher.calculatePriceFromCoords(startLat, startLng, endLat, endLng);
+    const result = this._matcher.calculatePriceFromCoords(
+      startLat,
+      startLng,
+      endLat,
+      endLng,
+    );
     return result ? result.price : this._matcher.DEFAULT_PRICE;
   }
 
-  
-  static get DATA_VERSION() { return 'v8-future-times'; }
+  static get DATA_VERSION() {
+    return "v8-future-times";
+  }
 
   initDatabase() {
-    const storedVersion = localStorage.getItem('smartride_data_version');
-    if (!localStorage.getItem('smartride_users') || storedVersion !== DatabaseManager.DATA_VERSION) {
-      
-      localStorage.removeItem('smartride_users');
-      localStorage.removeItem('smartride_rides');
-      localStorage.removeItem('smartride_bookings');
-      localStorage.removeItem('smartride_transactions');
-      localStorage.removeItem('smartride_ride_requests');
-      localStorage.removeItem('smartride_notifications');
-      localStorage.setItem('smartride_data_version', DatabaseManager.DATA_VERSION);
-     
+    const storedVersion = localStorage.getItem("smartride_data_version");
+    if (
+      !localStorage.getItem("smartride_users") ||
+      storedVersion !== DatabaseManager.DATA_VERSION
+    ) {
+      localStorage.removeItem("smartride_users");
+      localStorage.removeItem("smartride_rides");
+      localStorage.removeItem("smartride_bookings");
+      localStorage.removeItem("smartride_transactions");
+      localStorage.removeItem("smartride_ride_requests");
+      localStorage.removeItem("smartride_notifications");
+      localStorage.setItem(
+        "smartride_data_version",
+        DatabaseManager.DATA_VERSION,
+      );
+
       const sampleUsers = [
         {
           id: "u-1",
@@ -148,20 +157,16 @@ class DatabaseManager {
         },
       ];
 
-     
       const now = new Date();
       const setTime = (hours, minutes) => {
-       
         const d = new Date(now);
         d.setHours(hours, minutes, 0, 0);
         if (d <= now) {
-          
           d.setDate(d.getDate() + 1);
         }
         return d.toISOString();
       };
 
-      
       const sampleRides = [
         {
           id: "ride-101",
@@ -169,13 +174,15 @@ class DatabaseManager {
           driverName: "ဦးလှမောင်",
           startLocation: "Thanlyin (သန်လျင်)",
           endLocation: "Bahan (ဗဟန်း)",
-          
-          startLat: 16.7784, startLng: 96.2504,
-          endLat: 16.8275, endLng: 96.1623,
+
+          startLat: 16.7784,
+          startLng: 96.2504,
+          endLat: 16.8275,
+          endLng: 96.1623,
           departureTime: setTime(8, 30),
           availableSeats: 4,
           bookedSeats: 1,
-          price: null, 
+          price: null,
           carModel: "Toyota Probox",
           carPlate: "YGN 3Q/1122",
           passengers: [
@@ -188,13 +195,15 @@ class DatabaseManager {
           driverName: "ကိုကျော်စွာ",
           startLocation: "Hledan (လှည်းတန်း)",
           endLocation: "Sule (ဆူးလေ)",
-          
-          startLat: 16.8737, startLng: 96.1317,
-          endLat: 16.7747, endLng: 96.1561,
+
+          startLat: 16.8737,
+          startLng: 96.1317,
+          endLat: 16.7747,
+          endLng: 96.1561,
           departureTime: setTime(9, 0),
           availableSeats: 4,
           bookedSeats: 2,
-          price: null, 
+          price: null,
           carModel: "Honda Shuttle",
           carPlate: "YGN 2P/5566",
           passengers: [
@@ -208,13 +217,15 @@ class DatabaseManager {
           driverName: "ဒေါ်အေးအေး",
           startLocation: "Thanlyin Star City",
           endLocation: "Hledan Centre",
-          
-          startLat: 16.7634, startLng: 96.2812,
-          endLat: 16.8737, endLng: 96.1317,
+
+          startLat: 16.7634,
+          startLng: 96.2812,
+          endLat: 16.8737,
+          endLng: 96.1317,
           departureTime: setTime(7, 45),
           availableSeats: 4,
           bookedSeats: 2,
-          price: null, 
+          price: null,
           carModel: "Suzuki Ertiga",
           carPlate: "YGN 5R/9988",
           passengers: [
@@ -228,13 +239,15 @@ class DatabaseManager {
           driverName: "ကိုမင်းမင်း",
           startLocation: "North Dagon (မြောက်ဒဂုံ)",
           endLocation: "Botahtaung (ဗိုလ်တထောင်)",
-        
-          startLat: 16.9208, startLng: 96.2011,
-          endLat: 16.7793, endLng: 96.1681,
+
+          startLat: 16.9208,
+          startLng: 96.2011,
+          endLat: 16.7793,
+          endLng: 96.1681,
           departureTime: setTime(8, 0),
           availableSeats: 3,
           bookedSeats: 1,
-          price: null, 
+          price: null,
           carModel: "Toyota Aqua",
           carPlate: "YGN 7T/3344",
           passengers: [{ id: "u-9", name: "မခင်ခင်", pickup: "Dagon Center" }],
@@ -245,13 +258,15 @@ class DatabaseManager {
           driverName: "ဦးထွန်းထွန်း",
           startLocation: "Insein (အင်းစိန်)",
           endLocation: "Kamayut (ကမာရွတ်)",
-          
-          startLat: 16.9726, startLng: 96.1042,
-          endLat: 16.8532, endLng: 96.1170,
+
+          startLat: 16.9726,
+          startLng: 96.1042,
+          endLat: 16.8532,
+          endLng: 96.117,
           departureTime: setTime(8, 15),
           availableSeats: 4,
           bookedSeats: 2,
-          price: null, 
+          price: null,
           carModel: "Honda Fit",
           carPlate: "YGN 1M/7788",
           passengers: [
@@ -265,13 +280,15 @@ class DatabaseManager {
           driverName: "ဦးလှမောင်",
           startLocation: "South Okkalapa (တောင်ဥက္ကလာပ)",
           endLocation: "Sanchaung (စမ်းချောင်း)",
-          
-          startLat: 16.8493, startLng: 96.2176,
-          endLat: 16.8392, endLng: 96.1226,
+
+          startLat: 16.8493,
+          startLng: 96.2176,
+          endLat: 16.8392,
+          endLng: 96.1226,
           departureTime: setTime(9, 30),
           availableSeats: 4,
           bookedSeats: 1,
-          price: null, 
+          price: null,
           carModel: "Toyota Probox",
           carPlate: "YGN 3Q/1122",
           passengers: [
@@ -284,13 +301,15 @@ class DatabaseManager {
           driverName: "ကိုကျော်စွာ",
           startLocation: "Mingalardon (မင်္ဂလာဒုံ)",
           endLocation: "Downtown (ဗဟန်း/လမ်းမတော်)",
-          
-          startLat: 17.0473, startLng: 96.1201,
-          endLat: 16.7951, endLng: 96.1484,
+
+          startLat: 17.0473,
+          startLng: 96.1201,
+          endLat: 16.7951,
+          endLng: 96.1484,
           departureTime: setTime(7, 30),
           availableSeats: 3,
           bookedSeats: 0,
-          price: null, 
+          price: null,
           carModel: "Honda Shuttle",
           carPlate: "YGN 2P/5566",
           passengers: [],
@@ -301,13 +320,15 @@ class DatabaseManager {
           driverName: "U Kyaw Zaw",
           startLocation: "Thaketa (သာကေတ)",
           endLocation: "Tamwe (တာမွေ)",
-         
-          startLat: 16.8198, startLng: 96.2268,
-          endLat: 16.8333, endLng: 96.1649,
+
+          startLat: 16.8198,
+          startLng: 96.2268,
+          endLat: 16.8333,
+          endLng: 96.1649,
           departureTime: setTime(8, 45),
           availableSeats: 4,
           bookedSeats: 1,
-          price: null, 
+          price: null,
           carModel: "Suzuki Ertiga",
           carPlate: "YGN 5R/9988",
           passengers: [
@@ -320,13 +341,15 @@ class DatabaseManager {
           driverName: "ကိုမင်းမင်း",
           startLocation: "Dagon Myothit (ဒဂုံမြို့သစ်)",
           endLocation: "Yankin (ရန်ကင်း)",
-          
-          startLat: 16.8705, startLng: 96.2433,
-          endLat: 16.8438, endLng: 96.1783,
+
+          startLat: 16.8705,
+          startLng: 96.2433,
+          endLat: 16.8438,
+          endLng: 96.1783,
           departureTime: setTime(8, 30),
           availableSeats: 3,
           bookedSeats: 2,
-          price: null, 
+          price: null,
           carModel: "Toyota Aqua",
           carPlate: "YGN 7T/3344",
           passengers: [
@@ -340,13 +363,15 @@ class DatabaseManager {
           driverName: "ဦးထွန်းထွန်း",
           startLocation: "Shwepyithar (ရွှေပြည်သာ)",
           endLocation: "Sule (ဆူးလေ)",
-         
-          startLat: 17.0631, startLng: 96.0526,
-          endLat: 16.7747, endLng: 96.1561,
+
+          startLat: 17.0631,
+          startLng: 96.0526,
+          endLat: 16.7747,
+          endLng: 96.1561,
           departureTime: setTime(7, 0),
           availableSeats: 4,
           bookedSeats: 1,
-          price: null, 
+          price: null,
           carModel: "Honda Fit",
           carPlate: "YGN 1M/7788",
           passengers: [
@@ -355,12 +380,14 @@ class DatabaseManager {
         },
       ];
 
-      
       const priceMatcher = new RouteMatcher();
-      sampleRides.forEach(ride => {
+      sampleRides.forEach((ride) => {
         if (ride.startLat != null && ride.endLat != null) {
           const result = priceMatcher.calculatePriceFromCoords(
-            ride.startLat, ride.startLng, ride.endLat, ride.endLng
+            ride.startLat,
+            ride.startLng,
+            ride.endLat,
+            ride.endLng,
           );
           ride.price = result.price;
           ride.distanceKm = result.distanceKm;
@@ -370,7 +397,6 @@ class DatabaseManager {
         }
       });
 
-     
       const sampleRideRequests = [
         {
           id: "req-1",
@@ -379,19 +405,27 @@ class DatabaseManager {
           passengerPhone: "09789456123",
           startLocation: "Thanlyin (သန်လျင်)",
           endLocation: "Sule (ဆူးလေ)",
-          startLat: 16.7784, startLng: 96.2504,
-          endLat: 16.7747, endLng: 96.1561,
+          startLat: 16.7784,
+          startLng: 96.2504,
+          endLat: 16.7747,
+          endLng: 96.1561,
           departureTime: setTime(9, 0),
           estimatedPrice: null,
           status: "pending",
           joinedPassengers: [
             {
-              id: "u-7", name: "ကိုသန့်ဇင်", phone: "09112233445", joinedAt: new Date().toISOString(),
-              
-              startLocation: "Thanlyin (သန်လျင်)", endLocation: "Tamwe (တာမွေ)",
-              startLat: 16.7784, startLng: 96.2504,
-              endLat: 16.8333, endLng: 96.1649,
-            }
+              id: "u-7",
+              name: "ကိုသန့်ဇင်",
+              phone: "09112233445",
+              joinedAt: new Date().toISOString(),
+
+              startLocation: "Thanlyin (သန်လျင်)",
+              endLocation: "Tamwe (တာမွေ)",
+              startLat: 16.7784,
+              startLng: 96.2504,
+              endLat: 16.8333,
+              endLng: 96.1649,
+            },
           ],
           acceptedDriverId: null,
           rejectedByDrivers: [],
@@ -404,8 +438,10 @@ class DatabaseManager {
           passengerPhone: "09654321789",
           startLocation: "Hledan (လှည်းတန်း)",
           endLocation: "Botahtaung (ဗိုလ်တထောင်)",
-          startLat: 16.8737, startLng: 96.1317,
-          endLat: 16.7793, endLng: 96.1681,
+          startLat: 16.8737,
+          startLng: 96.1317,
+          endLat: 16.7793,
+          endLng: 96.1681,
           departureTime: setTime(8, 0),
           estimatedPrice: null,
           status: "pending",
@@ -421,19 +457,27 @@ class DatabaseManager {
           passengerPhone: "09887766554",
           startLocation: "North Dagon (မြောက်ဒဂုံ)",
           endLocation: "Tamwe (တာမွေ)",
-          startLat: 16.9208, startLng: 96.2011,
-          endLat: 16.8333, endLng: 96.1649,
+          startLat: 16.9208,
+          startLng: 96.2011,
+          endLat: 16.8333,
+          endLng: 96.1649,
           departureTime: setTime(7, 30),
           estimatedPrice: null,
           status: "pending",
           joinedPassengers: [
             {
-              id: "u-1", name: "Demo Passenger", phone: "09123456789", joinedAt: new Date().toISOString(),
-              
-              startLocation: "North Dagon (မြောက်ဒဂုံ)", endLocation: "Yankin (ရန်ကင်း)",
-              startLat: 16.9208, startLng: 96.2011,
-              endLat: 16.8438, endLng: 96.1783,
-            }
+              id: "u-1",
+              name: "Demo Passenger",
+              phone: "09123456789",
+              joinedAt: new Date().toISOString(),
+
+              startLocation: "North Dagon (မြောက်ဒဂုံ)",
+              endLocation: "Yankin (ရန်ကင်း)",
+              startLat: 16.9208,
+              startLng: 96.2011,
+              endLat: 16.8438,
+              endLng: 96.1783,
+            },
           ],
           acceptedDriverId: null,
           rejectedByDrivers: [],
@@ -441,11 +485,13 @@ class DatabaseManager {
         },
       ];
 
-      
-      sampleRideRequests.forEach(req => {
+      sampleRideRequests.forEach((req) => {
         if (req.startLat != null && req.endLat != null) {
           const result = priceMatcher.calculatePriceFromCoords(
-            req.startLat, req.startLng, req.endLat, req.endLng
+            req.startLat,
+            req.startLng,
+            req.endLat,
+            req.endLng,
           );
           req.estimatedPrice = result.price;
           req.distanceKm = result.distanceKm;
@@ -453,30 +499,45 @@ class DatabaseManager {
           req.estimatedPrice = priceMatcher.DEFAULT_PRICE;
           req.distanceKm = 0;
         }
-        
+
         _computeBreakdown(req, priceMatcher);
       });
 
-     
       function _computeBreakdown(req, matcher) {
         const allPassengers = [
-          { passengerId: req.passengerId, name: req.passengerName,
-            startLat: req.startLat, startLng: req.startLng,
-            endLat: req.endLat, endLng: req.endLng },
-          ...req.joinedPassengers.map(p => ({
-            passengerId: p.id, name: p.name,
-            startLat: p.startLat ?? req.startLat, startLng: p.startLng ?? req.startLng,
-            endLat: p.endLat ?? req.endLat, endLng: p.endLng ?? req.endLng,
-          }))
+          {
+            passengerId: req.passengerId,
+            name: req.passengerName,
+            startLat: req.startLat,
+            startLng: req.startLng,
+            endLat: req.endLat,
+            endLng: req.endLng,
+          },
+          ...req.joinedPassengers.map((p) => ({
+            passengerId: p.id,
+            name: p.name,
+            startLat: p.startLat ?? req.startLat,
+            startLng: p.startLng ?? req.startLng,
+            endLat: p.endLat ?? req.endLat,
+            endLng: p.endLng ?? req.endLng,
+          })),
         ];
-        const distances = allPassengers.map(p =>
+        const distances = allPassengers.map((p) =>
           p.startLat != null && p.endLat != null
-            ? matcher.calculateDistance(p.startLat, p.startLng, p.endLat, p.endLng)
-            : (req.distanceKm || 10)
+            ? matcher.calculateDistance(
+                p.startLat,
+                p.startLng,
+                p.endLat,
+                p.endLng,
+              )
+            : req.distanceKm || 10,
         );
         const maxDist = Math.max(...distances);
         const routePrice = matcher.calculateDistancePrice(maxDist);
-        const breakdowns = matcher.calculateFairPriceBreakdown(routePrice, distances);
+        const breakdowns = matcher.calculateFairPriceBreakdown(
+          routePrice,
+          distances,
+        );
         req.priceBreakdown = allPassengers.map((p, i) => ({
           passengerId: p.passengerId,
           name: p.name,
@@ -486,7 +547,7 @@ class DatabaseManager {
           driverBonus: breakdowns[i].driverBonusPerPassenger,
           appFee: breakdowns[i].appCommissionPerPassenger,
           weightPercent: breakdowns[i].weightPercent,
-          paidAmount: breakdowns[i].passengerPrice, 
+          paidAmount: breakdowns[i].passengerPrice,
         }));
         req.totalRoutePrice = routePrice;
       }
@@ -495,7 +556,10 @@ class DatabaseManager {
       localStorage.setItem("smartride_rides", JSON.stringify(sampleRides));
       localStorage.setItem("smartride_bookings", JSON.stringify([]));
       localStorage.setItem("smartride_transactions", JSON.stringify([]));
-      localStorage.setItem("smartride_ride_requests", JSON.stringify(sampleRideRequests));
+      localStorage.setItem(
+        "smartride_ride_requests",
+        JSON.stringify(sampleRideRequests),
+      );
       localStorage.setItem("smartride_notifications", JSON.stringify([]));
     }
   }
@@ -540,7 +604,6 @@ class DatabaseManager {
 
     const users = this.getUsers();
 
-   
     const existingUser = users.find((u) => u.email === email);
     if (existingUser) {
       throw new Error("A user with this email already exists.");
@@ -566,23 +629,27 @@ class DatabaseManager {
   offerRide(rideData) {
     const rides = this.getRides();
 
-    
     const startLat = rideData.startLat ?? null;
     const startLng = rideData.startLng ?? null;
     const endLat = rideData.endLat ?? null;
     const endLng = rideData.endLng ?? null;
-    const routeCoordinates = rideData.routeCoordinates ?? null; 
+    const routeCoordinates = rideData.routeCoordinates ?? null;
     let price = rideData.price;
     let distanceKm = rideData.distanceKm || 0;
 
     if (startLat != null && endLat != null) {
-      const result = this._matcher.calculatePriceFromCoords(startLat, startLng, endLat, endLng);
+      const result = this._matcher.calculatePriceFromCoords(
+        startLat,
+        startLng,
+        endLat,
+        endLng,
+      );
       if (result) {
         price = result.price;
         distanceKm = result.distanceKm;
       }
     }
-    
+
     if (!price) price = this._matcher.DEFAULT_PRICE;
 
     const newRide = {
@@ -592,7 +659,7 @@ class DatabaseManager {
       startLng,
       endLat,
       endLng,
-      routeCoordinates, 
+      routeCoordinates,
       price,
       distanceKm,
       bookedSeats: 0,
@@ -603,13 +670,20 @@ class DatabaseManager {
     return newRide;
   }
 
- 
-  async searchRidesWithGemini(startLocation, endLocation, departureTime, passengerCoords) {
+  async searchRidesWithGemini(
+    startLocation,
+    endLocation,
+    departureTime,
+    passengerCoords,
+  ) {
     const availableRides = this.getRides();
 
-    
     const localResults = this._fallbackMatch(
-      startLocation, endLocation, departureTime, availableRides, passengerCoords
+      startLocation,
+      endLocation,
+      departureTime,
+      availableRides,
+      passengerCoords,
     );
 
     const userInputJSON = {
@@ -617,7 +691,7 @@ class DatabaseManager {
         startLocation,
         endLocation,
         departureTime,
-        
+
         ...(passengerCoords ? passengerCoords : {}),
       },
     };
@@ -699,7 +773,6 @@ Do NOT include any text outside the JSON array.
 
       let rawText = data.candidates[0].content.parts[0].text.trim();
 
-      
       const jsonStart = rawText.indexOf("[");
       const jsonEnd = rawText.lastIndexOf("]") + 1;
       if (jsonStart !== -1 && jsonEnd > jsonStart) {
@@ -709,12 +782,10 @@ Do NOT include any text outside the JSON array.
       console.log("✅ Gemini AI Response:", rawText);
       const results = JSON.parse(rawText);
 
-      
       const geminiRides = results.map((ride) => {
         const basePrice = ride.price || this._matcher.DEFAULT_PRICE;
         const isFirstRider = (ride.bookedSeats || 0) === 0;
 
-        
         if (isFirstRider) {
           const appTax = Math.floor(basePrice * this.APP_TAX_RATE);
           const passengerCost = basePrice + appTax;
@@ -747,7 +818,6 @@ Do NOT include any text outside the JSON array.
           };
         }
 
-        
         const totalPassengers = (ride.bookedSeats || 0) + 1;
         const fareShare =
           ride.fareShare || Math.floor(basePrice / totalPassengers);
@@ -787,26 +857,26 @@ Do NOT include any text outside the JSON array.
         };
       });
 
-     
-      console.log(`✅ Gemini returned ${geminiRides.length} | Local returned ${localResults.length} → merging`);
+      console.log(
+        `✅ Gemini returned ${geminiRides.length} | Local returned ${localResults.length} → merging`,
+      );
       return this._mergeResults(geminiRides, localResults);
-
     } catch (error) {
-      console.warn('⚠️ Gemini failed — returning local corridor results:', error);
+      console.warn(
+        "⚠️ Gemini failed — returning local corridor results:",
+        error,
+      );
       return localResults;
     }
   }
 
-  
   _mergeResults(geminiResults, localResults) {
     const merged = new Map();
 
-    
     for (const ride of localResults) {
       merged.set(ride.id, ride);
     }
 
-    
     for (const ride of geminiResults) {
       const existing = merged.get(ride.id);
       if (!existing || ride.matchScore >= existing.matchScore) {
@@ -814,29 +884,38 @@ Do NOT include any text outside the JSON array.
       }
     }
 
-   
     return Array.from(merged.values())
       .sort((a, b) => b.matchScore - a.matchScore)
       .slice(0, 5);
   }
 
-  
-  
-  _fallbackMatch(startLocation, endLocation, departureTime, availableRides, passengerCoords) {
+  _fallbackMatch(
+    startLocation,
+    endLocation,
+    departureTime,
+    availableRides,
+    passengerCoords,
+  ) {
     const matcher = new RouteMatcher();
 
     const normalize = (str) => str.toLowerCase().replace(/[()]/g, "").trim();
     const startNorm = normalize(startLocation);
     const endNorm = normalize(endLocation);
 
-   
     const areaAliases = {
       thanlyin: ["သန်လျင်", "thanlyin", "star city", "thanlyin star city"],
       bahan: ["ဗဟန်း", "bahan"],
       sule: ["ဆူးလေ", "sule", "downtown"],
       hledan: ["လှည်းတန်း", "hledan", "hledan centre", "hledan center"],
       insein: ["အင်းစိန်", "insein"],
-      dagon: ["ဒဂုံ", "dagon", "north dagon", "မြောက်ဒဂုံ", "dagon myothit", "ဒဂုံမြို့သစ်"],
+      dagon: [
+        "ဒဂုံ",
+        "dagon",
+        "north dagon",
+        "မြောက်ဒဂုံ",
+        "dagon myothit",
+        "ဒဂုံမြို့သစ်",
+      ],
       kamayut: ["ကမာရွတ်", "kamayut"],
       sanchaung: ["စမ်းချောင်း", "sanchaung"],
       tamwe: ["တာမွေ", "tamwe"],
@@ -852,7 +931,8 @@ Do NOT include any text outside the JSON array.
     const findAreaKey = (text) => {
       const t = normalize(text);
       for (const [key, aliases] of Object.entries(areaAliases)) {
-        if (aliases.some((alias) => t.includes(alias) || alias.includes(t))) return key;
+        if (aliases.some((alias) => t.includes(alias) || alias.includes(t)))
+          return key;
       }
       return null;
     };
@@ -862,55 +942,75 @@ Do NOT include any text outside the JSON array.
 
     const scored = availableRides
       .filter((ride) => {
-        
         if (departureTime && ride.departureTime) {
-          const diffMin = Math.abs(new Date(departureTime) - new Date(ride.departureTime)) / 60000;
-          const hasPassengerGPS = passengerCoords && passengerCoords.startLat != null;
-          const timeLimit = hasPassengerGPS ? 180 : 240; 
+          const diffMin =
+            Math.abs(new Date(departureTime) - new Date(ride.departureTime)) /
+            60000;
+          const hasPassengerGPS =
+            passengerCoords && passengerCoords.startLat != null;
+          const timeLimit = hasPassengerGPS ? 180 : 240;
           if (diffMin > timeLimit) return false;
         }
         return true;
       })
       .map((ride) => {
-      
-      let textScore = 0;
-      const rideStartArea = findAreaKey(ride.startLocation);
-      const rideEndArea = findAreaKey(ride.endLocation);
+        let textScore = 0;
+        const rideStartArea = findAreaKey(ride.startLocation);
+        const rideEndArea = findAreaKey(ride.endLocation);
 
-      if (startArea && rideStartArea && startArea === rideStartArea) textScore += 45;
-      else if (normalize(ride.startLocation).includes(startNorm) || startNorm.includes(normalize(ride.startLocation))) textScore += 35;
+        if (startArea && rideStartArea && startArea === rideStartArea)
+          textScore += 45;
+        else if (
+          normalize(ride.startLocation).includes(startNorm) ||
+          startNorm.includes(normalize(ride.startLocation))
+        )
+          textScore += 35;
 
-      if (endArea && rideEndArea && endArea === rideEndArea) textScore += 45;
-      else if (normalize(ride.endLocation).includes(endNorm) || endNorm.includes(normalize(ride.endLocation))) textScore += 35;
+        if (endArea && rideEndArea && endArea === rideEndArea) textScore += 45;
+        else if (
+          normalize(ride.endLocation).includes(endNorm) ||
+          endNorm.includes(normalize(ride.endLocation))
+        )
+          textScore += 35;
 
-      
-      if (departureTime && ride.departureTime) textScore += 10;
+        if (departureTime && ride.departureTime) textScore += 10;
 
-      
-      if (
-        passengerCoords &&
-        passengerCoords.startLat != null &&
-        ride.startLat != null
-      ) {
-        const passengerRequest = {
-          startLat: passengerCoords.startLat,
-          startLng: passengerCoords.startLng,
-          endLat: passengerCoords.endLat,
-          endLng: passengerCoords.endLng,
-          departureTime,
-        };
-        
-        const corridorScore = matcher.calculateMatchScore(passengerRequest, ride);
-        if (corridorScore > 0) {
-          const usedPolyline = ride.routeCoordinates && ride.routeCoordinates.length >= 2;
-          return { ...ride, matchScore: Math.min(corridorScore, 98), _usedCorridor: true, _usedPolyline: usedPolyline };
+        if (
+          passengerCoords &&
+          passengerCoords.startLat != null &&
+          ride.startLat != null
+        ) {
+          const passengerRequest = {
+            startLat: passengerCoords.startLat,
+            startLng: passengerCoords.startLng,
+            endLat: passengerCoords.endLat,
+            endLng: passengerCoords.endLng,
+            departureTime,
+          };
+
+          const corridorScore = matcher.calculateMatchScore(
+            passengerRequest,
+            ride,
+          );
+          if (corridorScore > 0) {
+            const usedPolyline =
+              ride.routeCoordinates && ride.routeCoordinates.length >= 2;
+            return {
+              ...ride,
+              matchScore: Math.min(corridorScore, 98),
+              _usedCorridor: true,
+              _usedPolyline: usedPolyline,
+            };
+          }
         }
-        
-      }
 
-      
-      return { ...ride, matchScore: Math.min(textScore, 98), _usedCorridor: false, _usedPolyline: false };
-    })
+        return {
+          ...ride,
+          matchScore: Math.min(textScore, 98),
+          _usedCorridor: false,
+          _usedPolyline: false,
+        };
+      })
       .filter((r) => r.matchScore > 40)
       .sort((a, b) => b.matchScore - a.matchScore);
 
@@ -936,7 +1036,9 @@ Do NOT include any text outside the JSON array.
 
       const totalPassengers = (r.bookedSeats || 0) + 1;
       const fareShare = Math.floor(basePrice / totalPassengers);
-      const appCommissionPerPassenger = Math.floor(fareShare * this.APP_TAX_RATE);
+      const appCommissionPerPassenger = Math.floor(
+        fareShare * this.APP_TAX_RATE,
+      );
       const passengerPrice = fareShare + appCommissionPerPassenger;
       return {
         ...r,
@@ -958,7 +1060,6 @@ Do NOT include any text outside the JSON array.
     const rideIndex = rides.findIndex((r) => r.id === rideId);
     if (rideIndex === -1) return false;
 
-    
     const seatsLeft =
       (rides[rideIndex].availableSeats || 4) -
       (rides[rideIndex].bookedSeats || 0);
@@ -972,16 +1073,12 @@ Do NOT include any text outside the JSON array.
     const passengerIndex = users.findIndex((u) => u.id === passengerId);
     if (passengerIndex === -1) return false;
 
-    
     if (!isCash && users[passengerIndex].balance < totalPrice) {
-      throw new Error(
-        "Insufficient Balance",
-      );
+      throw new Error("Insufficient Balance");
     }
 
     rides[rideIndex].bookedSeats = (rides[rideIndex].bookedSeats || 0) + 1;
 
-    
     if (!rides[rideIndex].passengers) rides[rideIndex].passengers = [];
     rides[rideIndex].passengers.push({
       id: users[passengerIndex].id,
@@ -989,7 +1086,6 @@ Do NOT include any text outside the JSON array.
       pickup: "Requested via app",
     });
 
-   
     const basePrice = rides[rideIndex].price || this._matcher.DEFAULT_PRICE;
     const totalPassengers = rides[rideIndex].bookedSeats;
     const isFirstRider = totalPassengers === 1;
@@ -1000,25 +1096,21 @@ Do NOT include any text outside the JSON array.
       driverPayment;
 
     if (isFirstRider) {
-      
       fareShare = basePrice;
       driverBonusPerPassenger = 0;
       appCommissionPerPassenger = Math.floor(basePrice * this.APP_TAX_RATE);
-      driverPayment = basePrice; 
+      driverPayment = basePrice;
     } else {
-      
       fareShare = Math.floor(basePrice / totalPassengers);
       driverBonusPerPassenger = 0;
       appCommissionPerPassenger = Math.floor(fareShare * this.APP_TAX_RATE);
       driverPayment = fareShare; // Driver gets fare share
     }
 
-    
     if (!isCash) {
       users[passengerIndex].balance -= totalPrice;
     }
 
-    
     const driverId = rides[rideIndex].driverId;
     const driverIndex = users.findIndex((u) => u.id === driverId);
     if (!isCash && driverIndex !== -1) {
@@ -1046,7 +1138,6 @@ Do NOT include any text outside the JSON array.
 
     const transactions = this.getTransactions();
 
-    
     transactions.push({
       id: "tx-" + Math.random().toString(36).substr(2, 9),
       userId: passengerId,
@@ -1058,7 +1149,6 @@ Do NOT include any text outside the JSON array.
       createdAt: new Date().toISOString(),
     });
 
-    
     if (!isCash && driverIndex !== -1) {
       transactions.push({
         id: "tx-" + Math.random().toString(36).substr(2, 9),
@@ -1079,7 +1169,6 @@ Do NOT include any text outside the JSON array.
       });
     }
 
-    
     transactions.push({
       id: "tx-" + Math.random().toString(36).substr(2, 9),
       userId: "app-owner",
@@ -1089,32 +1178,38 @@ Do NOT include any text outside the JSON array.
       createdAt: new Date().toISOString(),
     });
 
-    
     if (!isFirstRider) {
       const existingBookingsForRide = bookings.filter(
-        (b) => b.rideId === rideId && b.status === "confirmed" && b.id !== newBooking.id
+        (b) =>
+          b.rideId === rideId &&
+          b.status === "confirmed" &&
+          b.id !== newBooking.id,
       );
 
-      
       const allPassengers = rides[rideIndex].passengers || [];
       const allDistances = allPassengers.map((p) => {
-        
         const pBooking = bookings.find(
-          (b) => b.rideId === rideId && b.passengerId === p.id && b.status === "confirmed"
+          (b) =>
+            b.rideId === rideId &&
+            b.passengerId === p.id &&
+            b.status === "confirmed",
         );
         if (pBooking && pBooking.passengerDistanceKm) {
           return pBooking.passengerDistanceKm;
         }
-        
+
         return rides[rideIndex].distanceKm || 10;
       });
 
-     
-      const fairBreakdowns = this._matcher.calculateFairPriceBreakdown(basePrice, allDistances);
+      const fairBreakdowns = this._matcher.calculateFairPriceBreakdown(
+        basePrice,
+        allDistances,
+      );
 
-      
       existingBookingsForRide.forEach((oldBooking) => {
-        const pIndex = allPassengers.findIndex((p) => p.id === oldBooking.passengerId);
+        const pIndex = allPassengers.findIndex(
+          (p) => p.id === oldBooking.passengerId,
+        );
         if (pIndex === -1) return;
 
         const newFairPrice = fairBreakdowns[pIndex].passengerPrice;
@@ -1122,28 +1217,29 @@ Do NOT include any text outside the JSON array.
         const refundAmount = oldPaid - newFairPrice;
 
         if (refundAmount > 0) {
-          
           const bookingIdx = bookings.findIndex((b) => b.id === oldBooking.id);
           if (bookingIdx !== -1) {
             bookings[bookingIdx].totalPrice = newFairPrice;
             bookings[bookingIdx].fareShare = fairBreakdowns[pIndex].fareShare;
-            bookings[bookingIdx].driverBonusPerPassenger = fairBreakdowns[pIndex].driverBonusPerPassenger;
-            bookings[bookingIdx].appCommission = fairBreakdowns[pIndex].appCommissionPerPassenger;
-            bookings[bookingIdx].refundedAmount = (bookings[bookingIdx].refundedAmount || 0) + refundAmount;
+            bookings[bookingIdx].driverBonusPerPassenger =
+              fairBreakdowns[pIndex].driverBonusPerPassenger;
+            bookings[bookingIdx].appCommission =
+              fairBreakdowns[pIndex].appCommissionPerPassenger;
+            bookings[bookingIdx].refundedAmount =
+              (bookings[bookingIdx].refundedAmount || 0) + refundAmount;
           }
 
-          
           if (oldBooking.paymentMethod !== "cash") {
-            const refundUserIdx = users.findIndex((u) => u.id === oldBooking.passengerId);
+            const refundUserIdx = users.findIndex(
+              (u) => u.id === oldBooking.passengerId,
+            );
             if (refundUserIdx !== -1) {
               users[refundUserIdx].balance += refundAmount;
 
-              
               if (driverIndex !== -1) {
                 users[driverIndex].balance -= refundAmount;
               }
 
-              
               transactions.push({
                 id: "tx-" + Math.random().toString(36).substr(2, 9),
                 userId: oldBooking.passengerId,
@@ -1153,7 +1249,6 @@ Do NOT include any text outside the JSON array.
                 createdAt: new Date().toISOString(),
               });
 
-              
               if (driverIndex !== -1) {
                 transactions.push({
                   id: "tx-" + Math.random().toString(36).substr(2, 9),
@@ -1177,15 +1272,18 @@ Do NOT include any text outside the JSON array.
       "smartride_transactions",
       JSON.stringify(transactions),
     );
-    
+
     const currentSession = this.getCurrentUser();
     if (currentSession && currentSession.id === passengerId) {
-      localStorage.setItem("smartride_currentUser", JSON.stringify(users[passengerIndex]));
+      localStorage.setItem(
+        "smartride_currentUser",
+        JSON.stringify(users[passengerIndex]),
+      );
     }
     return true;
   }
 
-  updateBalance(userId, amount, description) {
+  updateBalance(userId, amount, description, transactionType = null) {
     const users = this.getUsers();
     const index = users.findIndex((u) => u.id === userId);
     if (index === -1) return 0;
@@ -1197,7 +1295,7 @@ Do NOT include any text outside the JSON array.
       id: "tx-" + Math.random().toString(36).substr(2, 9),
       userId,
       amount,
-      type: amount > 0 ? "credit" : "debit",
+      type: transactionType || (amount > 0 ? "credit" : "debit"),
       description,
       createdAt: new Date().toISOString(),
     });
@@ -1207,10 +1305,13 @@ Do NOT include any text outside the JSON array.
       "smartride_transactions",
       JSON.stringify(transactions),
     );
-    
+
     const currentSession = this.getCurrentUser();
     if (currentSession && currentSession.id === userId) {
-      localStorage.setItem("smartride_currentUser", JSON.stringify(users[index]));
+      localStorage.setItem(
+        "smartride_currentUser",
+        JSON.stringify(users[index]),
+      );
     }
     return users[index].balance;
   }
@@ -1239,11 +1340,9 @@ Do NOT include any text outside the JSON array.
       throw new Error("Already Cancel this Ride");
     }
 
-    
     bookings[bookingIndex].status = "cancelled";
     bookings[bookingIndex].cancelledAt = new Date().toISOString();
 
-    
     const users = this.getUsers();
     const passengerIndex = users.findIndex((u) => u.id === passengerId);
     if (passengerIndex !== -1) {
@@ -1251,7 +1350,6 @@ Do NOT include any text outside the JSON array.
         (users[passengerIndex].balance || 0) + booking.totalPrice;
     }
 
-    
     const rides = this.getRides();
     const rideIndex = rides.findIndex((r) => r.id === booking.rideId);
     if (rideIndex !== -1) {
@@ -1263,13 +1361,11 @@ Do NOT include any text outside the JSON array.
           (users[driverIndex].balance || 0) - driverRefund;
       }
 
-    
       rides[rideIndex].bookedSeats = Math.max(
         0,
         (rides[rideIndex].bookedSeats || 1) - 1,
       );
 
-      
       if (rides[rideIndex].passengers) {
         rides[rideIndex].passengers = rides[rideIndex].passengers.filter(
           (p) => p.id !== passengerId,
@@ -1277,7 +1373,6 @@ Do NOT include any text outside the JSON array.
       }
     }
 
-    
     const transactions = this.getTransactions();
     transactions.push({
       id: "tx-" + Math.random().toString(36).substr(2, 9),
@@ -1301,7 +1396,6 @@ Do NOT include any text outside the JSON array.
       });
     }
 
-    
     localStorage.setItem("smartride_bookings", JSON.stringify(bookings));
     localStorage.setItem("smartride_users", JSON.stringify(users));
     localStorage.setItem("smartride_rides", JSON.stringify(rides));
@@ -1319,87 +1413,103 @@ Do NOT include any text outside the JSON array.
     return booking.totalPrice;
   }
 
-
   getRideRequests() {
-    return JSON.parse(localStorage.getItem('smartride_ride_requests')) || [];
+    return JSON.parse(localStorage.getItem("smartride_ride_requests")) || [];
   }
 
   getNotifications(userId) {
-    const all = JSON.parse(localStorage.getItem('smartride_notifications')) || [];
-    return all.filter(n => n.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const all =
+      JSON.parse(localStorage.getItem("smartride_notifications")) || [];
+    return all
+      .filter((n) => n.userId === userId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
 
   getUnreadNotificationCount(userId) {
-    return this.getNotifications(userId).filter(n => !n.read).length;
+    return this.getNotifications(userId).filter((n) => !n.read).length;
   }
 
-  addNotification(userId, message, type = 'info') {
-    const notifications = JSON.parse(localStorage.getItem('smartride_notifications')) || [];
+  addNotification(userId, message, type = "info") {
+    const notifications =
+      JSON.parse(localStorage.getItem("smartride_notifications")) || [];
     const notif = {
-      id: 'notif-' + Math.random().toString(36).substr(2, 9),
+      id: "notif-" + Math.random().toString(36).substr(2, 9),
       userId,
       message,
-      type, 
+      type,
       read: false,
       createdAt: new Date().toISOString(),
     };
     notifications.push(notif);
-    localStorage.setItem('smartride_notifications', JSON.stringify(notifications));
+    localStorage.setItem(
+      "smartride_notifications",
+      JSON.stringify(notifications),
+    );
     return notif;
   }
 
   markNotificationRead(notificationId) {
-    const notifications = JSON.parse(localStorage.getItem('smartride_notifications')) || [];
-    const idx = notifications.findIndex(n => n.id === notificationId);
+    const notifications =
+      JSON.parse(localStorage.getItem("smartride_notifications")) || [];
+    const idx = notifications.findIndex((n) => n.id === notificationId);
     if (idx !== -1) {
       notifications[idx].read = true;
-      localStorage.setItem('smartride_notifications', JSON.stringify(notifications));
+      localStorage.setItem(
+        "smartride_notifications",
+        JSON.stringify(notifications),
+      );
     }
   }
 
   markAllNotificationsRead(userId) {
-    const notifications = JSON.parse(localStorage.getItem('smartride_notifications')) || [];
-    notifications.forEach(n => {
+    const notifications =
+      JSON.parse(localStorage.getItem("smartride_notifications")) || [];
+    notifications.forEach((n) => {
       if (n.userId === userId) n.read = true;
     });
-    localStorage.setItem('smartride_notifications', JSON.stringify(notifications));
+    localStorage.setItem(
+      "smartride_notifications",
+      JSON.stringify(notifications),
+    );
   }
-
 
   createRideRequest(data) {
     const requests = this.getRideRequests();
     const user = this.getCurrentUser();
-    if (!user) throw new Error('Login First');
+    if (!user) throw new Error("Login First");
 
-    
     let estimatedPrice = 0;
     let distanceKm = 0;
     if (data.startLat != null && data.endLat != null) {
       const result = this._matcher.calculatePriceFromCoords(
-        data.startLat, data.startLng, data.endLat, data.endLng
+        data.startLat,
+        data.startLng,
+        data.endLat,
+        data.endLng,
       );
-      estimatedPrice = result.price;
-      distanceKm = result.distanceKm;
+      estimatedPrice = result ? result.passengerCost : 0;
+      distanceKm = result ? result.distanceKm : 0;
     } else {
-      estimatedPrice = this._matcher.DEFAULT_PRICE;
+      const basePrice = this._matcher.DEFAULT_PRICE;
+      const appTax = Math.floor(basePrice * this._matcher.APP_TAX_RATE);
+      estimatedPrice = basePrice + appTax;
     }
 
-    
     const users = this.getUsers();
-    const userIdx = users.findIndex(u => u.id === user.id);
-    if (userIdx === -1) throw new Error('Cannot Find User');
+    const userIdx = users.findIndex((u) => u.id === user.id);
+    if (userIdx === -1) throw new Error("Cannot Find User");
     const currentBalance = users[userIdx].balance || 0;
     if (currentBalance < estimatedPrice) {
       throw new Error(
-        ` Wallet Balance Insufficient! Need: ${estimatedPrice.toLocaleString()} Kyats | Remain Balance: ${currentBalance.toLocaleString()} Kyats`
+        ` Wallet Balance Insufficient! Need: ${estimatedPrice.toLocaleString()} Kyats | Remain Balance: ${currentBalance.toLocaleString()} Kyats`,
       );
     }
 
     const newRequest = {
-      id: 'req-' + Math.random().toString(36).substr(2, 9),
+      id: "req-" + Math.random().toString(36).substr(2, 9),
       passengerId: user.id,
-      passengerName: user.name || 'Passenger',
-      passengerPhone: user.phone || '',
+      passengerName: user.name || "Passenger",
+      passengerPhone: user.phone || "",
       startLocation: data.startLocation,
       endLocation: data.endLocation,
       startLat: data.startLat ?? null,
@@ -1409,39 +1519,39 @@ Do NOT include any text outside the JSON array.
       departureTime: data.departureTime,
       estimatedPrice,
       distanceKm,
-      status: 'pending',
+      status: "pending",
       joinedPassengers: [],
       acceptedDriverId: null,
       rejectedByDrivers: [],
       createdAt: new Date().toISOString(),
-     
-      priceBreakdown: [{
-        passengerId: user.id,
-        name: user.name || 'Passenger',
-        distanceKm,
-        price: estimatedPrice,
-        fareShare: estimatedPrice,
-        driverBonus: 0,
-        appFee: 0,
-        weightPercent: 100,
-        paidAmount: estimatedPrice,  
-      }],
+
+      priceBreakdown: [
+        {
+          passengerId: user.id,
+          name: user.name || "Passenger",
+          distanceKm,
+          price: estimatedPrice,
+          fareShare: estimatedPrice,
+          driverBonus: 0,
+          appFee: 0,
+          weightPercent: 100,
+          paidAmount: estimatedPrice,
+        },
+      ],
       totalRoutePrice: estimatedPrice,
     };
 
-    
     this.updateBalance(
       user.id,
       -estimatedPrice,
-      ` Ride Request: ${data.startLocation} → ${data.endLocation} (Pre-cash)`
+      ` Ride Request: ${data.startLocation} → ${data.endLocation} (Pre-cash)`,
     );
 
     requests.push(newRequest);
-    localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
+    localStorage.setItem("smartride_ride_requests", JSON.stringify(requests));
     return newRequest;
   }
 
-  
   _recalculatePriceBreakdown(req) {
     const allPassengers = [
       {
@@ -1452,26 +1562,33 @@ Do NOT include any text outside the JSON array.
         endLat: req.endLat,
         endLng: req.endLng,
       },
-      ...req.joinedPassengers.map(p => ({
+      ...req.joinedPassengers.map((p) => ({
         passengerId: p.id,
         name: p.name,
         startLat: p.startLat ?? req.startLat,
         startLng: p.startLng ?? req.startLng,
         endLat: p.endLat ?? req.endLat,
         endLng: p.endLng ?? req.endLng,
-      }))
+      })),
     ];
 
-    const distances = allPassengers.map(p =>
+    const distances = allPassengers.map((p) =>
       p.startLat != null && p.endLat != null
-        ? this._matcher.calculateDistance(p.startLat, p.startLng, p.endLat, p.endLng)
-        : (req.distanceKm || 10)
+        ? this._matcher.calculateDistance(
+            p.startLat,
+            p.startLng,
+            p.endLat,
+            p.endLng,
+          )
+        : req.distanceKm || 10,
     );
 
-   
     const maxDist = Math.max(...distances);
     const routePrice = this._matcher.calculateDistancePrice(maxDist);
-    const breakdowns = this._matcher.calculateFairPriceBreakdown(routePrice, distances);
+    const breakdowns = this._matcher.calculateFairPriceBreakdown(
+      routePrice,
+      distances,
+    );
 
     req.priceBreakdown = allPassengers.map((p, i) => ({
       passengerId: p.passengerId,
@@ -1485,85 +1602,128 @@ Do NOT include any text outside the JSON array.
     }));
     req.totalRoutePrice = routePrice;
 
-   
     req.estimatedPrice = req.priceBreakdown[0]?.price ?? req.estimatedPrice;
   }
 
-  
+  _applyJoinRefunds(req, oldBreakdown, newBreakdown, joinerName, joinerId) {
+    for (const newBD of newBreakdown) {
+      if (newBD.passengerId === joinerId) continue;
+
+      const oldBD = oldBreakdown.find(
+        (b) => b.passengerId === newBD.passengerId,
+      );
+      if (!oldBD) continue;
+
+      const previousPaid = oldBD.paidAmount || oldBD.price || 0;
+      const newPrice = newBD.price || 0;
+      const refundDiff = previousPaid - newPrice;
+
+      if (refundDiff > 0) {
+        this.updateBalance(
+          newBD.passengerId,
+          refundDiff,
+          ` New Passenger Joined and Refund: ${req.startLocation} → ${req.endLocation} (-${refundDiff.toLocaleString()} Kyats)`,
+          "refund",
+        );
+        this.addNotification(
+          newBD.passengerId,
+          ` ${joinerName} was Joined! Your Cost ${previousPaid.toLocaleString()} → ${newPrice.toLocaleString()} Kyats need to cash၊ ${refundDiff.toLocaleString()} Kyats Refund`,
+          "refund",
+        );
+      }
+
+      newBD.paidAmount = newPrice;
+    }
+  }
+
   joinRideRequest(requestId, passengerId, locationData = {}) {
     const requests = this.getRideRequests();
-    const idx = requests.findIndex(r => r.id === requestId);
-    if (idx === -1) throw new Error('Cannot Find Ride Request ');
+    const idx = requests.findIndex((r) => r.id === requestId);
+    if (idx === -1) throw new Error("Cannot Find Ride Request ");
 
     const req = requests[idx];
-    if (req.status !== 'pending') throw new Error('Already Accepted/Canceled this request');
-    if (req.passengerId === passengerId) throw new Error('ကိုယ့် Request ကိုယ် ပါဝင်၍ မရပါ။');
-    if (req.joinedPassengers.some(p => p.id === passengerId)) throw new Error('Already in this Request');
+    if (req.status !== "pending")
+      throw new Error("Already Accepted/Canceled this request");
+    if (req.passengerId === passengerId)
+      throw new Error("ကိုယ့် Request ကိုယ် ပါဝင်၍ မရပါ။");
+    if (req.joinedPassengers.some((p) => p.id === passengerId))
+      throw new Error("Already in this Request");
 
     const users = this.getUsers();
-    const passenger = users.find(u => u.id === passengerId);
-    if (!passenger) throw new Error('Cannot Find User');
+    const passenger = users.find((u) => u.id === passengerId);
+    if (!passenger) throw new Error("Cannot Find User");
 
-    
-    const joinerHasGPS = locationData.startLat != null && locationData.endLat != null;
+    const joinerHasGPS =
+      locationData.startLat != null && locationData.endLat != null;
     const requestHasGPS = req.startLat != null && req.endLat != null;
 
     if (joinerHasGPS && requestHasGPS) {
-      const JOIN_PICKUP_KM  = 5.0;  
+      const JOIN_PICKUP_KM = 5.0;
       const JOIN_DROPOFF_KM = 5.0;
 
-      
       const jBearing = this._matcher._bearing(
-        locationData.startLat, locationData.startLng,
-        locationData.endLat,   locationData.endLng
+        locationData.startLat,
+        locationData.startLng,
+        locationData.endLat,
+        locationData.endLng,
       );
       const rBearing = this._matcher._bearing(
-        req.startLat, req.startLng, req.endLat, req.endLng
+        req.startLat,
+        req.startLng,
+        req.endLat,
+        req.endLng,
       );
       const bearingDiff = this._matcher._bearingDiff(jBearing, rBearing);
 
       if (bearingDiff > this._matcher.BEARING_MAX_DIFF_DEG) {
         throw new Error(
           `❌ Diff Direction (${Math.round(bearingDiff)}° Diff) ` +
-          'Find same direction request'
+            "Find same direction request",
         );
       }
 
-      
       const pu = this._matcher._pointToSegment(
-        locationData.startLng, locationData.startLat,
-        req.startLng, req.startLat,
-        req.endLng,   req.endLat
+        locationData.startLng,
+        locationData.startLat,
+        req.startLng,
+        req.startLat,
+        req.endLng,
+        req.endLat,
       );
       const dr = this._matcher._pointToSegment(
-        locationData.endLng, locationData.endLat,
-        req.startLng, req.startLat,
-        req.endLng,   req.endLat
+        locationData.endLng,
+        locationData.endLat,
+        req.startLng,
+        req.startLat,
+        req.endLng,
+        req.endLat,
       );
 
-      
       const dirOk = pu.t < dr.t;
 
-      if (pu.distance > JOIN_PICKUP_KM || dr.distance > JOIN_DROPOFF_KM || !dirOk) {
+      if (
+        pu.distance > JOIN_PICKUP_KM ||
+        dr.distance > JOIN_DROPOFF_KM ||
+        !dirOk
+      ) {
         const pKm = Math.round(pu.distance * 10) / 10;
         const dKm = Math.round(dr.distance * 10) / 10;
         throw new Error(
           `❌ distance route — Pickup ${pKm} km · Dropoff ${dKm} km ` +
-          `(${JOIN_PICKUP_KM} km Different)။ ` +
-          'Find same route request'
+            `(${JOIN_PICKUP_KM} km Different)။ ` +
+            "Find same route request",
         );
       }
     }
 
-    
-    const oldBreakdown = (req.priceBreakdown || []).map(b => ({ ...b }));
+    const oldBreakdown = (req.priceBreakdown || []).map((b) => ({ ...b }));
 
     req.joinedPassengers.push({
       id: passengerId,
       name: passenger.name,
-      phone: passenger.phone || '',
+      phone: passenger.phone || "",
       joinedAt: new Date().toISOString(),
-      
+
       startLocation: locationData.startLocation || req.startLocation,
       endLocation: locationData.endLocation || req.endLocation,
       startLat: locationData.startLat ?? req.startLat,
@@ -1572,132 +1732,123 @@ Do NOT include any text outside the JSON array.
       endLng: locationData.endLng ?? req.endLng,
     });
 
-    
     this._recalculatePriceBreakdown(req);
 
-    
     const newBreakdown = req.priceBreakdown || [];
 
-    
-    const joinerBD = newBreakdown.find(b => b.passengerId === passengerId);
+    const joinerBD = newBreakdown.find((b) => b.passengerId === passengerId);
     const joinerPrice = joinerBD ? joinerBD.price : 0;
 
-    
     if (joinerPrice > 0) {
       const joinerBalance = passenger.balance || 0;
       if (joinerBalance < joinerPrice) {
-        
-        req.joinedPassengers = req.joinedPassengers.filter(p => p.id !== passengerId);
+        req.joinedPassengers = req.joinedPassengers.filter(
+          (p) => p.id !== passengerId,
+        );
         this._recalculatePriceBreakdown(req);
         throw new Error(
-          ` Insufficient Balance in Wallet! Require Balance: ${joinerPrice.toLocaleString()} Kyats | Remain Balance: ${joinerBalance.toLocaleString()} Kyats`
+          ` Insufficient Balance in Wallet! Require Balance: ${joinerPrice.toLocaleString()} Kyats | Remain Balance: ${joinerBalance.toLocaleString()} Kyats`,
         );
       }
 
-      
       this.updateBalance(
         passengerId,
         -joinerPrice,
-        ` Ride Join: ${req.startLocation} → ${req.endLocation} (Pre Cash)`
+        ` Ride Join: ${req.startLocation} → ${req.endLocation} (Pre Cash)`,
       );
       if (joinerBD) joinerBD.paidAmount = joinerPrice;
     }
 
-    
-    for (const newBD of newBreakdown) {
-      if (newBD.passengerId === passengerId) continue; 
-      const oldBD = oldBreakdown.find(b => b.passengerId === newBD.passengerId);
-      if (!oldBD) continue;
-      const previousPaid = oldBD.paidAmount || oldBD.price || 0;
-      const newPrice = newBD.price || 0;
-      const refundDiff = previousPaid - newPrice;
-      if (refundDiff > 0) {
-        this.updateBalance(
-          newBD.passengerId,
-          refundDiff,
-          ` New Passenger Joined and  Refund: ${req.startLocation} → ${req.endLocation} (-${refundDiff.toLocaleString()} Kyats)`
-        );
-        this.addNotification(
-          newBD.passengerId,
-          ` ${passenger.name} was Joined! Your Cost ${previousPaid.toLocaleString()} → ${newPrice.toLocaleString()} Kyats need to cash၊ ${refundDiff.toLocaleString()} Kyats Refund`,
-          'refund'
-        );
-      }
-      newBD.paidAmount = newPrice; 
-    }
+    this._applyJoinRefunds(
+      req,
+      oldBreakdown,
+      newBreakdown,
+      passenger.name,
+      passengerId,
+    );
 
-    localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
+    localStorage.setItem("smartride_ride_requests", JSON.stringify(requests));
 
-    
     this.addNotification(
       req.passengerId,
       `${passenger.name} was Joined Your "${req.startLocation} → ${req.endLocation}" Ride Request`,
-      'joined'
+      "joined",
     );
 
     return req;
   }
 
-  
   leaveRideRequest(requestId, passengerId) {
     const requests = this.getRideRequests();
-    const idx = requests.findIndex(r => r.id === requestId);
-    if (idx === -1) throw new Error('Ride Request cannot find');
+    const idx = requests.findIndex((r) => r.id === requestId);
+    if (idx === -1) throw new Error("Ride Request cannot find");
 
     const req = requests[idx];
-    if (req.status !== 'pending') throw new Error('Cannot Repair this request');
+    if (req.status !== "pending") throw new Error("Cannot Repair this request");
 
-    
-    const leaverBD = (req.priceBreakdown || []).find(b => b.passengerId === passengerId);
-    const refundAmount = leaverBD ? (leaverBD.paidAmount || leaverBD.price || 0) : 0;
+    const leaverBD = (req.priceBreakdown || []).find(
+      (b) => b.passengerId === passengerId,
+    );
+    const refundAmount = leaverBD
+      ? leaverBD.paidAmount || leaverBD.price || 0
+      : 0;
     if (refundAmount > 0) {
       this.updateBalance(
         passengerId,
         refundAmount,
-        ` Request leave refund: ${req.startLocation} → ${req.endLocation}`
+        ` Request leave refund: ${req.startLocation} → ${req.endLocation}`,
+        "refund",
       );
       this.addNotification(
         passengerId,
         ` Since leave from Request ${refundAmount.toLocaleString()} Kyats Refund`,
-        'refund'
+        "refund",
       );
     }
 
-    req.joinedPassengers = req.joinedPassengers.filter(p => p.id !== passengerId);
-    
+    req.joinedPassengers = req.joinedPassengers.filter(
+      (p) => p.id !== passengerId,
+    );
+
     this._recalculatePriceBreakdown(req);
-    localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
+    localStorage.setItem("smartride_ride_requests", JSON.stringify(requests));
     return req;
   }
 
-  
   acceptRideRequest(requestId, driverId) {
     const requests = this.getRideRequests();
-    const idx = requests.findIndex(r => r.id === requestId);
-    if (idx === -1) throw new Error('Cannot find Ride Request');
+    const idx = requests.findIndex((r) => r.id === requestId);
+    if (idx === -1) throw new Error("Cannot find Ride Request");
 
     const req = requests[idx];
-    if (req.status !== 'pending') throw new Error('Already Accepted/Canceled this request');
+    if (req.status !== "pending")
+      throw new Error("Already Accepted/Canceled this request");
 
     const users = this.getUsers();
-    const driver = users.find(u => u.id === driverId);
-    if (!driver) throw new Error('Driver cannot find');
+    const driver = users.find((u) => u.id === driverId);
+    if (!driver) throw new Error("Driver cannot find");
 
-    
-    req.status = 'accepted';
+    req.status = "accepted";
     req.acceptedDriverId = driverId;
     req.acceptedAt = new Date().toISOString();
-    localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
+    localStorage.setItem("smartride_ride_requests", JSON.stringify(requests));
 
-    
     const allPassengers = [
-      { id: req.passengerId, name: req.passengerName, pickup: req.startLocation },
-      ...req.joinedPassengers.map(p => ({ id: p.id, name: p.name, pickup: req.startLocation })),
+      {
+        id: req.passengerId,
+        name: req.passengerName,
+        pickup: req.startLocation,
+      },
+      ...req.joinedPassengers.map((p) => ({
+        id: p.id,
+        name: p.name,
+        pickup: req.startLocation,
+      })),
     ];
 
     const rideData = {
       driverId,
-      driverName: driver.name || 'Driver',
+      driverName: driver.name || "Driver",
       startLocation: req.startLocation,
       endLocation: req.endLocation,
       startLat: req.startLat,
@@ -1706,139 +1857,137 @@ Do NOT include any text outside the JSON array.
       endLng: req.endLng,
       departureTime: req.departureTime,
       availableSeats: 4,
-      carModel: driver.carModel || 'Unknown',
-      carPlate: driver.carPlate || 'N/A',
+      carModel: driver.carModel || "Unknown",
+      carPlate: driver.carPlate || "N/A",
     };
 
     const newRide = this.offerRide(rideData);
 
-    
     const rides = this.getRides();
-    const rideIdx = rides.findIndex(r => r.id === newRide.id);
+    const rideIdx = rides.findIndex((r) => r.id === newRide.id);
     if (rideIdx !== -1) {
       rides[rideIdx].passengers = allPassengers;
       rides[rideIdx].bookedSeats = allPassengers.length;
       rides[rideIdx].fromRequest = requestId;
-      localStorage.setItem('smartride_rides', JSON.stringify(rides));
+      localStorage.setItem("smartride_rides", JSON.stringify(rides));
     }
 
-   
     this.addNotification(
       req.passengerId,
-      ` ${driver.name} (${driver.carModel || ''} - ${driver.carPlate || ''}) was accept your "${req.startLocation} → ${req.endLocation}" ride request`,
-      'accepted'
+      ` ${driver.name} (${driver.carModel || ""} - ${driver.carPlate || ""}) was accept your "${req.startLocation} → ${req.endLocation}" ride request`,
+      "accepted",
     );
 
-  
-    req.joinedPassengers.forEach(p => {
+    req.joinedPassengers.forEach((p) => {
       this.addNotification(
         p.id,
-        ` ${driver.name} (${driver.carModel || ''} - ${driver.carPlate || ''}) was accepted "${req.startLocation} → ${req.endLocation}" your ride request`,
-        'accepted'
+        ` ${driver.name} (${driver.carModel || ""} - ${driver.carPlate || ""}) was accepted "${req.startLocation} → ${req.endLocation}" your ride request`,
+        "accepted",
       );
     });
 
     return { request: req, ride: newRide };
   }
 
-  
   rejectRideRequest(requestId, driverId) {
     const requests = this.getRideRequests();
-    const idx = requests.findIndex(r => r.id === requestId);
-    if (idx === -1) throw new Error('Cannot find Ride Request');
+    const idx = requests.findIndex((r) => r.id === requestId);
+    if (idx === -1) throw new Error("Cannot find Ride Request");
 
     if (!requests[idx].rejectedByDrivers) requests[idx].rejectedByDrivers = [];
     if (!requests[idx].rejectedByDrivers.includes(driverId)) {
       requests[idx].rejectedByDrivers.push(driverId);
     }
-    localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
+    localStorage.setItem("smartride_ride_requests", JSON.stringify(requests));
     return requests[idx];
   }
 
-  
   cancelRideRequest(requestId, passengerId) {
     const requests = this.getRideRequests();
-    const idx = requests.findIndex(r => r.id === requestId);
-    if (idx === -1) throw new Error(' Cannot find Ride Request');
+    const idx = requests.findIndex((r) => r.id === requestId);
+    if (idx === -1) throw new Error(" Cannot find Ride Request");
 
     const req = requests[idx];
-    if (req.passengerId !== passengerId) throw new Error('Cannot cancel this request');
-    if (req.status !== 'pending') throw new Error('Cannot cancel this request');
-    if (req.status === 'accepted') throw new Error('Since driver accepted , cannot cancel this request');
+    if (req.passengerId !== passengerId)
+      throw new Error("Cannot cancel this request");
+    if (req.status !== "pending") throw new Error("Cannot cancel this request");
+    if (req.status === "accepted")
+      throw new Error("Since driver accepted , cannot cancel this request");
 
-    
     const departureDate = new Date(req.departureTime);
     const now = new Date();
     const hoursUntilDeparture = (departureDate - now) / (1000 * 60 * 60);
     if (hoursUntilDeparture < 3) {
       throw new Error(
-        ` Departure Time ${Math.round(hoursUntilDeparture * 10) / 10} Cannot cancel because departure time is too close! (U can cancle before 3 hours left)`
+        ` Departure Time ${Math.round(hoursUntilDeparture * 10) / 10} Cannot cancel because departure time is too close! (U can cancle before 3 hours left)`,
       );
     }
 
-    
-    const allToRefund = (req.priceBreakdown || []);
+    const allToRefund = req.priceBreakdown || [];
     let totalRefunded = 0;
-    allToRefund.forEach(bd => {
+    allToRefund.forEach((bd) => {
       const refund = bd.paidAmount || bd.price || 0;
       if (refund > 0) {
         this.updateBalance(
           bd.passengerId,
           refund,
-          ` Request cancel refund: ${req.startLocation} → ${req.endLocation}`
+          ` Request cancel refund: ${req.startLocation} → ${req.endLocation}`,
         );
         totalRefunded += refund;
       }
     });
 
-    req.status = 'cancelled';
+    req.status = "cancelled";
     req.cancelledAt = new Date().toISOString();
     req.totalRefunded = totalRefunded;
-    localStorage.setItem('smartride_ride_requests', JSON.stringify(requests));
+    localStorage.setItem("smartride_ride_requests", JSON.stringify(requests));
 
-    
-    req.joinedPassengers.forEach(p => {
-      const pBD = allToRefund.find(b => b.passengerId === p.id);
-      const pRefund = pBD ? (pBD.paidAmount || pBD.price || 0) : 0;
+    req.joinedPassengers.forEach((p) => {
+      const pBD = allToRefund.find((b) => b.passengerId === p.id);
+      const pRefund = pBD ? pBD.paidAmount || pBD.price || 0 : 0;
       this.addNotification(
         p.id,
-        `"${req.startLocation} → ${req.endLocation}" Request cancelled ${pRefund > 0 ? pRefund.toLocaleString() + ' Kyats Refund' : ''}`,
-        'refund'
+        `"${req.startLocation} → ${req.endLocation}" Request cancelled ${pRefund > 0 ? pRefund.toLocaleString() + " Kyats Refund" : ""}`,
+        "refund",
       );
     });
 
     return req;
   }
 
-  
   getPendingRequestsForDriver(driverId) {
     const requests = this.getRideRequests();
     const now = new Date();
-    return requests.filter(r => {
-      if (r.status !== 'pending') return false;
-      
-      if (new Date(r.departureTime) < now) return false;
-      
-      if (r.rejectedByDrivers && r.rejectedByDrivers.includes(driverId)) return false;
-      return true;
-    }).sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
+    return requests
+      .filter((r) => {
+        if (r.status !== "pending") return false;
+
+        if (new Date(r.departureTime) < now) return false;
+
+        if (r.rejectedByDrivers && r.rejectedByDrivers.includes(driverId))
+          return false;
+        return true;
+      })
+      .sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
   }
 
- 
   getRideRequestsByPassenger(passengerId) {
     return this.getRideRequests().filter(
-      r => r.passengerId === passengerId || r.joinedPassengers.some(p => p.id === passengerId)
+      (r) =>
+        r.passengerId === passengerId ||
+        r.joinedPassengers.some((p) => p.id === passengerId),
     );
   }
 
- 
   getActivePendingRequests() {
     const now = new Date();
-    return this.getRideRequests().filter(r => {
-      if (r.status !== 'pending') return false;
-      if (new Date(r.departureTime) < now) return false;
-      return true;
-    }).sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
+    return this.getRideRequests()
+      .filter((r) => {
+        if (r.status !== "pending") return false;
+        if (new Date(r.departureTime) < now) return false;
+        return true;
+      })
+      .sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
   }
 }
 
