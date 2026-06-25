@@ -653,6 +653,15 @@
                     >
                   </div>
                   <div
+                    id="reqTaxDetail"
+                    style="
+                      font-size: 0.68rem;
+                      color: var(--gray);
+                      margin-top: 0.25rem;
+                      text-align: right;
+                    "
+                  ></div>
+                  <div
                     style="
                       font-size: 0.68rem;
                       color: var(--green);
@@ -1239,7 +1248,7 @@
             <span class="avatar">${req.passengerName.charAt(0)}</span>
             <div>
               <div>${req.passengerName} <span style="font-size:0.6rem; color:var(--green); margin-left:2px;">(requester)</span></div>
-              ${reqBD ? `<div style="font-size:0.65rem; color:var(--gray); margin-top:1px;">📏 ${reqBD.distanceKm} km &nbsp;·&nbsp; <span style="color:var(--green); font-weight:700;"> ${reqBD.price.toLocaleString()} Kyats (${reqBD.weightPercent}%)</span></div>` : ""}
+              ${reqBD ? `<div style="font-size:0.65rem; color:var(--gray); margin-top:1px;">📏 ${reqBD.distanceKm} km &nbsp;·&nbsp; <span style="color:var(--green); font-weight:700;"> ${reqBD.price.toLocaleString()} Kyats</span> <span style="font-size:0.6rem; color:var(--gray);">(Fare: ${reqBD.fareShare.toLocaleString()} + Tax 5%: ${reqBD.appFee.toLocaleString()})</span></div>` : ""}
             </div>
           </div>`;
 
@@ -1252,7 +1261,7 @@
               <span class="avatar">${p.name.charAt(0)}</span>
               <div>
                 <div>${p.name}</div>
-                ${bd ? `<div style="font-size:0.65rem; color:var(--gray); margin-top:1px;">📏 ${bd.distanceKm} km &nbsp;·&nbsp; <span style="color:var(--green); font-weight:700;">${bd.price.toLocaleString()} Kyats (${bd.weightPercent}%)</span></div>` : ""}
+                ${bd ? `<div style="font-size:0.65rem; color:var(--gray); margin-top:1px;">📏 ${bd.distanceKm} km &nbsp;·&nbsp; <span style="color:var(--green); font-weight:700;">${bd.price.toLocaleString()} Kyats</span> <span style="font-size:0.6rem; color:var(--gray);">(Fare: ${bd.fareShare.toLocaleString()} + Tax 5%: ${bd.appFee.toLocaleString()})</span></div>` : ""}
               </div>
             </div>`;
               })
@@ -1590,20 +1599,46 @@
             (b) => b.distanceKm,
           );
           const allDists = [...existingDists, myDist];
-          const maxDist = Math.max(...allDists);
-          const routePrice = priceMatcher.calculateDistancePrice(maxDist);
-          const breakdowns = priceMatcher.calculateFairPriceBreakdown(
-            routePrice,
-            allDists,
-          );
+
+          // Build segment data for fair pricing
+          const existingPassengers = (pendingJoinReq?.priceBreakdown || []).map((b, idx) => ({
+            id: b.passengerId || `existing_${idx}`,
+            startLat: pendingJoinReq.joinedPassengers?.[idx - 1]?.startLat ?? pendingJoinReq.startLat,
+            startLng: pendingJoinReq.joinedPassengers?.[idx - 1]?.startLng ?? pendingJoinReq.startLng,
+            endLat: pendingJoinReq.joinedPassengers?.[idx - 1]?.endLat ?? pendingJoinReq.endLat,
+            endLng: pendingJoinReq.joinedPassengers?.[idx - 1]?.endLng ?? pendingJoinReq.endLng,
+          }));
+          // First passenger is the original requester
+          if (existingPassengers.length > 0) {
+            existingPassengers[0].startLat = pendingJoinReq.startLat;
+            existingPassengers[0].startLng = pendingJoinReq.startLng;
+            existingPassengers[0].endLat = pendingJoinReq.endLat;
+            existingPassengers[0].endLng = pendingJoinReq.endLng;
+          }
+          const allPassengerObjs = [
+            ...existingPassengers,
+            { id: 'joiner', startLat: jStartLat, startLng: jStartLng, endLat: jEndLat, endLng: jEndLng },
+          ];
+          const driverObj = {
+            startLat: pendingJoinReq.startLat, startLng: pendingJoinReq.startLng,
+            endLat: pendingJoinReq.endLat, endLng: pendingJoinReq.endLng,
+            routeCoordinates: pendingJoinReq.routeCoordinates,
+          };
+          const totalRouteKm = pendingJoinReq.distanceKm || allDists.reduce((a, b) => Math.max(a, b), 0);
+          const segmentData = priceMatcher.buildSegmentData(allPassengerObjs, driverObj, totalRouteKm);
+
+          const breakdowns = segmentData
+            ? priceMatcher.calculateFairPriceBreakdown(0, allDists, { segmentData })
+            : priceMatcher.calculateFairPriceBreakdown(0, allDists);
           const myBD = breakdowns[breakdowns.length - 1];
 
           document.getElementById("joinDistNote").textContent =
-            `📏 ${Math.round(myDist * 10) / 10} km (${myBD.weightPercent}%)`;
+            `📏 ${Math.round(myDist * 10) / 10} km` +
+            (myBD.equivalentKm != null ? ` (Shared ဖြင့် ${myBD.equivalentKm} km စာသာကျ)` : '');
           document.getElementById("joinEstPrice").textContent =
             myBD.passengerPrice.toLocaleString() + " ကျပ်";
           document.getElementById("joinWeightNote").textContent =
-            `Passenger ${existingDists.length + 1} ဦးနှင့် ကျသင့်ငွေ`;
+            `Fare: ${myBD.fareShare.toLocaleString()} + App Tax 5%: ${myBD.appCommissionPerPassenger.toLocaleString()} ကျပ်`;
           priceEl.style.display = "block";
         }
 
@@ -1774,17 +1809,22 @@
           const breakdown = req.priceBreakdown || [];
           let tableHtml = "";
           let totalDriverEarnings = 0;
+          let totalAppTax = 0;
 
           if (breakdown.length > 0) {
             breakdown.forEach((b) => {
               totalDriverEarnings += b.fareShare;
+              totalAppTax += b.appFee || 0;
               tableHtml += `
               <div style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid rgba(29,158,117,0.08); font-size:0.78rem;">
                 <div>
                   <span style="font-weight:600; color:var(--text-primary);">${b.name}</span>
-                  <span style="color:var(--gray); margin-left:0.4rem;"> ${b.distanceKm} km (${b.weightPercent}%)</span>
+                  <span style="color:var(--gray); margin-left:0.4rem;"> ${b.distanceKm} km</span>
                 </div>
-                <span style="font-family:var(--font-heading); font-weight:700; color:var(--green);">${b.price.toLocaleString()} Kyats</span>
+                <div style="text-align:right;">
+                  <span style="font-family:var(--font-heading); font-weight:700; color:var(--green);">${b.price.toLocaleString()} Kyats</span>
+                  <div style="font-size:0.6rem; color:var(--gray);">Fare: ${b.fareShare.toLocaleString()} + Tax 5%: ${(b.appFee || 0).toLocaleString()}</div>
+                </div>
               </div>`;
             });
           } else {
@@ -1799,13 +1839,12 @@
             });
           }
 
-          const appTaxTotal = Math.floor(totalDriverEarnings * 0.05);
           document.getElementById("acceptBreakdownTable").innerHTML = tableHtml;
           document.getElementById("acceptDriverEarnings").textContent =
             totalDriverEarnings.toLocaleString() +
-            " Kyats (App tax " +
-            appTaxTotal.toLocaleString() +
-            " Kyats Reduce)";
+            " Kyats (App Tax " +
+            totalAppTax.toLocaleString() +
+            " Kyats ဖြတ်ယူမည်)";
           document.getElementById("acceptModal").style.display = "flex";
         };
 
@@ -1984,9 +2023,11 @@
             }
 
             document.getElementById("reqEstPrice").textContent =
-              result.price.toLocaleString() + " Kyats";
+              result.passengerCost.toLocaleString() + " Kyats";
             document.getElementById("reqDistNote").textContent =
               ` ${result.distanceKm} km ride`;
+            document.getElementById("reqTaxDetail").textContent =
+              `Base: ${result.price.toLocaleString()} + App Tax 5%: ${result.appTax.toLocaleString()} Kyats`;
             preview.style.display = "block";
             if (paymentNote) paymentNote.style.display = "block";
 
@@ -1994,7 +2035,7 @@
             const bal = curUser?.balance || 0;
             if (walBalEl)
               walBalEl.textContent = bal.toLocaleString() + " Kyats";
-            if (bal < result.price) {
+            if (bal < result.passengerCost) {
               walBalEl.style.color = "#dc2626";
             } else {
               walBalEl.style.color = "#2563eb";

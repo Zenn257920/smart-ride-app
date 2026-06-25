@@ -24,7 +24,7 @@ class DatabaseManager {
   }
 
   static get DATA_VERSION() {
-    return "v8-future-times";
+    return "v9-fair-fare";
   }
 
   initDatabase() {
@@ -532,12 +532,16 @@ class DatabaseManager {
               )
             : req.distanceKm || 10,
         );
-        const maxDist = Math.max(...distances);
-        const routePrice = matcher.calculateDistancePrice(maxDist);
-        const breakdowns = matcher.calculateFairPriceBreakdown(
-          routePrice,
-          distances,
-        );
+        const driverObj = {
+          startLat: req.startLat, startLng: req.startLng,
+          endLat: req.endLat, endLng: req.endLng,
+          routeCoordinates: req.routeCoordinates,
+        };
+        const totalRouteKm = req.distanceKm || distances.reduce((a, b) => Math.max(a, b), 0);
+        const segmentData = matcher.buildSegmentData(allPassengers, driverObj, totalRouteKm);
+        const breakdowns = segmentData
+          ? matcher.calculateFairPriceBreakdown(0, distances, { segmentData })
+          : matcher.calculateFairPriceBreakdown(0, distances);
         req.priceBreakdown = allPassengers.map((p, i) => ({
           passengerId: p.passengerId,
           name: p.name,
@@ -549,7 +553,7 @@ class DatabaseManager {
           weightPercent: breakdowns[i].weightPercent,
           paidAmount: breakdowns[i].passengerPrice,
         }));
-        req.totalRoutePrice = routePrice;
+        req.totalRoutePrice = breakdowns.reduce((s, b) => s + b.fareShare, 0);
       }
 
       localStorage.setItem("smartride_users", JSON.stringify(sampleUsers));
@@ -1201,10 +1205,28 @@ Do NOT include any text outside the JSON array.
         return rides[rideIndex].distanceKm || 10;
       });
 
-      const fairBreakdowns = this._matcher.calculateFairPriceBreakdown(
-        basePrice,
-        allDistances,
+      const ride = rides[rideIndex];
+      const driverObj = {
+        startLat: ride.startLat, startLng: ride.startLng,
+        endLat: ride.endLat, endLng: ride.endLng,
+        routeCoordinates: ride.routeCoordinates,
+      };
+      const totalRouteKm = ride.distanceKm || allDistances.reduce((a, b) => Math.max(a, b), 0);
+      const segmentData = this._matcher.buildSegmentData(
+        allPassengers.map((p) => ({
+          id: p.id,
+          startLat: p.startLat ?? ride.startLat,
+          startLng: p.startLng ?? ride.startLng,
+          endLat: p.endLat ?? ride.endLat,
+          endLng: p.endLng ?? ride.endLng,
+        })),
+        driverObj,
+        totalRouteKm,
       );
+
+      const fairBreakdowns = segmentData
+        ? this._matcher.calculateFairPriceBreakdown(0, allDistances, { segmentData })
+        : this._matcher.calculateFairPriceBreakdown(0, allDistances);
 
       existingBookingsForRide.forEach((oldBooking) => {
         const pIndex = allPassengers.findIndex(
@@ -1480,6 +1502,8 @@ Do NOT include any text outside the JSON array.
 
     let estimatedPrice = 0;
     let distanceKm = 0;
+    let baseFare = 0;
+    let appTax = 0;
     if (data.startLat != null && data.endLat != null) {
       const result = this._matcher.calculatePriceFromCoords(
         data.startLat,
@@ -1487,12 +1511,14 @@ Do NOT include any text outside the JSON array.
         data.endLat,
         data.endLng,
       );
+      baseFare = result ? result.price : 0;
+      appTax = result ? result.appTax : 0;
       estimatedPrice = result ? result.passengerCost : 0;
       distanceKm = result ? result.distanceKm : 0;
     } else {
-      const basePrice = this._matcher.DEFAULT_PRICE;
-      const appTax = Math.floor(basePrice * this._matcher.APP_TAX_RATE);
-      estimatedPrice = basePrice + appTax;
+      baseFare = this._matcher.DEFAULT_PRICE;
+      appTax = Math.floor(baseFare * this._matcher.APP_TAX_RATE);
+      estimatedPrice = baseFare + appTax;
     }
 
     const users = this.getUsers();
@@ -1531,14 +1557,14 @@ Do NOT include any text outside the JSON array.
           name: user.name || "Passenger",
           distanceKm,
           price: estimatedPrice,
-          fareShare: estimatedPrice,
+          fareShare: baseFare,
           driverBonus: 0,
-          appFee: 0,
+          appFee: appTax,
           weightPercent: 100,
           paidAmount: estimatedPrice,
         },
       ],
-      totalRoutePrice: estimatedPrice,
+      totalRoutePrice: baseFare,
     };
 
     this.updateBalance(
@@ -1583,12 +1609,16 @@ Do NOT include any text outside the JSON array.
         : req.distanceKm || 10,
     );
 
-    const maxDist = Math.max(...distances);
-    const routePrice = this._matcher.calculateDistancePrice(maxDist);
-    const breakdowns = this._matcher.calculateFairPriceBreakdown(
-      routePrice,
-      distances,
-    );
+    const driverObj = {
+      startLat: req.startLat, startLng: req.startLng,
+      endLat: req.endLat, endLng: req.endLng,
+      routeCoordinates: req.routeCoordinates,
+    };
+    const totalRouteKm = req.distanceKm || distances.reduce((a, b) => Math.max(a, b), 0);
+    const segmentData = this._matcher.buildSegmentData(allPassengers, driverObj, totalRouteKm);
+    const breakdowns = segmentData
+      ? this._matcher.calculateFairPriceBreakdown(0, distances, { segmentData })
+      : this._matcher.calculateFairPriceBreakdown(0, distances);
 
     req.priceBreakdown = allPassengers.map((p, i) => ({
       passengerId: p.passengerId,
@@ -1600,7 +1630,7 @@ Do NOT include any text outside the JSON array.
       appFee: breakdowns[i].appCommissionPerPassenger,
       weightPercent: breakdowns[i].weightPercent,
     }));
-    req.totalRoutePrice = routePrice;
+    req.totalRoutePrice = breakdowns.reduce((s, b) => s + b.fareShare, 0);
 
     req.estimatedPrice = req.priceBreakdown[0]?.price ?? req.estimatedPrice;
   }

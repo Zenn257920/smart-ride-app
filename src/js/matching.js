@@ -70,11 +70,28 @@ export class RouteMatcher {
     };
   }
 
-  calculateFairPriceBreakdown(totalRoutePrice, passengerDistances) {
-    const totalKm = passengerDistances.reduce((a, b) => a + b, 0);
+  /**
+   * Calculate fair price breakdown for shared rides.
+   *
+   * When segmentData is provided, uses segment-based pricing where each
+   * segment of the route is split among riders present on that segment.
+   * Otherwise falls back to individual distance-based pricing.
+   *
+   * @param {number} totalRoutePrice - Base route price (unused in segment mode)
+   * @param {number[]} passengerDistances - Each passenger's individual distance
+   * @param {Object} [options] - Optional configuration
+   * @param {Object} [options.segmentData] - Segment-based pricing data
+   * @param {number} options.segmentData.totalRouteKm - Driver's total route distance
+   * @param {Array<{id: string, startT: number, endT: number}>} options.segmentData.passengers
+   *   Each passenger's normalized position (0.0–1.0) on the driver's route
+   * @returns {Array<Object>} Breakdown per passenger
+   */
+  calculateFairPriceBreakdown(totalRoutePrice, passengerDistances, options) {
     if (passengerDistances.length === 0) {
       return [];
     }
+
+    const totalKm = passengerDistances.reduce((a, b) => a + b, 0);
 
     if (totalKm === 0) {
       return passengerDistances.map(() =>
@@ -82,29 +99,106 @@ export class RouteMatcher {
       );
     }
 
-    const personalPrices = passengerDistances.map((myKm) =>
-      this.calculateDistancePrice(myKm),
-    );
-    const firstPassengerShare = Math.max(
-      0,
-      totalRoutePrice -
-        personalPrices.slice(1).reduce((sum, price) => sum + price, 0),
-    );
+    // --- Segment-based pricing (new) ---
+    if (options && options.segmentData) {
+      return this._segmentBasedBreakdown(
+        options.segmentData,
+        passengerDistances,
+      );
+    }
 
-    return passengerDistances.map((myKm, index) => {
+    // --- Fallback: individual distance-based pricing (original) ---
+    return passengerDistances.map((myKm) => {
       const weight = myKm / totalKm;
-      const fareShare =
-        index === 0 ? firstPassengerShare : personalPrices[index];
-      const cappedFareShare = Math.max(0, Math.min(fareShare, totalRoutePrice));
-      const appFee = Math.floor(cappedFareShare * this.APP_TAX_RATE);
-      const passengerPrice = cappedFareShare + appFee;
+      const fareShare = this.calculateDistancePrice(myKm);
+      const appFee = Math.floor(fareShare * this.APP_TAX_RATE);
+      const passengerPrice = fareShare + appFee;
 
       return {
-        fareShare: cappedFareShare,
+        fareShare,
         driverBonusPerPassenger: 0,
         appCommissionPerPassenger: appFee,
         passengerPrice,
         distanceKm: Math.round(myKm * 10) / 10,
+        weightPercent: Math.round(weight * 100),
+      };
+    });
+  }
+
+  /**
+   * Segment-based pricing: split the driver's route into segments at each
+   * passenger's pickup/dropoff point. Each segment's fare is divided equally
+   * among riders present on that segment.
+   *
+   * @param {Object} segmentData - { totalRouteKm, passengers: [{id, startT, endT}] }
+   * @param {number[]} passengerDistances - Individual distances (for fallback/display)
+   * @returns {Array<Object>} Breakdown per passenger (same order as passengerDistances)
+   */
+  _segmentBasedBreakdown(segmentData, passengerDistances) {
+    const { totalRouteKm, passengers } = segmentData;
+
+    // Collect all unique breakpoints (T values) from passenger start/end
+    const breakpointSet = new Set();
+    breakpointSet.add(0);
+    breakpointSet.add(1);
+    for (const p of passengers) {
+      breakpointSet.add(Math.max(0, Math.min(1, p.startT)));
+      breakpointSet.add(Math.max(0, Math.min(1, p.endT)));
+    }
+    const breakpoints = Array.from(breakpointSet).sort((a, b) => a - b);
+
+    // Build segments between consecutive breakpoints
+    const segments = [];
+    for (let i = 0; i < breakpoints.length - 1; i++) {
+      const segStart = breakpoints[i];
+      const segEnd = breakpoints[i + 1];
+      const segKm = (segEnd - segStart) * totalRouteKm;
+
+      // Find which passengers are riding on this segment
+      const ridersOnSegment = [];
+      for (let pIdx = 0; pIdx < passengers.length; pIdx++) {
+        const p = passengers[pIdx];
+        // Passenger rides segment if their range covers it
+        // (startT <= segStart AND endT >= segEnd)
+        if (p.startT <= segStart + 1e-9 && p.endT >= segEnd - 1e-9) {
+          ridersOnSegment.push(pIdx);
+        }
+      }
+
+      segments.push({ segStart, segEnd, segKm, ridersOnSegment });
+    }
+
+    // Accumulate equivalent km for each passenger
+    const equivKm = new Array(passengers.length).fill(0);
+    for (const seg of segments) {
+      if (seg.ridersOnSegment.length === 0) continue;
+      const perPerson = seg.segKm / seg.ridersOnSegment.length;
+      for (const pIdx of seg.ridersOnSegment) {
+        equivKm[pIdx] += perPerson;
+      }
+    }
+
+    // Total equivalent km determines each passenger's weight
+    const totalEquivKm = equivKm.reduce((a, b) => a + b, 0);
+
+    // Calculate fare for each passenger based on their equivalent km
+    return passengers.map((p, i) => {
+      const myEquivKm = equivKm[i];
+      const fareShare = this.calculateDistancePrice(myEquivKm);
+      const appFee = Math.floor(fareShare * this.APP_TAX_RATE);
+      const passengerPrice = fareShare + appFee;
+      const weight = totalEquivKm > 0 ? myEquivKm / totalEquivKm : 0;
+
+      return {
+        fareShare,
+        driverBonusPerPassenger: 0,
+        appCommissionPerPassenger: appFee,
+        passengerPrice,
+        distanceKm: Math.round((passengerDistances[i] || myEquivKm) * 10) / 10,
+        equivalentKm: Math.round(myEquivKm * 10) / 10,
+        soloKm: Math.round(
+          (passengerDistances[i] - (passengerDistances[i] - myEquivKm)) * 10,
+        ) / 10,
         weightPercent: Math.round(weight * 100),
       };
     });
@@ -121,6 +215,70 @@ export class RouteMatcher {
       distanceKm: 0,
       weightPercent: Math.round(100 / passengerCount),
     };
+  }
+
+  /**
+   * Build segmentData for calculateFairPriceBreakdown from passenger/driver objects.
+   *
+   * Resolves each passenger's pickupT/dropoffT on the driver's route using
+   * isOnDriverRoute() or isOnDriverCorridor(). Falls back to proportional
+   * estimation from straight-line distances when no route match is found.
+   *
+   * @param {Array<Object>} passengers - [{id, startLat, startLng, endLat, endLng}]
+   * @param {Object} driver - Driver ride object with route data
+   * @param {number} totalRouteKm - Driver's total route distance
+   * @returns {Object|null} segmentData or null if insufficient data
+   */
+  buildSegmentData(passengers, driver, totalRouteKm) {
+    if (!passengers || passengers.length === 0 || totalRouteKm <= 0) {
+      return null;
+    }
+
+    const segPassengers = [];
+    for (const p of passengers) {
+      if (p.startLat == null || p.endLat == null) {
+        // Can't determine position on route — return null to use fallback
+        return null;
+      }
+
+      // Try polyline route match first
+      let match = this.isOnDriverRoute(p, driver);
+      if (!match) {
+        // Try corridor match
+        match = this.isOnDriverCorridor(p, driver);
+      }
+
+      if (match) {
+        segPassengers.push({
+          id: p.id || p.passengerId || `p${segPassengers.length}`,
+          startT: match.pickupT,
+          endT: match.dropoffT,
+        });
+      } else {
+        // Estimate T position from straight-line distance ratios
+        const startDist = this.calculateDistance(
+          driver.startLat, driver.startLng,
+          p.startLat, p.startLng,
+        );
+        const endDist = this.calculateDistance(
+          driver.startLat, driver.startLng,
+          p.endLat, p.endLng,
+        );
+        const driverDist = this.calculateDistance(
+          driver.startLat, driver.startLng,
+          driver.endLat, driver.endLng,
+        );
+        if (driverDist <= 0) return null;
+
+        segPassengers.push({
+          id: p.id || p.passengerId || `p${segPassengers.length}`,
+          startT: Math.min(1, startDist / driverDist),
+          endT: Math.min(1, endDist / driverDist),
+        });
+      }
+    }
+
+    return { totalRouteKm, passengers: segPassengers };
   }
 
   _bearing(lat1, lon1, lat2, lon2) {
@@ -533,10 +691,37 @@ export class RouteMatcher {
         };
       }
 
-      const breakdowns = this.calculateFairPriceBreakdown(
-        basePrice,
-        allDistances,
-      );
+      const breakdowns = (() => {
+        // Build segment data for fair pricing
+        const allPassengerObjs = [
+          ...(ride.passengers || []).map((p) => ({
+            id: p.id || p.passengerId,
+            startLat: p.startLat ?? ride.startLat,
+            startLng: p.startLng ?? ride.startLng,
+            endLat: p.endLat ?? ride.endLat,
+            endLng: p.endLng ?? ride.endLng,
+          })),
+          {
+            id: userRequest.id || userRequest.passengerId || 'new',
+            startLat: userRequest.startLat,
+            startLng: userRequest.startLng,
+            endLat: userRequest.endLat,
+            endLng: userRequest.endLng,
+          },
+        ];
+
+        const driverRouteKm = ride.distanceKm || this.getPassengerDistance(
+          { startLat: ride.startLat, startLng: ride.startLng, endLat: ride.endLat, endLng: ride.endLng },
+          ride,
+        ) || allDistances.reduce((a, b) => Math.max(a, b), 0);
+
+        const segmentData = this.buildSegmentData(allPassengerObjs, ride, driverRouteKm);
+
+        if (segmentData) {
+          return this.calculateFairPriceBreakdown(0, allDistances, { segmentData });
+        }
+        return this.calculateFairPriceBreakdown(0, allDistances);
+      })();
       const myBreakdown = breakdowns[breakdowns.length - 1];
 
       return {
@@ -641,18 +826,32 @@ export class RouteMatcher {
           return 10;
         });
 
-        const maxDist = Math.max(...distances);
-        const routePrice = this.calculateDistancePrice(maxDist);
-        const breakdowns = this.calculateFairPriceBreakdown(
-          routePrice,
-          distances,
+        // Use the first member as the "driver" reference for segment data
+        const leader = group[0];
+        const leaderKm = distances[0] || 10;
+        const maxKm = distances.reduce((a, b) => Math.max(a, b), leaderKm);
+        const segmentData = this.buildSegmentData(
+          group.map((req, idx) => ({
+            id: req.id || req.passengerId || `p${idx}`,
+            startLat: req.startLat,
+            startLng: req.startLng,
+            endLat: req.endLat,
+            endLng: req.endLng,
+          })),
+          leader,
+          maxKm,
         );
+
+        const breakdowns = segmentData
+          ? this.calculateFairPriceBreakdown(0, distances, { segmentData })
+          : this.calculateFairPriceBreakdown(0, distances);
+        const totalFares = breakdowns.reduce((s, b) => s + b.fareShare, 0);
 
         groups.push({
           passengers: group,
           count: group.length,
-          totalPrice: routePrice,
-          driverEarnings: routePrice,
+          totalPrice: totalFares,
+          driverEarnings: totalFares,
           appCommissionTotal: breakdowns.reduce(
             (sum, b) => sum + b.appCommissionPerPassenger,
             0,
@@ -663,16 +862,8 @@ export class RouteMatcher {
             breakdowns.reduce((sum, b) => sum + b.passengerPrice, 0) /
               group.length,
           ),
-          savingsPerPerson: Math.floor(
-            breakdowns.reduce(
-              (sum, b) => sum + (routePrice - b.passengerPrice),
-              0,
-            ) / group.length,
-          ),
-          totalSavings: breakdowns.reduce(
-            (sum, b) => sum + (routePrice - b.passengerPrice),
-            0,
-          ),
+          savingsPerPerson: 0,
+          totalSavings: 0,
         });
       }
     }
