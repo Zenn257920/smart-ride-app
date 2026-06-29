@@ -1,8 +1,6 @@
-
 @import "./font.css";
 
 :root {
-
   --green: #1d9e75;
   --green-light: #e1f5ee;
   --green-dark: #085041;
@@ -10,7 +8,7 @@
   --amber-light: #faeeda;
   --gray: #5f5e5a;
   --gray-light: #f1efe8;
-  
+
   --bg-primary: #f8f9f4;
   --bg-card: rgba(0, 0, 0, 0.03);
   --border-subtle: rgba(0, 0, 0, 0.08);
@@ -22,7 +20,6 @@
   --font-heading: "MiSans Latin", "MiSans Myanmar", "Syne", sans-serif;
   --font-body: "MiSans Latin", "MiSans Myanmar", "Inter", sans-serif;
 }
-
 
 [data-theme="dark"] {
   --bg-primary: #0f1117;
@@ -130,7 +127,7 @@
 }
 
 [data-theme="dark"] .nav-link:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: #4aeaaf;
 }
 
 [data-theme="dark"] .step-card,
@@ -187,7 +184,6 @@
   border-color: var(--green);
 }
 
-
 @media (max-width: 768px) {
   [data-theme="dark"] .nav-links {
     background: rgba(15, 17, 23, 0.97);
@@ -195,11 +191,10 @@
   }
 
   [data-theme="dark"] .nav-links .nav-link:hover {
-    background: rgba(29, 158, 117, 0.1);
+    background: #4aeaaf;
     color: var(--green);
   }
 }
-
 
 .theme-toggle {
   width: 36px;
@@ -221,7 +216,6 @@
   background: rgba(29, 158, 117, 0.08);
   transform: rotate(20deg) scale(1.1);
 }
-
 
 *,
 *::before,
@@ -250,7 +244,6 @@ body {
   background: rgba(29, 158, 117, 0.2);
   color: var(--text-primary);
 }
-
 
 .bg-grid {
   position: fixed;
@@ -318,7 +311,6 @@ body {
   }
 }
 
-
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -355,7 +347,6 @@ body {
   animation-delay: 0.5s;
 }
 
-
 @keyframes pulse {
   0%,
   100% {
@@ -377,14 +368,13 @@ body {
   animation: pulse 2s ease-in-out infinite;
 }
 
-
 .nav-wrapper {
   position: sticky;
   top: 0;
   z-index: 50;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  background: rgba(248, 249, 244, 0.85);
+  background: rgba(249, 247, 244, 0.85);
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -460,7 +450,7 @@ body {
 
 .nav-link:hover {
   color: var(--text-primary);
-  background: var(--bg-card);
+  background: #4aeaaf;
 }
 
 .nav-cta {
@@ -475,7 +465,6 @@ body {
   background: var(--green-dark);
   transform: translateY(-1px);
 }
-
 
 .glass-card {
   position: relative;
@@ -495,7 +484,6 @@ body {
   box-shadow: 0 12px 40px rgba(29, 158, 117, 0.08);
 }
 
-
 .badge {
   display: inline-flex;
   align-items: center;
@@ -508,9 +496,8 @@ body {
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: white;
 }
-
 
 .btn-primary {
   background: var(--green);
@@ -579,7 +566,6 @@ body {
   background: rgba(29, 158, 117, 0.05);
 }
 
-
 .input-group {
   margin-bottom: 1.25rem;
 }
@@ -610,7 +596,6 @@ body {
   box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.1);
 }
 
-
 .map-container {
   width: 100%;
   height: 400px;
@@ -621,7 +606,6 @@ body {
   position: relative;
   z-index: 1;
 }
-
 
 .map-container .leaflet-control-container .leaflet-top,
 .map-container .leaflet-control-container .leaflet-bottom {
@@ -650,7 +634,6 @@ body {
   font-size: 1.5rem;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
-
 
 .smartride-marker {
   position: relative;
@@ -702,7 +685,6 @@ body {
   white-space: nowrap;
 }
 
-
 .marker-pulse {
   position: absolute;
   width: 100%;
@@ -732,7 +714,6 @@ body {
   }
 }
 
-
 .input-field.map-select-active {
   border-color: var(--green) !important;
   background: rgba(29, 158, 117, 0.06) !important;
@@ -757,7 +738,6 @@ body {
   }
 }
 
-
 .map-click-hint {
   margin-bottom: 0.75rem;
   padding: 0.6rem 1rem;
@@ -778,7 +758,6 @@ body {
   opacity: 1;
   transform: translateY(0);
 }
-
 
 .ride-map-section {
   margin-bottom: 2rem;
@@ -838,7 +817,6 @@ body {
   }
 }
 
-
 .stats-row {
   background: #fff;
   border-top: 1px solid #f0f0e8;
@@ -867,7 +845,6 @@ body {
   color: var(--muted);
   margin-top: 4px;
 }
-
 
 .section {
   padding: 5rem 5%;
@@ -902,7 +879,6 @@ body {
   max-width: 500px;
   margin-bottom: 3rem;
 }
-
 
 .steps-grid {
   display: grid;
@@ -968,7 +944,6 @@ body {
   line-height: 1.6;
   color: var(--muted);
 }
-
 
 .pricing-grid {
   display: grid;
@@ -1044,7 +1019,6 @@ body {
   line-height: 1.5;
 }
 
-
 .benefits-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1100,7 +1074,6 @@ body {
   color: var(--muted);
   line-height: 1.5;
 }
-
 
 .modal {
   display: none;
@@ -1234,7 +1207,6 @@ body {
   margin-bottom: 0.5rem;
 }
 
-
 footer {
   background: #2c2c2a;
   padding: 3rem 5%;
@@ -1287,7 +1259,6 @@ footer ul a:hover {
   font-size: 0.75rem;
 }
 
-
 .container {
   max-width: 1280px;
   margin: 0 auto;
@@ -1295,7 +1266,6 @@ footer ul a:hover {
   position: relative;
   z-index: 1;
 }
-
 
 .mobile-menu-btn {
   display: none;
@@ -1342,7 +1312,6 @@ footer ul a:hover {
   transform: translateY(-7px) rotate(-45deg);
 }
 
-
 .nav-overlay {
   display: none;
   position: fixed;
@@ -1358,7 +1327,6 @@ footer ul a:hover {
   display: block;
   opacity: 1;
 }
-
 
 @media (max-width: 1024px) {
   .steps-grid,
@@ -1465,7 +1433,6 @@ footer ul a:hover {
     padding: 0 1rem;
   }
 
-
   .container > div[style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
@@ -1499,8 +1466,6 @@ footer ul a:hover {
     height: 250px;
   }
 }
-
-
 
 #splash-screen {
   position: fixed;
@@ -1590,7 +1555,6 @@ footer ul a:hover {
   }
 }
 
-
 .leaflet-routing-container {
   background: rgba(255, 255, 255, 0.92) !important;
   backdrop-filter: blur(12px) !important;
@@ -1624,7 +1588,6 @@ footer ul a:hover {
   margin: 0.5rem 0 0.25rem !important;
 }
 
-
 .leaflet-routing-alt {
   padding: 0 !important;
   margin: 0 !important;
@@ -1636,7 +1599,6 @@ footer ul a:hover {
   font-weight: 700 !important;
   color: var(--green) !important;
 }
-
 
 .leaflet-routing-alt table {
   width: 100% !important;
@@ -1664,17 +1626,14 @@ footer ul a:hover {
   line-height: 1.4 !important;
 }
 
-
 .leaflet-routing-alt table td:first-child {
   width: 28px !important;
   text-align: center !important;
 }
 
-
 .leaflet-routing-alt table td:nth-child(2) {
   font-weight: 500 !important;
 }
-
 
 .leaflet-routing-alt table td:last-child {
   text-align: right !important;
@@ -1684,14 +1643,12 @@ footer ul a:hover {
   white-space: nowrap !important;
 }
 
-
 .leaflet-routing-icon {
   background-size: contain !important;
   width: 18px !important;
   height: 18px !important;
   opacity: 0.7 !important;
 }
-
 
 .leaflet-routing-container::-webkit-scrollbar {
   width: 4px;
@@ -1709,7 +1666,6 @@ footer ul a:hover {
 .leaflet-routing-container::-webkit-scrollbar-thumb:hover {
   background: rgba(29, 158, 117, 0.4);
 }
-
 
 .leaflet-routing-collapse-btn {
   border-radius: 8px !important;
@@ -1731,7 +1687,6 @@ footer ul a:hover {
   background: var(--green-dark) !important;
   transform: scale(1.05) !important;
 }
-
 
 [data-theme="dark"] .leaflet-routing-container {
   background: rgba(30, 32, 40, 0.92) !important;
@@ -1762,7 +1717,6 @@ footer ul a:hover {
 [data-theme="dark"] .leaflet-routing-container::-webkit-scrollbar-thumb {
   background: rgba(29, 158, 117, 0.3);
 }
-
 
 @media (max-width: 768px) {
   .leaflet-routing-container {

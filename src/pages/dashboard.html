@@ -5,6 +5,100 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard - Innovix SharedRide</title>
     <link rel="stylesheet" href="/src/style.css" />
+    <style>
+      /* ── Dashboard responsive overrides ── */
+      .dashboard-wrap {
+        padding: 2rem;
+      }
+
+      .user-info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      .user-balance-amount {
+        font-family: var(--font-heading);
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--green);
+      }
+
+      .action-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .stats-mini-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+
+      @media (min-width: 640px) {
+        .action-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (min-width: 900px) {
+        .action-grid {
+          grid-template-columns: repeat(4, 1fr);
+        }
+      }
+
+      @media (max-width: 480px) {
+        .dashboard-wrap {
+          padding: 1rem;
+        }
+
+        .action-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 0.75rem;
+        }
+
+        .action-card {
+          padding: 1.25rem 0.75rem !important;
+        }
+
+        .action-card-icon {
+          width: 48px !important;
+          height: 48px !important;
+        }
+
+        .action-card h3 {
+          font-size: 0.85rem !important;
+        }
+
+        .action-card p {
+          font-size: 0.75rem !important;
+        }
+
+        .user-info-row {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .user-balance-block {
+          text-align: left !important;
+          width: 100%;
+          padding-top: 0.75rem;
+          border-top: 1px solid var(--border-subtle);
+        }
+
+        .user-balance-amount {
+          font-size: 1.6rem;
+        }
+
+        #userName {
+          font-size: 1.2rem !important;
+        }
+      }
+    </style>
     
     <script>
       (function () {
@@ -56,21 +150,13 @@
         </button>
       </div>
     </nav>
-    <div class="container" style="padding: 2rem">
+    <div class="container dashboard-wrap">
       <div
         id="userInfo"
         class="glass-card animate-fade-in-up"
         style="margin-bottom: 2rem; padding: 1.5rem"
       >
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-          "
-        >
+        <div class="user-info-row">
           <div>
             <h2
               id="userName"
@@ -84,37 +170,20 @@
             </h2>
             <p id="userEmail" style="color: var(--gray)"></p>
           </div>
-          <div style="text-align: right">
+          <div class="user-balance-block" style="text-align: right">
             <div style="font-size: 0.75rem; color: var(--gray)">Remain Balance</div>
-            <div
-              style="
-                font-family: var(--font-heading);
-                font-size: 2rem;
-                font-weight: 800;
-                color: var(--green);
-              "
-              id="userBalance"
-            >
-              0
-            </div>
+            <div class="user-balance-amount" id="userBalance">0</div>
             <div style="font-size: 0.7rem; color: var(--gray)">Kyats</div>
           </div>
         </div>
       </div>
-      <div
-        style="
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 1.5rem;
-          margin-bottom: 2rem;
-        "
-      >
+      <div class="action-grid">
         <a
           href="find-ride.html"
-          class="glass-card"
+          class="glass-card action-card"
           style="text-decoration: none; text-align: center; padding: 2rem"
         >
-          <div style="font-size: 3rem; margin-bottom: 1rem"><i data-lucide="car" style="width:80px;height:80px;"></i></div>
+          <div style="margin-bottom: 1rem"><i data-lucide="car" class="action-card-icon" style="width:80px;height:80px;"></i></div>
           <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
             Find Ride
           </h3>
@@ -125,10 +194,10 @@
 
         <a
           href="wallet.html"
-          class="glass-card"
+          class="glass-card action-card"
           style="text-decoration: none; text-align: center; padding: 2rem"
         >
-          <div style="font-size: 3rem; margin-bottom: 1rem"><i data-lucide="wallet" style="width:80px;height:80px;"></i></div>
+          <div style="margin-bottom: 1rem"><i data-lucide="wallet" class="action-card-icon" style="width:80px;height:80px;"></i></div>
           <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
             Wallet
           </h3>
@@ -138,10 +207,10 @@
         </a>
         <a
           href="my-rides.html"
-          class="glass-card"
+          class="glass-card action-card"
           style="text-decoration: none; text-align: center; padding: 2rem"
         >
-          <div style="font-size: 3rem; margin-bottom: 1rem"><i data-lucide="notepad-text" style="width:80px;height:80px;"></i></div>
+          <div style="margin-bottom: 1rem"><i data-lucide="notepad-text" class="action-card-icon" style="width:80px;height:80px;"></i></div>
           <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
             Records
           </h3>
@@ -151,10 +220,10 @@
         </a>
         <a
           href="ride-requests.html"
-          class="glass-card"
+          class="glass-card action-card"
           style="text-decoration: none; text-align: center; padding: 2rem"
         >
-          <div style="font-size: 3rem; margin-bottom: 1rem"><i data-lucide="map-pinned" style="width:80px;height:80px;"></i></div>
+          <div style="margin-bottom: 1rem"><i data-lucide="map-pinned" class="action-card-icon" style="width:80px;height:80px;"></i></div>
           <h3 style="color: var(--green-dark); margin-bottom: 0.5rem">
             Request Ride
           </h3>
@@ -173,13 +242,7 @@
         >
           Record
         </h3>
-        <div
-          style="
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-          "
-        >
+        <div class="stats-mini-grid">
           <div>
             <div style="font-size: 0.75rem; color: var(--gray)">
               Total Ride
