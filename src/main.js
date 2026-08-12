@@ -1,19 +1,18 @@
-// Main entry point
 import { isLoggedIn, getCurrentUser } from "./js/auth.js";
 import { toggleTheme } from "./js/theme.js";
-// Update navigation based on login state
+
 function updateNavigation() {
   const navLinks = document.querySelector(".nav-links");
   if (!navLinks) return;
   if (isLoggedIn()) {
     const user = getCurrentUser();
-    // Change login link to dashboard
+
     const loginLink = navLinks.querySelector(".nav-cta");
     if (loginLink) {
       loginLink.textContent = "Dashboard";
       loginLink.href = "/src/pages/dashboard.html";
     }
-    // Add logout option if needed
+
     const existingLogout = document.querySelector(".logout-btn");
     if (!existingLogout) {
       const logoutBtn = document.createElement("a");
@@ -30,16 +29,14 @@ function updateNavigation() {
     }
   }
 }
-// Initialize when DOM is ready
+
 document.addEventListener("DOMContentLoaded", () => {
   updateNavigation();
 
-  // Theme toggle
   document
     .getElementById("themeToggleBtn")
     ?.addEventListener("click", toggleTheme);
 
-  // Mobile hamburger menu toggle
   const mobileMenuBtn = document.getElementById("mobileMenuBtn");
   const navLinks = document.querySelector(".nav-links");
   if (mobileMenuBtn && navLinks) {
@@ -47,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
       navLinks.classList.toggle("active");
       mobileMenuBtn.classList.toggle("active");
     });
-    // Close menu when a nav link is clickedddd
+
     navLinks.querySelectorAll("a").forEach((link) => {
       link.addEventListener("click", () => {
         navLinks.classList.remove("active");
@@ -56,7 +53,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Add animation classes to elements
   const animatedElements = document.querySelectorAll(
     ".step-card, .benefit-item, .price-card",
   );
@@ -67,7 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
-// Export to use other modules
+
 export { updateNavigation };
 
 window.addEventListener("load", () => {
