@@ -176,7 +176,17 @@ function WalletInner() {
                       aria-pressed={topupMethod === m}
                       className={`rounded-[12px] border-2 p-3 text-left ${topupMethod === m ? "border-forest bg-mint-soft dark:border-mint dark:bg-forest-soft" : "border-forest/15 dark:border-mint/15"}`}
                     >
-                      <span className="block text-sm font-medium">{m === "KBZPay" ? "💙 KBZPay" : "💛 WavePay"}</span>
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        <span
+                          aria-hidden
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs font-bold ${
+                            m === "KBZPay" ? "bg-[#1d4ed8] text-white" : "bg-[#ffc800] text-[#3d2c00]"
+                          }`}
+                        >
+                          {m === "KBZPay" ? "K" : "W"}
+                        </span>
+                        {m}
+                      </span>
                       <span className="mt-1 block text-xs text-forest/60 dark:text-mint/60">Mobile payment</span>
                     </button>
                   ))}

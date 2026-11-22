@@ -100,18 +100,53 @@ function FindRideInner() {
   async function search(e?: React.FormEvent) {
     e?.preventDefault();
     setError("");
-    if (!start || !end) {
-      setError("Please pick both a start and a destination (search or tap the map).");
+    setLoading(true);
+    let s = start;
+    let en = end;
+    // If the user typed a place name but never tapped a suggestion, resolve
+    // the text to coordinates instead of failing outright.
+    if (!s && startLabel.trim()) {
+      try {
+        const hits = await geocode(startLabel.trim());
+        if (hits[0]) {
+          s = { lat: hits[0].lat, lng: hits[0].lng };
+          setStart(s);
+          setStartLabel(hits[0].label);
+        }
+      } catch {
+        // No match — handled by the check below.
+      }
+    }
+    if (!en && endLabel.trim()) {
+      try {
+        const hits = await geocode(endLabel.trim());
+        if (hits[0]) {
+          en = { lat: hits[0].lat, lng: hits[0].lng };
+          setEnd(en);
+          setEndLabel(hits[0].label);
+        }
+      } catch {
+        // No match — handled by the check below.
+      }
+    }
+    if (!s || !en) {
+      const missing = [
+        ...(!s ? [`start location${startLabel.trim() ? ` ("${startLabel.trim()}")` : ""}`] : []),
+        ...(!en ? [`destination${endLabel.trim() ? ` ("${endLabel.trim()}")` : ""}`] : []),
+      ];
+      setError(
+        `Could not find ${missing.join(" and ")} — type a place and tap a suggestion, or pick a point on the map.`,
+      );
+      setLoading(false);
       return;
     }
-    setLoading(true);
     setSearched(true);
     try {
       const q = new URLSearchParams({
-        startLat: String(start.lat),
-        startLng: String(start.lng),
-        endLat: String(end.lat),
-        endLng: String(end.lng),
+        startLat: String(s.lat),
+        startLng: String(s.lng),
+        endLat: String(en.lat),
+        endLng: String(en.lng),
         departureTime: new Date(departureTime).toISOString(),
       });
       const data = await apiFetch<unknown>(`/api/rides/search?${q.toString()}`);
@@ -195,6 +230,9 @@ function FindRideInner() {
           onChange={(v) => { setEndLabel(v); setEnd(null); }}
           onSelect={(h: GeocodeHit) => { setEndLabel(h.label); setEnd({ lat: h.lat, lng: h.lng }); }}
         />
+        <p className="text-xs leading-relaxed text-forest/60 dark:text-mint/60 md:col-span-2">
+          Type a place, then tap a suggestion — or tap the map to pick a point.
+        </p>
         <div>
           <label htmlFor="departureTime" className="label">Departure time</label>
           <input id="departureTime" className="input" type="datetime-local" value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} required />
