@@ -98,6 +98,11 @@ function RideRequestsInner() {
       setCreateError("Please pick both a start and a destination.");
       return;
     }
+    // A6: departure must be in the future (server enforces this too).
+    if (Number.isNaN(new Date(departureTime).getTime()) || new Date(departureTime) <= new Date()) {
+      setCreateError("Departure time must be in the future.");
+      return;
+    }
     setCreating(true);
     try {
       await apiFetch("/api/ride-requests", {
@@ -230,7 +235,7 @@ function RideRequestsInner() {
             <LocationField id="reqEndLocation" label="Destination" value={endLabel} onChange={(v) => { setEndLabel(v); setEnd(null); }} onSelect={(h: GeocodeHit) => { setEndLabel(h.label); setEnd({ lat: h.lat, lng: h.lng }); }} />
             <div>
               <label htmlFor="reqDepartureTime" className="label">Departure time</label>
-              <input id="reqDepartureTime" className="input" type="datetime-local" value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} required />
+              <input id="reqDepartureTime" className="input" type="datetime-local" min={localInputValue(new Date())} value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} required />
             </div>
             <p className="rounded-[12px] bg-mint-soft px-3 py-2 text-sm dark:bg-forest-soft">
               Creating a request takes a prepayment from your wallet. Balance: {balance != null ? fmtMMK(balance) : "—"}

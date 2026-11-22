@@ -30,7 +30,15 @@ export const user = pgTable("user", {
   user_type: text("user_type").notNull().default("passenger"),
   // D2: admin flag. Server routes must check this row (see requireAdmin
   // in src/lib/api-helpers) — never trust a client-sent value.
-  isAdmin: boolean("is_admin").notNull().default(false),
+  // NOTE: the property name MUST be `is_admin` (snake_case, like the
+  // sibling `user_type` key), not camelCase `isAdmin`: Better Auth's
+  // additionalFields key is `is_admin` (see src/lib/auth.ts) and its
+  // drizzle-adapter schema check looks the field up by that name in
+  // this table object. With `isAdmin` here the check failed with
+  // "Missing columns: user.is_admin" and EVERY authed route 500'd in
+  // local dev (found 2026-11-23 while smoke-testing Batch 5c — the
+  // failure predates this batch; the DB column was always `is_admin`).
+  is_admin: boolean("is_admin").notNull().default(false),
 });
 
 export const session = pgTable("session", {
@@ -111,6 +119,16 @@ export const rides = pgTable("rides", {
   carModel: text("car_model"),
   carPlate: text("car_plate"),
   status: text("status").notNull().default("open"),
+  // D4 — live trip tracking. tripStatus is the in-trip state
+  // (scheduled -> started -> arrived); status above still says
+  // whether the ride exists (open/full/completed/cancelled).
+  // driverLat/driverLng/driverLocationAt hold the driver's LATEST
+  // position while a trip is started (posted ~every 10s) — no
+  // history table: the live view only ever needs the latest point.
+  tripStatus: text("trip_status").notNull().default("scheduled"),
+  driverLat: doublePrecision("driver_lat"),
+  driverLng: doublePrecision("driver_lng"),
+  driverLocationAt: timestamp("driver_location_at"),
   routeCoordinates: jsonb("route_coordinates").$type<Array<[number, number]>>(),
   price: integer("price").notNull(),
   distanceKm: doublePrecision("distance_km"),

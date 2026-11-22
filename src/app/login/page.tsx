@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "@/lib/auth-client";
 import { apiFetch } from "@/lib/api";
+import { normalizePhone } from "@/lib/phone";
 
 function looksLikePhone(id: string): boolean {
   const t = id.trim();
@@ -23,10 +24,14 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      if (looksLikePhone(identifier)) {
+      // B5: normalise the phone first (spaces/dashes stripped, +95 ->
+      // 0) so a number typed differently from registration still logs
+      // in — the check and the lookup both use the normalised form.
+      const normalized = normalizePhone(identifier);
+      if (looksLikePhone(normalized)) {
         await apiFetch("/api/auth/phone-login", {
           method: "POST",
-          body: JSON.stringify({ phone: identifier.trim(), password }),
+          body: JSON.stringify({ phone: normalized, password }),
         });
         // phone-login returns the Better Auth sign-in response without a
         // user_type, so check driver status directly to pick the landing page.
@@ -40,12 +45,12 @@ export default function LoginPage() {
         return;
       }
       const res = await signIn.email({ email: identifier.trim(), password });
-      if (res?.error) throw new Error(res.error.message || "Login failed. Check your email and password.");
+      if (res?.error) throw new Error(res.error.message || "အီးမေးလ်နှင့် စကားဝှက်ကို စစ်ပြီး ထပ်ကြိုးစားကြည့်ပါ။");
       const user = (res?.data as { user?: { user_type?: string } } | undefined)?.user;
       router.push(user?.user_type === "driver" ? "/driver/dashboard" : "/dashboard");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
+      setError(err instanceof Error ? err.message : "အကောင့်ဝင်လို့ မရပါ။ ထပ်ကြိုးစားကြည့်ပါ။");
     } finally {
       setLoading(false);
     }
@@ -54,22 +59,22 @@ export default function LoginPage() {
   return (
     <div className="page-wrap max-w-md">
       <div className="card">
-        <h1 className="page-title">Login</h1>
-        <p className="section-sub">Welcome back — sign in with your email or phone number.</p>
+        <h1 className="page-title">အကောင့်ဝင်ပါ</h1>
+        <p className="section-sub">ပြန်လည်ကြိုဆိုပါတယ် — အီးမေးလ် သို့မဟုတ် ဖုန်းနံပါတ်ဖြင့် ဝင်ရောက်ပါ။</p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div>
-            <label htmlFor="identifier" className="label">Email or phone</label>
-            <input id="identifier" className="input" type="text" inputMode="email" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="you@example.com or 09xxxxxxxxx" required />
+            <label htmlFor="identifier" className="label">အီးမေးလ် သို့မဟုတ် ဖုန်းနံပါတ်</label>
+            <input id="identifier" className="input" type="text" inputMode="email" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="you@example.com သို့မဟုတ် 09xxxxxxxxx" required />
           </div>
           <div>
-            <label htmlFor="password" className="label">Password</label>
-            <input id="password" className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" required />
+            <label htmlFor="password" className="label">စကားဝှက်</label>
+            <input id="password" className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="သင့်စကားဝှက်" required />
           </div>
           {error ? <p role="alert" className="rounded-[12px] bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</p> : null}
-          <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? "Signing in…" : "Login"}</button>
+          <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? "ဝင်ရောက်နေသည်…" : "အကောင့်ဝင်မယ်"}</button>
         </form>
         <p className="mt-4 text-center text-sm text-forest/70 dark:text-mint/70">
-          No account yet? <Link href="/register" className="font-medium text-forest underline dark:text-mint">Register</Link>
+          အကောင့် မရှိသေးဘူးလား? <Link href="/register" className="font-medium text-forest underline dark:text-mint">စာရင်းသွင်းပါ</Link>
         </p>
       </div>
     </div>

@@ -10,6 +10,10 @@
  * = fareShare + appFee. driverPayment = fareShare (first rider: the
  * full price).
  *
+ * B6: those amounts are PER SEAT. Booking N seats charges N x the
+ * per-seat price (see multiSeatAmounts in src/lib/money), and the
+ * modal shows exactly the scaled total (B3).
+ *
  * The rider's own pickup/dropoff coords may be sent (the client sends
  * the coords it searched with) so the segment split uses the same inputs
  * as search. Without them the rider is treated as riding the driver's
@@ -31,16 +35,18 @@
  *
  * A3 race guards (Neon HTTP driver has no transactions):
  * - The seat is taken by a GUARDED update:
- *     UPDATE rides SET seats_available = seats_available - 1
- *     WHERE id = $1 AND seats_available > 0
+ *     UPDATE rides SET seats_available = seats_available - N
+ *     WHERE id = $1 AND seats_available >= N
  *   The affected-row count decides success — two simultaneous bookings
  *   cannot both take the last seat, and the count can never go below
  *   zero. The old check-then-write (read seats, compute, write) is gone.
  *   The hold happens AFTER the balance check and BEFORE any money
- *   moves; if the money/booking steps then fail, the seat is released
- *   again (compensating +1). A crash between hold and booking insert
- *   can still strand one held seat — the known residual risk of having
- *   no transactions; it only ever costs a seat, never money.
+ *   moves; if the money/booking steps then fail, the seats are released
+ *   again (compensating +N). A crash between hold and booking insert
+ *   can still strand held seats — the known residual risk of having
+ *   no transactions; it only ever costs seats, never money.
+ * - B6: a booking may take N > 1 seats (price = per-seat price x N);
+ *   the guard decrements by N, and the release adds N back.
  * - A driver cannot book their own ride (409).
  * - A passenger with a confirmed booking on this ride gets 409. The
  *   route pre-checks, and the partial unique index
@@ -54,7 +60,7 @@
  *   rather than Dates — the client already tolerates both.
  */
 import { NextResponse } from "next/server";
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { bookings, rides, user } from "@/db/schema";
@@ -70,11 +76,12 @@ import { dbIdempotencyStore } from "@/lib/idempotency-db";
 import { routeMatcher } from "@/lib/matching";
 import {
   fairSplitRefundDeltas,
+  multiSeatAmounts,
   repricedBookingAmounts,
   splitRefund,
 } from "@/lib/money";
 import {
-  guardedDecrement,
+  guardedDecrementN,
   isDuplicateConfirmedBooking,
   isOwnRide,
 } from "@/lib/race-guards";
@@ -83,6 +90,11 @@ import { notifyUser } from "@/lib/notify";
 
 const bookSchema = z.object({
   paymentMethod: z.enum(["ewallet", "cash"]),
+  // B6: how many seats this booking takes (1..4). The price is the
+  // per-seat segment price x seats; the guarded seat decrement takes
+  // exactly this many seats. Defaults to 1 — every pre-B6 client
+  // books exactly one seat.
+  seats: z.number().int().min(1).max(4).optional(),
   // The booking rider's own pickup/dropoff — the coords the search that
   // produced this ride used. All four or none; partial coords are
   // ignored and the rider is priced as a full-route rider.
@@ -131,6 +143,8 @@ async function doBook(
     body: { error: message },
   });
   const { paymentMethod } = input;
+  // B6: seat count for this booking (1 by default).
+  const seats = input.seats ?? 1;
   const isCash = paymentMethod === "cash";
   // Rider coords only count when all four are present; otherwise the
   // rider is priced as riding the driver's full route.
@@ -152,13 +166,13 @@ async function doBook(
     .from(rides)
     .where(eq(rides.id, rideId))
     .limit(1);
-  if (!ride) return err("Ride not found", 404);
+  if (!ride) return err("ခရီးစဉ် မတွေ့ပါ", 404);
   if (ride.status !== "open") {
-    return err("This ride is no longer open for booking", 409);
+    return err("ဤခရီးစဉ်ကို ဘွတ်ကင်လုပ်လို့ မရတော့ပါ", 409);
   }
   // A3: a driver cannot book their own ride.
   if (isOwnRide(ride.driverId, userId)) {
-    return err("You cannot book your own ride", 409);
+    return err("ကိုယ့်ခရီးစဉ်ကို ကိုယ်တိုင် ဘွတ်ကင်လုပ်၍ မရပါ", 409);
   }
 
   const confirmed = await db
@@ -167,15 +181,23 @@ async function doBook(
     .where(
       and(eq(bookings.rideId, rideId), eq(bookings.status, "confirmed")),
     );
-  const bookedSeats = confirmed.length;
+  // B6: seats already taken — sum the seat counts, not the booking
+  // rows, since one booking may hold several seats.
+  const bookedSeats = confirmed.reduce(
+    (sum, b) => sum + (b.seats ?? 1),
+    0,
+  );
   // A3: one confirmed booking per passenger per ride (the partial
   // unique index is the backstop; this pre-check gives the clean error).
   if (isDuplicateConfirmedBooking(confirmed, rideId, userId)) {
-    return err("You already have a confirmed booking on this ride", 409);
+    return err("ဤခရီးစဉ်အတွက် အတည်ပြုပြီး ဘွတ်ကင်တစ်ခု ရှိနေပါသည်", 409);
   }
   // Friendly early error; the guarded UPDATE below is the real gate —
   // the count may have changed since this read.
-  if (bookedSeats >= ride.seatsTotal || guardedDecrement(ride.seatsAvailable) === null) {
+  if (
+    bookedSeats + seats > ride.seatsTotal ||
+    guardedDecrementN(ride.seatsAvailable, seats) === null
+  ) {
     return err("ဤခရီးစဉ်တွင် နေရာလွတ် မရှိတော့ပါ။", 409);
   }
 
@@ -214,39 +236,50 @@ async function doBook(
     },
   });
   const isFirstRider = priced.isFirstRider;
-  const { fareShare, appCommissionPerPassenger: appFee, passengerPrice: totalPrice } =
-    priced.newRider;
-  const driverPayment = fareShare;
+  // B6: the segment price is PER SEAT — booking N seats charges N x
+  // the per-seat fare/fee/total, and the driver is credited the
+  // scaled fare. The modal shows exactly these scaled amounts (B3).
+  const amounts = multiSeatAmounts(
+    {
+      fareShare: priced.newRider.fareShare,
+      appFee: priced.newRider.appCommissionPerPassenger,
+      totalPrice: priced.newRider.passengerPrice,
+      driverPayment: priced.newRider.fareShare,
+    },
+    seats,
+  );
+  const { fareShare, appFee, totalPrice } = amounts;
+  const driverPayment = amounts.driverPayment;
 
   if (!isCash) {
     const balance = await getBalance(userId);
-    if (balance < totalPrice) return err("Insufficient Balance", 409);
+    if (balance < totalPrice) return err("လက်ကျန်ငွေ မလုံလောက်ပါ", 409);
   }
 
-  // A3: take the seat with the guarded UPDATE — the affected-row count
+  // A3: take the seats with the guarded UPDATE — the affected-row count
   // is the atomic gate. Zero rows means another booking took the last
-  // seat after our pre-check above.
+  // seats after our pre-check above.
   const [held] = await db
     .update(rides)
     .set({
-      seatsAvailable: sql`${rides.seatsAvailable} - 1`,
-      status: sql<string>`CASE WHEN ${rides.seatsAvailable} - 1 <= 0 THEN 'full' ELSE ${rides.status} END`,
+      seatsAvailable: sql`${rides.seatsAvailable} - ${seats}`,
+      status: sql<string>`CASE WHEN ${rides.seatsAvailable} - ${seats} <= 0 THEN 'full' ELSE ${rides.status} END`,
     })
-    .where(and(eq(rides.id, rideId), gt(rides.seatsAvailable, 0)))
+    .where(and(eq(rides.id, rideId), gte(rides.seatsAvailable, seats)))
     .returning();
   if (!held) {
     return err("ဤခရီးစဉ်တွင် နေရာလွတ် မရှိတော့ပါ။", 409);
   }
 
-  // The seat is held from here on. If the money/booking steps below
-  // fail, release it again — otherwise a failed booking would strand
-  // a seat. (Notifications/refunds happen after the booking exists,
-  // so a failure there must NOT release the seat.)
+  // The seats are held from here on. If the money/booking steps below
+  // fail, release them again — otherwise a failed booking would strand
+  // seats. (Notifications/refunds happen after the booking exists,
+  // so a failure there must NOT release the seats.)
   const releaseSeat = () =>
     db
       .update(rides)
       .set({
-        seatsAvailable: sql`${rides.seatsAvailable} + 1`,
+        seatsAvailable: sql`${rides.seatsAvailable} + ${seats}`,
         status: "open",
       })
       .where(eq(rides.id, rideId));
@@ -277,7 +310,7 @@ async function doBook(
       .values({
         rideId,
         passengerId: userId,
-        seats: 1,
+        seats,
         fareShare,
         appFee,
         totalPrice,
@@ -291,7 +324,7 @@ async function doBook(
     if (isUniqueViolation(e)) {
       // Raced past the pre-check: the partial unique index caught the
       // duplicate confirmed booking.
-      return err("You already have a confirmed booking on this ride", 409);
+      return err("ဤခရီးစဉ်အတွက် အတည်ပြုပြီး ဘွတ်ကင်တစ်ခု ရှိနေပါသည်", 409);
     }
     throw e;
   }
@@ -303,14 +336,15 @@ async function doBook(
     .where(eq(user.id, userId))
     .limit(1);
   const passengerName = passenger?.name ?? "Passenger";
+  const seatText = seats > 1 ? ` (${seats} seats)` : "";
   await notifyUser(
     ride.driverId,
-    `${passengerName} booked your ride "${ride.startLabel} → ${ride.endLabel}"`,
+    `${passengerName} booked your ride "${ride.startLabel} → ${ride.endLabel}"${seatText}`,
     "booking",
   );
   await notifyUser(
     userId,
-    `Your booking for "${ride.startLabel} → ${ride.endLabel}" is confirmed. Total ${totalPrice.toLocaleString()} MMK${isCash ? " (pay cash to the driver)" : ""}.`,
+    `Your booking for "${ride.startLabel} → ${ride.endLabel}" is confirmed. ${seats > 1 ? `${seats} seats. ` : ""}Total ${totalPrice.toLocaleString()} MMK${isCash ? " (pay cash to the driver)" : ""}.`,
     "booking",
   );
 
@@ -326,17 +360,24 @@ async function doBook(
       const oldBooking = confirmed[i];
       const newBreakdown = priced.breakdowns[i];
       if (!newBreakdown) continue;
+      // B6: the breakdown is PER SEAT — an earlier booking holding
+      // several seats is repriced to its seat count x the new per-seat
+      // breakdown, never down to a single seat's price.
+      const newAmounts = multiSeatAmounts(
+        repricedBookingAmounts(newBreakdown),
+        oldBooking.seats ?? 1,
+      );
       const split = splitRefund(
         oldBooking.fareShare,
         oldBooking.appFee,
-        newBreakdown.fareShare,
-        newBreakdown.appCommissionPerPassenger,
+        newAmounts.fareShare,
+        newAmounts.appFee,
       );
       if (split.refundTotal <= 0) continue;
 
       await db
         .update(bookings)
-        .set(repricedBookingAmounts(newBreakdown))
+        .set(newAmounts)
         .where(eq(bookings.id, oldBooking.id));
 
       // Only e-wallet riders get money back; cash riders keep the new
@@ -354,14 +395,14 @@ async function doBook(
             amount: delta.amount,
             description:
               delta.type === "refund"
-                ? `↩ ခရီးသည်အသစ် ပါဝင်လာ၍ ပြန်အမ်းငွေ ${split.refundTotal.toLocaleString()} ကျပ် (${oldBooking.totalPrice.toLocaleString()} → ${newBreakdown.passengerPrice.toLocaleString()})`
+                ? `↩ ခရီးသည်အသစ် ပါဝင်လာ၍ ပြန်အမ်းငွေ ${split.refundTotal.toLocaleString()} ကျပ် (${oldBooking.totalPrice.toLocaleString()} → ${newAmounts.totalPrice.toLocaleString()})`
                 : `↩ Since new Passenger Joined — ${split.farePortion.toLocaleString()} Kyats Refund`,
             referenceId: rideId,
           });
         }
         await notifyUser(
           oldBooking.passengerId,
-          `${passengerName} joined your ride! Your cost ${oldBooking.totalPrice.toLocaleString()} → ${newBreakdown.passengerPrice.toLocaleString()} MMK, ${split.refundTotal.toLocaleString()} MMK refunded.`,
+          `${passengerName} joined your ride! Your cost ${oldBooking.totalPrice.toLocaleString()} → ${newAmounts.totalPrice.toLocaleString()} MMK, ${split.refundTotal.toLocaleString()} MMK refunded.`,
           "refund",
         );
       }

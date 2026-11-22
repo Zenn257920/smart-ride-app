@@ -54,7 +54,7 @@ export async function requireAdmin(userId: string) {
     .from(user)
     .where(eq(user.id, userId))
     .limit(1);
-  return row?.isAdmin ? row : null;
+  return row?.is_admin ? row : null;
 }
 
 /** Parse a request body as JSON, returning null when the body is not JSON. */

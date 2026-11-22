@@ -76,10 +76,23 @@ export async function POST(
   const price = priced ? priced.price : 7500;
   const distanceKm = priced ? priced.distanceKm : 0;
 
-  await db
+  // GUARDED accept (Batch 5a follow-up to A3): the status transition is
+  // conditional — only an 'open' request becomes 'accepted', and the
+  // affected-row count decides. Two concurrent accepts both pass the
+  // status check above, but only the first UPDATE matches a row; the
+  // loser gets 0 rows and a 409, and creates no ride, no bookings, and
+  // credits the driver nothing — so the driver can never be
+  // double-credited for one request.
+  const [accepted] = await db
     .update(rideRequests)
     .set({ status: "accepted" })
-    .where(eq(rideRequests.id, requestId));
+    .where(
+      and(eq(rideRequests.id, requestId), eq(rideRequests.status, "open")),
+    )
+    .returning();
+  if (!accepted) {
+    return jsonError("Already Accepted/Canceled this request", 409);
+  }
 
   const seatsAvailable = Math.max(0, 4 - members.length);
   const [ride] = await db

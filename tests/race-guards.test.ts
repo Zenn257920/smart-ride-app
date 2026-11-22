@@ -9,11 +9,16 @@ import {
 } from "../src/lib/idempotency";
 import {
   guardedDecrement,
+  guardedDecrementN,
+  guardedRideCancelStatus,
   isDuplicateConfirmedBooking,
   isOwnRide,
   simulateGuardedDecrements,
+  simulateGuardedDecrementsN,
+  simulateGuardedRideCancels,
   withdrawWouldOverdraw,
 } from "../src/lib/race-guards";
+import { multiSeatAmounts } from "../src/lib/money";
 import { createRateLimiter, createTtlCache } from "../src/lib/rate-limit";
 
 describe("A3: guarded seat decrement can never go below zero", () => {
@@ -46,6 +51,86 @@ describe("A3: guarded seat decrement can never go below zero", () => {
     const bothPassedTheReadCheck = 1 > 0 && 1 > 0;
     expect(bothPassedTheReadCheck).toBe(true);
     expect(simulateGuardedDecrements(1, 2).succeeded).toBe(1);
+  });
+});
+
+describe("B6: guarded N-seat decrement can never go below zero", () => {
+  test("guardedDecrementN mirrors the SQL guard `WHERE seats_available >= N`", () => {
+    expect(guardedDecrementN(4, 2)).toBe(2);
+    expect(guardedDecrementN(2, 2)).toBe(0);
+    expect(guardedDecrementN(1, 2)).toBeNull();
+    expect(guardedDecrementN(0, 1)).toBeNull();
+    expect(guardedDecrementN(3, 0)).toBeNull();
+    expect(guardedDecrementN(3, -1)).toBeNull();
+    expect(guardedDecrementN(3, 1.5)).toBeNull();
+  });
+
+  test("guardedDecrement is the N = 1 case of guardedDecrementN", () => {
+    for (const seats of [0, 1, 2, 5]) {
+      expect(guardedDecrement(seats)).toBe(guardedDecrementN(seats, 1));
+    }
+  });
+
+  test("four seats, three racing 2-seat attempts: two succeed, zero left", () => {
+    const res = simulateGuardedDecrementsN(4, 2, 3);
+    expect(res).toEqual({ succeeded: 2, finalSeats: 0 });
+  });
+
+  test("three seats, two racing 2-seat attempts: one succeeds, one seat left", () => {
+    const res = simulateGuardedDecrementsN(3, 2, 2);
+    expect(res).toEqual({ succeeded: 1, finalSeats: 1 });
+  });
+
+  test("one seat left: a 2-seat attempt fails and the seat stays", () => {
+    const res = simulateGuardedDecrementsN(1, 2, 2);
+    expect(res).toEqual({ succeeded: 0, finalSeats: 1 });
+  });
+
+  test("single-seat simulation still behaves as before (N = 1)", () => {
+    expect(simulateGuardedDecrementsN(3, 1, 5)).toEqual(
+      simulateGuardedDecrements(3, 5),
+    );
+  });
+});
+
+describe("B6: multi-seat pricing is per-seat price x seats", () => {
+  // Worked example from the review: one seat is 4,950 fare + 247 fee
+  // = 5,197 total, driver credited 4,950.
+  const perSeat = {
+    fareShare: 4950,
+    appFee: 247,
+    totalPrice: 5197,
+    driverPayment: 4950,
+  };
+
+  test("2 seats cost exactly twice one seat, every amount scaled", () => {
+    expect(multiSeatAmounts(perSeat, 2)).toEqual({
+      fareShare: 9900,
+      appFee: 494,
+      totalPrice: 10394,
+      driverPayment: 9900,
+    });
+  });
+
+  test("3 seats scale the same way", () => {
+    expect(multiSeatAmounts(perSeat, 3)).toEqual({
+      fareShare: 14850,
+      appFee: 741,
+      totalPrice: 15591,
+      driverPayment: 14850,
+    });
+  });
+
+  test("1 seat is the identity — pre-B6 bookings are unchanged", () => {
+    expect(multiSeatAmounts(perSeat, 1)).toEqual(perSeat);
+  });
+
+  test("the ledger invariants hold at any seat count: total = fare + fee, driverPayment = fare", () => {
+    for (const seats of [1, 2, 3, 4]) {
+      const scaled = multiSeatAmounts(perSeat, seats);
+      expect(scaled.totalPrice).toBe(scaled.fareShare + scaled.appFee);
+      expect(scaled.driverPayment).toBe(scaled.fareShare);
+    }
   });
 });
 
@@ -284,5 +369,32 @@ describe("C3: TTL cache for geocode/route results", () => {
     expect(cache.get("a", 1000)).toBe(1);
     expect(cache.get("b", 1000)).toBe(2);
     expect(cache.get("c", 1000)).toBeUndefined();
+  });
+});
+
+describe("Batch 5c: guarded driver ride-cancel can only cancel once", () => {
+  test("open and full rides cancel; cancelled/completed never re-cancel", () => {
+    expect(guardedRideCancelStatus("open")).toBe("cancelled");
+    expect(guardedRideCancelStatus("full")).toBe("cancelled");
+    expect(guardedRideCancelStatus("cancelled")).toBeNull();
+    expect(guardedRideCancelStatus("completed")).toBeNull();
+  });
+
+  test("two racing driver cancels: exactly one succeeds, loser refunds nothing", () => {
+    expect(simulateGuardedRideCancels("open", 2)).toEqual({
+      succeeded: 1,
+      finalStatus: "cancelled",
+    });
+    expect(simulateGuardedRideCancels("full", 3)).toEqual({
+      succeeded: 1,
+      finalStatus: "cancelled",
+    });
+  });
+
+  test("a cancel racing a completion loses when the ride is already completed", () => {
+    expect(simulateGuardedRideCancels("completed", 2)).toEqual({
+      succeeded: 0,
+      finalStatus: "completed",
+    });
   });
 });

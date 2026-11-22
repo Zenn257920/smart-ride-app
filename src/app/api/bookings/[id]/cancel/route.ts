@@ -3,20 +3,21 @@
  * (database.js 1351-1438).
  *
  * Booking status -> 'cancelled' and the seat is freed. E-wallet bookings
- * refund the full totalPrice to the passenger ledger ('refund') and debit
- * the driver by driverPayment ('adjustment') — which is exactly the
- * fareShare the driver was credited at book/accept time (see
- * src/lib/money: driverPayment always equals the credited fareShare, so
- * this reverses the credit and never the app-fee part). Cash bookings
- * refund 0 — no money ever moved through the wallet, so there is nothing
- * to return.
+ * are refunded under the cancellation policy (src/lib/money, D6): full
+ * totalPrice until 3h before departure, half the fare + full app fee
+ * inside 3h; after departure no cancel at all (the ride is completed
+ * instead). The driver is debited exactly the refunded fare part —
+ * which is driverPayment (the fareShare credited at book/accept time)
+ * on a free cancel, half of it on a late passenger cancel. Cash
+ * bookings refund 0 — no money ever moved through the wallet, so there
+ * is nothing to return.
  */
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings, rides } from "@/db/schema";
 import { getSessionUser, jsonError } from "@/lib/api-helpers";
-import { cancelBookingDeltas } from "@/lib/money";
+import { cancelBookingDeltasForPolicy, cancelPolicy, passengerRefundForPolicy } from "@/lib/money";
 import { addTransaction } from "@/lib/wallet";
 import { notifyUser } from "@/lib/notify";
 
@@ -52,6 +53,17 @@ export async function POST(
     .where(eq(rides.id, booking.rideId))
     .limit(1);
 
+  // A4 + D6: cancellation policy. After departure there is no cancel at
+  // all — the ride should be completed, not cancelled. Before that,
+  // free full refund until 3h before departure, partial refund
+  // (half the fare + full app fee) inside 3h (see src/lib/money).
+  let policy: { kind: "free" | "partial" } = { kind: "free" };
+  if (ride) {
+    const gated = cancelPolicy(ride.departureTime);
+    if (!gated.allowed) return jsonError(gated.error, 409);
+    policy = { kind: gated.kind };
+  }
+
   // A3: the cancel transition is GUARDED — only a 'confirmed' booking
   // can become 'cancelled', and the affected-row count decides. Two
   // concurrent cancels of the same booking used to both pass the
@@ -84,34 +96,39 @@ export async function POST(
 
   let refunded = 0;
   if (booking.paymentMethod !== "cash") {
-    refunded = booking.totalPrice;
+    // D6: refund under the policy — full totalPrice when free, half the
+    // fare + full app fee when late. The driver is debited exactly the
+    // refunded fare part (see cancelBookingDeltasForPolicy).
+    refunded = passengerRefundForPolicy(booking, policy);
     if (ride) {
-      // Amounts come from cancelBookingDeltas (src/lib/money): passenger
-      // +totalPrice, driver -driverPayment (fare only, never the fee part).
-      for (const delta of cancelBookingDeltas(booking, ride.driverId)) {
+      for (const delta of cancelBookingDeltasForPolicy(booking, ride.driverId, policy, "passenger")) {
         await addTransaction({
           userId: delta.userId,
           type: delta.type,
           amount: delta.amount,
           description:
             delta.type === "refund"
-              ? `Ride Cancle Refund ${booking.totalPrice.toLocaleString()} Kyats`
-              : `Cancled Passenger refund ${booking.driverPayment.toLocaleString()} ကျပ်`,
+              ? policy.kind === "partial"
+                ? `Late ride cancel — partial refund ${refunded.toLocaleString()} Kyats (half fare + full app fee)`
+                : `Ride Cancle Refund ${booking.totalPrice.toLocaleString()} Kyats`
+              : policy.kind === "partial"
+                ? `Late cancel — passenger refunded ${refunded.toLocaleString()} ကျပ်, driver keeps the other half of the fare`
+                : `Cancled Passenger refund ${booking.driverPayment.toLocaleString()} ကျပ်`,
           referenceId: booking.rideId,
         });
       }
       await notifyUser(
         ride.driverId,
-        `A passenger cancelled their booking on "${ride.startLabel} → ${ride.endLabel}".`,
+        `A passenger cancelled their booking on "${ride.startLabel} → ${ride.endLabel}".${policy.kind === "partial" ? " (Late cancel — you keep half the fare.)" : ""}`,
         "cancelled",
       );
     } else {
-      // No ride row left — refund the passenger, no driver to debit.
+      // No ride row left — refund the passenger under the policy, no driver to debit.
       await addTransaction({
         userId: sessionUser.id,
         type: "refund",
-        amount: booking.totalPrice,
-        description: `Ride Cancle Refund ${booking.totalPrice.toLocaleString()} Kyats`,
+        amount: refunded,
+        description: `Ride Cancle Refund ${refunded.toLocaleString()} Kyats`,
         referenceId: booking.rideId,
       });
     }
@@ -120,9 +137,12 @@ export async function POST(
   return NextResponse.json({
     booking: { ...booking, status: "cancelled" as const },
     refunded,
+    refundPolicy: policy.kind,
     note:
       booking.paymentMethod === "cash"
         ? "Cash booking — no wallet refund (no payment was taken)."
-        : undefined,
+        : policy.kind === "partial"
+          ? "Late cancellation (inside 3 hours before departure): refund is half the fare plus the full app fee; the driver keeps the other half of the fare."
+          : undefined,
   });
 }

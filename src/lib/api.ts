@@ -91,6 +91,20 @@ export interface RideLike {
   driverName?: string;
   driver_name?: string;
   driver?: { id?: string; name?: string; phone?: string; rating?: number };
+  // D3: present ONLY when the viewer is a party to a confirmed /
+  // completed booking on this ride (server drops the key otherwise).
+  driverPhone?: string;
+  driver_phone?: string;
+  // D4: trip state (scheduled | started | arrived) + latest driver
+  // position, present on my-rides / driver-dashboard ride rows.
+  tripStatus?: string;
+  trip_status?: string;
+  driverLat?: number;
+  driver_lat?: number;
+  driverLng?: number;
+  driver_lng?: number;
+  driverLocationAt?: string;
+  driver_location_at?: string;
   startLabel?: string;
   start_label?: string;
   endLabel?: string;
@@ -116,7 +130,7 @@ export interface RideLike {
   status?: string;
   routeCoordinates?: Array<[number, number]>;
   route_coordinates?: Array<[number, number]>;
-  passengers?: Array<{ id?: string; name?: string; passengerId?: string; passenger_id?: string; passengerName?: string }>;
+  passengers?: Array<{ id?: string; name?: string; passengerId?: string; passenger_id?: string; passengerName?: string; phone?: string; passengerPhone?: string; passenger_phone?: string }>;
   passengerCount?: number;
   matchScore?: number;
   match_score?: number;
@@ -270,12 +284,26 @@ export function rideMatch(r: RideLike): number | undefined {
 export function rideDistance(r: RideLike): number | undefined {
   return r.distanceKm ?? r.distance_km;
 }
-export function ridePassengers(r: RideLike): Array<{ id?: string; name?: string }> {
+export function ridePassengers(r: RideLike): Array<{ id?: string; name?: string; phone?: string }> {
   const p = (r.passengers ?? []) as Array<Record<string, unknown>>;
   return p.map((x) => ({
     id: (x.id ?? x.passengerId ?? x.passenger_id) as string | undefined,
     name: (x.name ?? x.passengerName ?? "Passenger") as string,
+    // D3: only present when the server included it (viewer is the
+    // ride's driver and the booking is confirmed). Never present on
+    // search / open-ride lists, so strangers see no phone here.
+    phone: (x.phone ?? x.passengerPhone ?? x.passenger_phone) as string | undefined,
   }));
+}
+
+/** The driver's phone for this ride, when the server included it (D3). */
+export function rideDriverPhone(r: RideLike): string | undefined {
+  return r.driverPhone ?? r.driver_phone ?? r.driver?.phone ?? undefined;
+}
+
+/** The trip state for this ride (D4), defaulting to 'scheduled'. */
+export function rideTripStatus(r: RideLike): string {
+  return r.tripStatus ?? r.trip_status ?? "scheduled";
 }
 
 // --- Geocode / route proxies -------------------------------------------------

@@ -3,16 +3,20 @@
  * (database.js 1669-1810).
  *
  * Checks: request exists and is 'open'; not your own request; not already
- * joined. When both sides have GPS coords: bearing diff <= 65°, pickup and
- * dropoff point-to-segment distances <= 5.0 km each, pickupT < dropoffT.
+ * joined. When both sides have GPS coords: bearing diff <= 65°, pickup
+ * and dropoff point-to-segment distances <= the search thresholds
+ * (pickup <= 2.0 km, dropoff <= 2.5 km — A8: the old 5.0 km join
+ * thresholds let in riders search would never match), pickupT < dropoffT.
  *
  * The segment breakdown is recomputed over creator + all joiners (incl.
  * the new joiner) BEFORE any money moves, so an insufficient balance fails
  * cleanly with no rollback needed. The joiner pays their new share
  * (ledger 'prepayment'); existing members whose share dropped are refunded
  * the difference (ledger 'refund' + notification) and their rows are
- * updated to the new share. A member whose share rises is NOT charged
- * extra — only the recorded share is updated, as in the old app.
+ * updated to the new share. A5: a member whose recomputed share RISES is
+ * NOT charged extra and their recorded share is NOT raised either — it
+ * stays frozen at what they paid (see joinRepriceForMember in
+ * src/lib/money), so the recorded totalPrice never exceeds paidAmount.
  */
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
@@ -20,7 +24,8 @@ import { z } from "zod";
 import { db } from "@/db";
 import { requestPassengers, rideRequests, user } from "@/db/schema";
 import { getSessionUser, jsonError } from "@/lib/api-helpers";
-import { routeMatcher } from "@/lib/matching";
+import { routeMatcher, PICKUP_THRESHOLD_KM, DROPOFF_THRESHOLD_KM } from "@/lib/matching";
+import { joinRepriceForMember } from "@/lib/money";
 import { recalcRequestBreakdown } from "@/lib/ride-requests";
 import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { addTransaction, getBalance } from "@/lib/wallet";
@@ -35,8 +40,11 @@ const joinSchema = z.object({
   endLng: z.number().min(-180).max(180),
 });
 
-const JOIN_PICKUP_KM = 5.0;
-const JOIN_DROPOFF_KM = 5.0;
+// A8: join uses the SAME thresholds as search (matching.ts) —
+// pickup <= 2.0 km, dropoff <= 2.5 km — so a rider who can join is
+// also a rider search would match on this route.
+const JOIN_PICKUP_KM = PICKUP_THRESHOLD_KM;
+const JOIN_DROPOFF_KM = DROPOFF_THRESHOLD_KM;
 
 export async function POST(
   request: Request,
@@ -127,7 +135,7 @@ export async function POST(
       const pKm = Math.round(pu.distance * 10) / 10;
       const dKm = Math.round(dr.distance * 10) / 10;
       return jsonError(
-        `❌ distance route — Pickup ${pKm} km · Dropoff ${dKm} km (${JOIN_PICKUP_KM} km Different)။ Find same route request`,
+        `❌ distance route — Pickup ${pKm} km · Dropoff ${dKm} km (pickup must be within ${JOIN_PICKUP_KM} km, dropoff within ${JOIN_DROPOFF_KM} km)။ Find same route request`,
         409,
       );
     }
@@ -200,27 +208,37 @@ export async function POST(
   }
 
   // Refund existing members whose share dropped; update all rows to the
-  // new breakdown (mirrors old _applyJoinRefunds).
+  // new breakdown (mirrors old _applyJoinRefunds) — except A5: a member
+  // whose recomputed share ROSE keeps their old (paid) amounts instead
+  // of being recorded at a price nobody paid.
   const refunds: Array<{ passengerId: string; refund: number }> = [];
+  const appliedPrices: number[] = [];
   for (let i = 0; i < existingMembers.length; i++) {
     const member = existingMembers[i];
     const bd = breakdowns[i];
-    if (!bd) continue;
+    if (!bd) {
+      appliedPrices.push(member.paidAmount ?? member.totalPrice);
+      continue;
+    }
     const previousPaid = member.paidAmount ?? member.totalPrice;
     const newPrice = bd.passengerPrice;
-    const refundDiff = previousPaid - newPrice;
-
-    await db
-      .update(requestPassengers)
-      .set({
-        fareShare: bd.fareShare,
-        appFee: bd.appCommissionPerPassenger,
-        totalPrice: newPrice,
-        paidAmount: newPrice,
-      })
-      .where(eq(requestPassengers.id, member.id));
+    const { appliedPrice, refund: refundDiff } = joinRepriceForMember(
+      previousPaid,
+      newPrice,
+    );
+    appliedPrices.push(appliedPrice);
 
     if (refundDiff > 0) {
+      await db
+        .update(requestPassengers)
+        .set({
+          fareShare: bd.fareShare,
+          appFee: bd.appCommissionPerPassenger,
+          totalPrice: newPrice,
+          paidAmount: newPrice,
+        })
+        .where(eq(requestPassengers.id, member.id));
+
       await addTransaction({
         userId: member.passengerId,
         type: "refund",
@@ -240,17 +258,19 @@ export async function POST(
       );
       refunds.push({ passengerId: member.passengerId, refund: refundDiff });
     }
+    // refundDiff === 0 and newPrice > previousPaid: the share rose —
+    // frozen at what was paid (no row update, no charge, no refund).
   }
 
-  // Creator's displayed estimate follows their new share (old behaviour).
+  // Creator's displayed estimate follows their APPLIED share (what they
+  // actually paid), not a recomputed share that was frozen away.
   const creatorIdx = existingMembers.findIndex(
     (m) => m.passengerId === rideRequest.passengerId,
   );
-  const creatorBD = creatorIdx >= 0 ? breakdowns[creatorIdx] : undefined;
-  if (creatorBD) {
+  if (creatorIdx >= 0 && appliedPrices[creatorIdx] != null) {
     await db
       .update(rideRequests)
-      .set({ estimatedPrice: creatorBD.passengerPrice })
+      .set({ estimatedPrice: appliedPrices[creatorIdx] })
       .where(eq(rideRequests.id, requestId));
   }
 

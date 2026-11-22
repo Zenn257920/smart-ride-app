@@ -40,9 +40,9 @@ async function main() {
 
   const [updated] = await db
     .update(user)
-    .set({ isAdmin: true })
+    .set({ is_admin: true })
     .where(eq(user.id, existing.id))
-    .returning({ id: user.id, email: user.email, isAdmin: user.isAdmin });
+    .returning({ id: user.id, email: user.email, is_admin: user.is_admin });
   console.log("admin granted:", JSON.stringify(updated));
 }
 

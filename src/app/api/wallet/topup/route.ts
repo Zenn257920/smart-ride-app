@@ -4,16 +4,19 @@
  *      phone? }. Creates a wallet_transactions row type 'topup',
  *      amount +amount, status 'pending'.
  *
- * v1 has no payment gateway and no admin confirm UI, so a top-up does NOT
- * change the balance until someone confirms it. The response says so
- * ('waiting for confirmation').
+ * v1 has no payment gateway: a top-up does NOT change the balance
+ * until an admin confirms it in the admin section (D2). The response
+ * says so ('waiting for confirmation'), and every admin is notified
+ * (D7) so the pending top-up is not only discovered by opening the
+ * admin page.
  */
 import { NextResponse } from "next/server";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { walletTransactions } from "@/db/schema";
+import { user, walletTransactions } from "@/db/schema";
 import { getSessionUser, jsonError } from "@/lib/api-helpers";
+import { notifyUser } from "@/lib/notify";
 import { addTransaction } from "@/lib/wallet";
 
 const topupSchema = z.object({
@@ -58,6 +61,23 @@ export async function POST(request: Request) {
     description: `Top-up via ${method}${phone ? ` (${phone})` : ""} — waiting for confirmation`,
     status: "pending",
   });
+
+  // D7: the top-up is pending until an admin confirms it (D2) — tell
+  // every admin it is waiting, so it is not only discovered by opening
+  // the admin page. Best-effort: a missing admin row must not fail the
+  // top-up itself.
+  const admins = await db
+    .select({ id: user.id })
+    .from(user)
+    .where(eq(user.is_admin, true));
+  for (const admin of admins) {
+    if (admin.id === sessionUser.id) continue;
+    await notifyUser(
+      admin.id,
+      `Top-up pending: ${sessionUser.name ?? "A user"} requested ${amount.toLocaleString()} MMK via ${method}. Confirm it in the admin section.`,
+      "topup",
+    );
+  }
 
   return NextResponse.json(
     {

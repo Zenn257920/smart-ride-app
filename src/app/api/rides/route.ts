@@ -12,6 +12,7 @@ import { db } from "@/db";
 import { bookings, drivers, ratings, rides, user } from "@/db/schema";
 import { getSessionUser, jsonError, parseDate } from "@/lib/api-helpers";
 import { routeMatcher } from "@/lib/matching";
+import { isFutureDeparture } from "@/lib/money";
 
 const offerRideSchema = z.object({
   startLabel: z.string().min(1),
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
       .where(eq(rides.driverId, sessionUser.id))
       .orderBy(sql`${rides.departureTime} desc`);
     const rideIds = myRides.map((r) => r.id);
-    const passengerMap = new Map<string, Array<{ id: string; name: string }>>();
+    const passengerMap = new Map<string, Array<{ id: string; name: string; passengerPhone?: string }>>();
     if (rideIds.length > 0) {
       const confirmed = await db
         .select()
@@ -56,10 +57,19 @@ export async function GET(request: Request) {
         pIds.length > 0
           ? await db.select().from(user).where(inArray(user.id, pIds))
           : [];
-      const nameById = new Map(pUsers.map((u) => [u.id, u.name]));
+      const userById = new Map(pUsers.map((u) => [u.id, u]));
       for (const b of confirmed) {
         const list = passengerMap.get(b.rideId) ?? [];
-        list.push({ id: b.passengerId, name: nameById.get(b.passengerId) ?? "Passenger" });
+        // D3: the viewer IS the driver of this ride and the booking is
+        // confirmed, so the passenger's phone is visible to them
+        // (see src/lib/contact-privacy.ts). Cancelled passengers are
+        // never in this list at all.
+        list.push({
+          id: b.passengerId,
+          name: userById.get(b.passengerId)?.name ?? "Passenger",
+          passengerPhone:
+            (userById.get(b.passengerId) as { phone?: string | null } | undefined)?.phone ?? undefined,
+        });
         passengerMap.set(b.rideId, list);
       }
     }
@@ -146,6 +156,10 @@ export async function POST(request: Request) {
 
   const departureTime = parseDate(data.departureTime);
   if (!departureTime) return jsonError("Invalid departureTime", 400);
+  // A6: rides cannot be offered in the past.
+  if (!isFutureDeparture(departureTime)) {
+    return jsonError("Departure time must be in the future", 400);
+  }
 
   // Driver only: the user must have a drivers row (see /api/driver/register).
   const [driver] = await db

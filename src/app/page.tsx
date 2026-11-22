@@ -19,21 +19,34 @@ const STEPS = [
 ];
 
 const FEATURES = [
-  { icon: "⚡", title: "Book in seconds", desc: "Pick a place and time — AI finds the best car in minutes." },
-  { icon: "📍", title: "Track in real-time", desc: "See your ride on the map from pickup to drop-off." },
-  { icon: "💳", title: "Easy pay", desc: "Pay with your Innovix E-Wallet or cash — no hassle." },
-];
-
-const REVIEWS = [
-  { stars: "★★★★★", text: "Demo review — carpooling to downtown is cheaper than a taxi every day, and the pickup is right at my door." },
-  { stars: "★★★★★", text: "Demo review — I share my morning commute and the fare split is fair. The app finds riders on my exact route." },
-  { stars: "★★★★☆", text: "Demo review — booking takes seconds and the driver arrives on time. Easy to pay from my wallet." },
+  { icon: "⚡", title: "စက္ကန့်ပိုင်းအတွင်း ဘွတ်ကင်လုပ်ပါ", desc: "နေရာနှင့် အချိန်ကို ရွေးပါ — AI က အကောင်းဆုံး ကားကို မိနစ်ပိုင်းအတွင်း ရှာပေးသည်။" },
+  { icon: "📍", title: "တိုက်ရိုက် ခြေရာခံပါ", desc: "တက်သည့်နေရာမှ ဆင်းသည့်နေရာအထိ သင့်ခရီးစဉ်ကို မြေပုံပေါ်တွင် ကြည့်နိုင်သည်။" },
+  { icon: "💳", title: "လွယ်ကူစွာ ပေးချေပါ", desc: "Innovix E-Wallet သို့မဟုတ် ငွေသားဖြင့် ပေးချေပါ — အခက်အခဲ မရှိ။" },
 ];
 
 export default function Home() {
+  // B2: the splash shows only on the first visit — once it has played,
+  // a flag in localStorage skips it on every later load.
   const [splash, setSplash] = useState(true);
   useEffect(() => {
-    const t = setTimeout(() => setSplash(false), 1500);
+    let seen = false;
+    try {
+      seen = localStorage.getItem("smartride_seen_splash") === "1";
+    } catch {
+      seen = false;
+    }
+    if (seen) {
+      setSplash(false);
+      return;
+    }
+    const t = setTimeout(() => {
+      setSplash(false);
+      try {
+        localStorage.setItem("smartride_seen_splash", "1");
+      } catch {
+        /* splash flag is best-effort */
+      }
+    }, 1500);
     return () => clearTimeout(t);
   }, []);
 
@@ -64,22 +77,22 @@ export default function Home() {
               AI Algorithm ကနေ လမ်းကြောင်းတူ ခရီးသည်များကို အလိုအလျောက် ချိတ်ဆက်ပေးတဲ့ Smart Carpooling
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/find-ride" className="btn-mint px-7 py-3.5 text-base">Ride Now</Link>
-              <Link href="/driver/register" className="btn rounded-[12px] border border-mint/60 px-7 py-3.5 text-base text-mint hover:bg-white/10">Register as Driver</Link>
+              <Link href="/find-ride" className="btn-mint px-7 py-3.5 text-base">အခုပဲ ခရီးရှာပါ</Link>
+              <Link href="/driver/register" className="btn rounded-[12px] border border-mint/60 px-7 py-3.5 text-base text-mint hover:bg-white/10">ယာဉ်မောင်းအဖြစ် စာရင်းသွင်းပါ</Link>
             </div>
-            <p className="mt-6 text-sm text-mint/80">★★★★★ · Trusted by 15,000+ daily riders in Yangon</p>
+            <p className="mt-6 text-sm text-mint/80">★★★★★ · ရန်ကုန်မြို့မှာ နေ့စဉ် ခရီးသည် 15,000+ က ယုံကြည်သုံးစွဲနေသည်</p>
           </div>
           <div className="relative min-w-0">
             <div className="overflow-hidden rounded-[24px]">
               <Image src="/bg2.png" alt="SharedRide car in Yangon" width={900} height={620} className="h-auto w-full object-cover" priority />
             </div>
             <div className="absolute -bottom-5 left-4 right-4 rounded-[20px] bg-white p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] sm:left-8 sm:right-8">
-              <h2 className="text-base font-medium text-forest">Door-to-door, shared fairly</h2>
-              <p className="mt-1 text-sm text-forest/70">AC car, fixed fair split, no surge pricing.</p>
+              <h2 className="text-base font-medium text-forest">အိမ်တံခါးဝအထိ၊ မျှမျှတတ ခွဲဝေပေးသည်</h2>
+              <p className="mt-1 text-sm text-forest/70">AC ကား၊ တည်ငြိမ်သော မျှဝေဈေးနှုန်း၊ ဈေးတက်ခြင်း မရှိ။</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <span className="badge">Door-to-door</span>
-                <span className="badge">67% cheaper</span>
-                <span className="badge">AI matched</span>
+                <span className="badge">အိမ်တံခါးဝအထိ</span>
+                <span className="badge">67% သက်သာသည်</span>
+                <span className="badge">AI ချိတ်ဆက်ပေးသည်</span>
               </div>
             </div>
           </div>
@@ -101,8 +114,8 @@ export default function Home() {
       {/* Features trio — white */}
       <section className="bg-white dark:bg-[#0f2416]">
         <div className="mx-auto w-full max-w-7xl px-4 py-14 sm:px-6">
-          <h2 className="section-title">Why ride with SharedRide</h2>
-          <p className="section-sub max-w-xl">Fast booking, live tracking and easy payment — built for Yangon commutes.</p>
+          <h2 className="section-title">SharedRide ကို ဘာကြောင့် စီးသနည်း</h2>
+          <p className="section-sub max-w-xl">မြန်မြန် ဘွတ်ကင်လုပ်၊ တိုက်ရိုက် ခြေရာခံ၊ လွယ်ကူစွာ ပေးချေ — ရန်ကုန် ရုံးတက်/ရုံးဆင်း ခရီးစဉ်များအတွက် တည်ဆောက်ထားသည်။</p>
           <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
             {FEATURES.map((f) => (
               <div key={f.title} className="card">
@@ -166,23 +179,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trusted drivers + reviews — white */}
+      {/* Trusted drivers — white.
+          B1: the fake "Demo review" cards lived here; they are gone
+          entirely until there are real rider reviews to show. */}
       <section className="bg-white dark:bg-[#0f2416]">
         <div className="mx-auto w-full max-w-7xl px-4 pb-14 sm:px-6">
-          <h2 className="section-title">Trusted drivers</h2>
-          <p className="section-sub max-w-xl">Drivers register with a licence and NRC, and every ride can be rated by its passengers.</p>
-          <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
-            {REVIEWS.map((r, i) => (
-              <div key={i} className="card">
-                <p className="text-mint-deep" aria-label="Rating">{r.stars}</p>
-                <p className="mt-2 text-sm leading-relaxed text-forest/80 dark:text-mint/80">{r.text}</p>
-                <p className="mt-3 text-xs text-forest/50 dark:text-mint/50">Demo review — no real rider name shown</p>
-              </div>
-            ))}
-          </div>
+          <h2 className="section-title">ယုံကြည်စိတ်ချရသော ယာဉ်မောင်းများ</h2>
+          <p className="section-sub max-w-xl">ယာဉ်မောင်းများသည် လိုင်စင်နှင့် မှတ်ပုံတင်ဖြင့် စာရင်းသွင်းရပြီး၊ ခရီးစဉ်တိုင်းကို ခရီးသည်များက အဆင့်သတ်မှတ်နိုင်သည်။</p>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
-            <Link href="/find-ride" className="btn-primary px-7 py-3.5 text-base">Ride Now</Link>
-            <Link href="/driver/register" className="btn-outline px-7 py-3.5 text-base">Register as Driver</Link>
+            <Link href="/find-ride" className="btn-primary px-7 py-3.5 text-base">အခုပဲ ခရီးရှာပါ</Link>
+            <Link href="/driver/register" className="btn-outline px-7 py-3.5 text-base">ယာဉ်မောင်းအဖြစ် စာရင်းသွင်းပါ</Link>
           </div>
         </div>
       </section>
@@ -191,10 +197,10 @@ export default function Home() {
       <section className="bg-forest">
         <div className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-6 px-4 py-12 sm:px-6 lg:flex-row lg:items-center">
           <div className="min-w-0">
-            <h2 className="text-2xl font-medium leading-tight text-mint sm:text-3xl">Ready to ride for a third of a taxi fare?</h2>
-            <p className="mt-2 text-sm text-white/80">Create an account, pick your route, and let AI match you in about ၃ မိနစ်.</p>
+            <h2 className="text-2xl font-medium leading-tight text-mint sm:text-3xl">တက္ကစီခရဲ့ ၃ ပုံ ၁ ပုံနဲ့ စီးဖို့ အဆင်သင့်ဖြစ်ပြီလား?</h2>
+            <p className="mt-2 text-sm text-white/80">အကောင့်ဖွင့်ပါ၊ လမ်းကြောင်းကို ရွေးပါ၊ AI က ၃ မိနစ်ခန့်အတွင်း ချိတ်ဆက်ပေးပါမယ်။</p>
           </div>
-          <Link href="/register" className="btn-mint shrink-0 px-7 py-3.5 text-base">Get started</Link>
+          <Link href="/register" className="btn-mint shrink-0 px-7 py-3.5 text-base">အခုပဲ စတင်ပါ</Link>
         </div>
       </section>
     </div>

@@ -17,6 +17,11 @@ interface RideMapProps {
   routeCoordinates?: Array<[number, number]>;
   onPick?: (lat: number, lng: number) => void;
   height?: number;
+  // D4: when false, marker updates redraw the markers but do NOT
+  // re-fit the viewport — used by the passenger live view, where the
+  // driver marker moves every poll and re-fitting would yank the map
+  // under the user's fingers. Defaults to true (search / dashboard).
+  autoFit?: boolean;
 }
 
 export default function RideMap({
@@ -25,6 +30,7 @@ export default function RideMap({
   routeCoordinates,
   onPick,
   height = 320,
+  autoFit = true,
 }: RideMapProps) {
   const divRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<unknown>(null);
@@ -127,10 +133,13 @@ export default function RideMap({
         if (m.label) marker.bindTooltip(m.label, { direction: "top", offset: [0, -16] });
         bounds.push([m.lat, m.lng]);
       }
+      // D4: live views pass autoFit={false} so a moving driver marker
+      // does not re-centre the map on every poll.
+      if (!autoFit) return;
       if (bounds.length > 1) map.fitBounds(bounds, { padding: [24, 24] });
       else if (bounds.length === 1) map.setView(bounds[0], 14);
     });
-  }, [markers, routeCoordinates]);
+  }, [markers, routeCoordinates, autoFit]);
 
   return (
     <div className="min-w-0 overflow-hidden rounded-[20px] ring-1 ring-forest/10 dark:ring-mint/10">

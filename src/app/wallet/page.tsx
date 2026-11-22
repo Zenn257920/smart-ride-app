@@ -16,6 +16,10 @@ export default function WalletPage() {
 
 function WalletInner() {
   const [balance, setBalance] = useState<number | null>(null);
+  // D8a: prepayments held for ride requests still 'open' — already out
+  // of the spendable balance, shown separately so the user can tell
+  // held money apart from money that is gone.
+  const [heldPrepayments, setHeldPrepayments] = useState<number>(0);
   const [txs, setTxs] = useState<WalletTx[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -45,10 +49,11 @@ function WalletInner() {
   async function load() {
     try {
       const [bal, list] = await Promise.all([
-        apiFetch<{ balance?: number }>("/api/wallet/balance"),
+        apiFetch<{ balance?: number; heldPrepayments?: number }>("/api/wallet/balance"),
         apiFetch<unknown>("/api/wallet/transactions"),
       ]);
       setBalance(typeof bal.balance === "number" ? bal.balance : (bal as { data?: { balance?: number } }).data?.balance ?? null);
+      setHeldPrepayments(typeof bal.heldPrepayments === "number" ? bal.heldPrepayments : 0);
       setTxs(asArray<WalletTx>(list));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load your wallet.");
@@ -116,32 +121,37 @@ function WalletInner() {
 
   return (
     <div className="page-wrap">
-      <h1 className="page-title">Wallet</h1>
-      <p className="section-sub">Your Innovix E-Wallet — balance is the sum of your transaction ledger.</p>
+      <h1 className="page-title">ငွေအိတ်</h1>
+      <p className="section-sub">သင့် Innovix E-Wallet — လက်ကျန်ငွေသည် ငွေလွှဲပြောင်းမှု မှတ်တမ်း (ledger) ၏ ပေါင်းလဒ် ဖြစ်သည်။</p>
 
       {notice ? <p className="mt-4 rounded-[12px] bg-mint-soft px-3 py-2 text-sm dark:bg-forest-soft">{notice}</p> : null}
       {error ? <p role="alert" className="mt-4 rounded-[12px] bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</p> : null}
 
       <div className="card mt-5 bg-forest !p-6 text-mint dark:bg-forest">
-        <p className="text-sm text-mint/80">Current balance</p>
+        <p className="text-sm text-mint/80">လက်ရှိ လက်ကျန်ငွေ</p>
         <p className="mt-1 text-4xl font-medium">{loading ? "…" : balance != null ? fmtMMK(balance) : "—"}</p>
+        {heldPrepayments > 0 ? (
+          <p className="mt-2 text-sm text-mint/80">
+            ⏳ ဖွင့်ထားသော ခရီးစဉ် တောင်းဆိုမှုများအတွက် ထိန်းထားသောငွေ: {fmtMMK(heldPrepayments)} — တောင်းဆိုမှု လက်ခံခြင်း / ပယ်ဖျက်ခြင်း ပြုလုပ်သောအခါ ပြန်လည် ရှင်းလင်းပါမည်။
+          </p>
+        ) : null}
         <div className="mt-5 flex flex-wrap gap-3">
-          <button type="button" className="btn-mint" onClick={() => { setTopupOpen(true); setTopupStep(1); setTopupError(""); }}>+ Top up</button>
-          <button type="button" className="btn rounded-[12px] border border-mint/60 px-5 py-3 text-sm text-mint hover:bg-white/10" onClick={() => { setWithdrawOpen(true); setWithdrawError(""); }}>Withdraw</button>
+          <button type="button" className="btn-mint" onClick={() => { setTopupOpen(true); setTopupStep(1); setTopupError(""); }}>+ ငွေဖြည့်မယ်</button>
+          <button type="button" className="btn rounded-[12px] border border-mint/60 px-5 py-3 text-sm text-mint hover:bg-white/10" onClick={() => { setWithdrawOpen(true); setWithdrawError(""); }}>ငွေထုတ်မယ်</button>
         </div>
       </div>
 
       {pendingTopups.length > 0 ? (
         <div className="mt-4 rounded-[20px] bg-mint-soft p-4 text-sm dark:bg-forest-soft">
-          <p className="font-medium">⏳ {pendingTopups.length} top-up{pendingTopups.length === 1 ? "" : "s"} waiting for confirmation</p>
-          <p className="mt-1 text-forest/70 dark:text-mint/70">Your transfer is recorded as pending — an admin confirms it manually. No money moves automatically in v1.</p>
+          <p className="font-medium">⏳ အတည်ပြုချက် စောင့်နေသော ငွေဖြည့်မှု {pendingTopups.length} ခု</p>
+          <p className="mt-1 text-forest/70 dark:text-mint/70">သင့်လွှဲပြောင်းမှုကို စောင့်ဆိုင်းနေသည့် အခြေအနေဖြင့် မှတ်တမ်းတင်ထားသည် — စီမံခန့်ခွဲသူက ကိုယ်တိုင် အတည်ပြုပေးပါမည်။ v1 တွင် ငွေ အလိုအလျောက် မလှုပ်ရှားပါ။</p>
         </div>
       ) : null}
 
-      <h2 className="mt-8 text-lg font-medium text-forest dark:text-mint">Transaction history</h2>
+      <h2 className="mt-8 text-lg font-medium text-forest dark:text-mint">ငွေလွှဲပြောင်းမှု မှတ်တမ်း</h2>
       <div className="card mt-3">
         {txs.length === 0 ? (
-          <p className="text-sm text-forest/60 dark:text-mint/60">No transactions yet.</p>
+          <p className="text-sm text-forest/60 dark:text-mint/60">ငွေလွှဲပြောင်းမှု မရှိသေးပါ။</p>
         ) : (
           <ul className="divide-y divide-forest/5 dark:divide-mint/5">
             {txs.map((t) => {
@@ -151,7 +161,7 @@ function WalletInner() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium capitalize">{t.type?.replace(/_/g, " ") ?? "Transaction"}</p>
                     <p className="truncate text-xs text-forest/60 dark:text-mint/60">{t.description ?? ""} · {fmtTime(t.createdAt ?? t.created_at)}</p>
-                    {t.status === "pending" ? <span className="badge mt-1">Waiting for confirmation</span> : null}
+                    {t.status === "pending" ? <span className="badge mt-1">အတည်ပြုချက် စောင့်နေသည်</span> : null}
                   </div>
                   <span className={`shrink-0 text-sm font-medium ${amount >= 0 ? "text-forest dark:text-mint" : "text-red-700 dark:text-red-300"}`}>
                     {amount >= 0 ? "+" : "−"}{fmtMMK(Math.abs(amount))}
@@ -167,7 +177,7 @@ function WalletInner() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-forest/60 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label="Top up wallet">
           <div className="card w-full max-w-md rounded-b-none p-6 sm:rounded-b-[20px]">
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-lg font-medium">Top up wallet</h2>
+              <h2 className="text-lg font-medium">ငွေအိတ် ငွေဖြည့်ပါ</h2>
               <button type="button" onClick={() => setTopupOpen(false)} aria-label="Close" className="rounded-full px-2 py-1 text-forest/60 hover:bg-mint-soft dark:text-mint/60">✕</button>
             </div>
 
@@ -208,7 +218,7 @@ function WalletInner() {
                   if (!amount || amount < 1000) { setTopupError("Top-up amount must be at least 1,000 MMK."); return; }
                   setTopupError("");
                   setTopupStep(2);
-                }}>Continue →</button>
+                }}>ဆက်သွားမယ် →</button>
               </>
             ) : topupStep === 2 ? (
               <>
@@ -223,18 +233,18 @@ function WalletInner() {
                 </p>
                 {topupError ? <p role="alert" className="mt-3 rounded-[12px] bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{topupError}</p> : null}
                 <div className="mt-5 flex gap-3">
-                  <button type="button" className="btn-outline flex-1" onClick={() => setTopupStep(1)}>Back</button>
-                  <button type="button" className="btn-primary flex-1" disabled={topupBusy} onClick={submitTopup}>{topupBusy ? "Submitting…" : "Confirm top-up"}</button>
+                  <button type="button" className="btn-outline flex-1" onClick={() => setTopupStep(1)}>နောက်သို့</button>
+                  <button type="button" className="btn-primary flex-1" disabled={topupBusy} onClick={submitTopup}>{topupBusy ? "တင်ပြနေသည်…" : "ငွေဖြည့်မှုကို အတည်ပြုမယ်"}</button>
                 </div>
               </>
             ) : (
               <>
                 <p aria-hidden className="mt-2 text-4xl">⏳</p>
-                <h3 className="mt-2 text-lg font-medium">Top-up submitted — waiting for confirmation</h3>
+                <h3 className="mt-2 text-lg font-medium">ငွေဖြည့်မှု တင်ပြီးပါပြီ — အတည်ပြုချက် စောင့်နေသည်</h3>
                 <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">
                   {fmtMMK(Number(topupAmount))} via {topupMethod} is recorded as PENDING. Your balance updates once an admin confirms the transfer.
                 </p>
-                <button type="button" className="btn-primary mt-5 w-full" onClick={() => { setTopupOpen(false); setTopupAmount(""); setTopupPhone(""); setTopupStep(1); }}>Done</button>
+                <button type="button" className="btn-primary mt-5 w-full" onClick={() => { setTopupOpen(false); setTopupAmount(""); setTopupPhone(""); setTopupStep(1); }}>ပြီးပါပြီ</button>
               </>
             )}
           </div>
@@ -245,14 +255,14 @@ function WalletInner() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-forest/60 p-4" role="dialog" aria-modal="true" aria-label="Withdraw">
           <div className="card w-full max-w-sm">
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-lg font-medium">Withdraw</h2>
+              <h2 className="text-lg font-medium">ငွေထုတ်ပါ</h2>
               <button type="button" onClick={() => setWithdrawOpen(false)} aria-label="Close" className="rounded-full px-2 py-1 text-forest/60 hover:bg-mint-soft dark:text-mint/60">✕</button>
             </div>
             <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">Available: {balance != null ? fmtMMK(balance) : "—"}</p>
             <label htmlFor="withdrawAmount" className="label mt-4">Amount (MMK, min 1,000)</label>
             <input id="withdrawAmount" className="input" type="number" min={1000} step={500} value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="e.g. 5000" />
             {withdrawError ? <p role="alert" className="mt-3 rounded-[12px] bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{withdrawError}</p> : null}
-            <button type="button" className="btn-primary mt-5 w-full" disabled={withdrawBusy} onClick={submitWithdraw}>{withdrawBusy ? "Processing…" : "Withdraw"}</button>
+            <button type="button" className="btn-primary mt-5 w-full" disabled={withdrawBusy} onClick={submitWithdraw}>{withdrawBusy ? "ဆောင်ရွက်နေသည်…" : "ငွေထုတ်မယ်"}</button>
           </div>
         </div>
       ) : null}

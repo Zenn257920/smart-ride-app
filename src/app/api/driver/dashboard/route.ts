@@ -1,9 +1,9 @@
 /**
  * GET /api/driver/dashboard — driver + vehicle info, stats (active rides,
- * available seats, total earnings = sum of completed 'ride_earning' rows,
- * total passengers), offered rides with passenger lists, pending ride
- * requests (status 'open', future departure, not rejected by this driver),
- * and wallet balance.
+ * available seats, total earnings = completed 'ride_earning' rows MINUS
+ * completed 'adjustment' debits, total passengers), offered rides with
+ * passenger lists, pending ride requests (status 'open', future departure,
+ * not rejected by this driver), and wallet balance.
  *
  * Rejections live in the request_rejections table (request_id, driver_id)
  * — see POST /api/ride-requests/:id/reject.
@@ -22,6 +22,7 @@ import {
   walletTransactions,
 } from "@/db/schema";
 import { getSessionUser, jsonError, requireDriver } from "@/lib/api-helpers";
+import { driverNetEarnings } from "@/lib/money";
 import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { getBalance } from "@/lib/wallet";
 
@@ -40,7 +41,12 @@ export async function GET() {
     .where(eq(rides.driverId, sessionUser.id))
     .orderBy(asc(rides.departureTime));
 
-  const activeRides = offeredRides.filter((r) => r.status === "open");
+  // A7: "active" is open + full — a full ride still has passengers on
+  // board and is very much active. (Full rides contribute 0 available
+  // seats, so availableSeats is unchanged by the wider count.)
+  const activeRides = offeredRides.filter(
+    (r) => r.status === "open" || r.status === "full",
+  );
   const availableSeats = activeRides.reduce(
     (sum, r) => sum + r.seatsAvailable,
     0,
@@ -66,8 +72,7 @@ export async function GET() {
     passengerIds.length > 0
       ? await db.select().from(user).where(inArray(user.id, passengerIds))
       : [];
-  const passengerById = new Map(passengerUsers.map((u) => [u.id, u]));
-  const bookingsByRide = new Map<string, typeof confirmedBookings>();
+  const passengerById = new Map(passengerUsers.map((u) => [u.id, u]));  const bookingsByRide = new Map<string, typeof confirmedBookings>();
   for (const b of confirmedBookings) {
     const list = bookingsByRide.get(b.rideId) ?? [];
     list.push(b);
@@ -84,7 +89,25 @@ export async function GET() {
         eq(walletTransactions.status, "completed"),
       ),
     );
-  const totalEarnings = earnings.reduce((sum, t) => sum + t.amount, 0);
+  // A7: total earnings must reflect what the driver actually KEPT —
+  // refund / fair-split / cancel 'adjustment' debits are subtracted.
+  // Summing ride_earning alone overstated earnings after any refund.
+  // (Adjustments are only ever driver debits: cancelBookingDeltas and
+  // fairSplitRefundDeltas in src/lib/money.)
+  const adjustments = await db
+    .select()
+    .from(walletTransactions)
+    .where(
+      and(
+        eq(walletTransactions.userId, sessionUser.id),
+        eq(walletTransactions.type, "adjustment"),
+        eq(walletTransactions.status, "completed"),
+      ),
+    );
+  const totalEarnings = driverNetEarnings(
+    earnings.map((t) => t.amount),
+    adjustments.map((t) => t.amount),
+  );
 
   // Pending requests: open + future + not rejected by this driver.
   const rejectedRows = await db
@@ -142,6 +165,14 @@ export async function GET() {
       passengers: (bookingsByRide.get(r.id) ?? []).map((b) => ({
         ...b,
         passengerName: passengerById.get(b.passengerId)?.name ?? "Passenger",
+        // D3: the viewer IS the driver of this ride and these are
+        // confirmed bookings, so each passenger's phone is visible to
+        // them (see src/lib/contact-privacy.ts). The phone is NOT
+        // included on the public ride lists — only here, scoped to the
+        // ride's own driver.
+        passengerPhone:
+          (passengerById.get(b.passengerId) as { phone?: string | null } | undefined)?.phone ??
+          undefined,
       })),
     })),
     // C2: a browsing driver is neither creator, member, nor the driver

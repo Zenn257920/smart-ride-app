@@ -1,7 +1,8 @@
 /**
  * POST /api/ratings — { bookingId, stars 1-5, comment? }. The rater must
- * own the booking, the booking must be confirmed/completed, and there is
- * at most one rating per booking (upsert by booking_id).
+ * own the booking, the booking must be COMPLETED on a COMPLETED ride
+ * (A4: a confirmed, not-yet-ridden booking is not rateable), and there
+ * is at most one rating per booking (upsert by booking_id).
  * GET  /api/drivers/:id/rating — { average, count } for a driver.
  */
 import { NextResponse } from "next/server";
@@ -10,6 +11,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { bookings, ratings, rides } from "@/db/schema";
 import { getSessionUser, jsonError } from "@/lib/api-helpers";
+import { isRateableBooking } from "@/lib/money";
 
 const ratingSchema = z.object({
   bookingId: z.string().min(1),
@@ -37,16 +39,16 @@ export async function POST(request: Request) {
   if (booking.passengerId !== sessionUser.id) {
     return jsonError("You can only rate your own bookings", 403);
   }
-  if (booking.status !== "confirmed" && booking.status !== "completed") {
-    return jsonError("Only confirmed or completed bookings can be rated", 409);
-  }
-
   const [ride] = await db
     .select()
     .from(rides)
     .where(eq(rides.id, booking.rideId))
     .limit(1);
   if (!ride) return jsonError("Ride not found", 404);
+
+  // A4: only a completed booking on a completed ride is rateable.
+  const rateable = isRateableBooking(booking.status, ride.status);
+  if (!rateable.ok) return jsonError(rateable.error, 409);
 
   const [existing] = await db
     .select()

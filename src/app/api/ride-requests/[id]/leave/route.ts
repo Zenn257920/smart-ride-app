@@ -1,16 +1,23 @@
 /**
  * POST /api/ride-requests/:id/leave — mirrors the old app's
  * leaveRideRequest (database.js 1811-1847). A joiner leaves an open
- * request: their paid_amount is refunded in full (ledger 'refund'), their
- * row is marked 'left', and the split is recalculated for the remaining
- * members (recorded shares updated, nobody charged extra).
+ * request: their paid_amount is refunded in full (ledger 'refund'),
+ * their row is marked 'left', and the remaining members are notified.
+ *
+ * A5: remaining members' prices are FROZEN at what they prepaid — the
+ * old code recalculated the fair split over the survivors, which
+ * RAISED their recorded totalPrice without anyone paying the
+ * difference, and accept then credited the driver the raised
+ * (never-paid) fareShares. No recalculation happens here any more
+ * (see freezePricesOnLeave in src/lib/money); at accept the driver is
+ * credited exactly the stored (paid) fareShares.
  */
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { requestPassengers, rideRequests } from "@/db/schema";
 import { getSessionUser, jsonError } from "@/lib/api-helpers";
-import { recalcRequestBreakdown } from "@/lib/ride-requests";
+import { freezePricesOnLeave } from "@/lib/money";
 import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { addTransaction } from "@/lib/wallet";
 import { notifyUser } from "@/lib/notify";
@@ -72,45 +79,27 @@ export async function POST(
     .set({ status: "left" })
     .where(eq(requestPassengers.id, leaver.id));
 
-  // Recalculate the split for those who remain (shares only — no charges).
+  // A5: prices are FROZEN — the remaining members keep exactly the
+  // fareShare / appFee / totalPrice they prepaid (freezePricesOnLeave
+  // returns the stored amounts unchanged). No recalculation, no extra
+  // charge, and accept later credits the driver exactly these paid
+  // fareShares. Only the survivors are told someone left.
   const remaining = members.filter((m) => m.id !== leaver.id);
-  if (remaining.length > 0) {
-    const breakdowns = recalcRequestBreakdown(
-      remaining.map((m) => ({
-        passengerId: m.passengerId,
-        startLat: m.startLat,
-        startLng: m.startLng,
-        endLat: m.endLat,
-        endLng: m.endLng,
-      })),
-      {
-        startLat: rideRequest.startLat,
-        startLng: rideRequest.startLng,
-        endLat: rideRequest.endLat,
-        endLng: rideRequest.endLng,
-      },
+  freezePricesOnLeave(
+    remaining.map((m) => ({
+      fareShare: m.fareShare,
+      appFee: m.appFee,
+      totalPrice: m.totalPrice,
+      paidAmount: m.paidAmount ?? m.totalPrice,
+    })),
+  );
+  const leaverName = sessionUser.name ?? "A passenger";
+  for (const member of remaining) {
+    await notifyUser(
+      member.passengerId,
+      `${leaverName} left the "${rideRequest.startLabel} → ${rideRequest.endLabel}" ride request. Your price stays at ${member.totalPrice.toLocaleString()} Kyats — no extra charge.`,
+      "left",
     );
-    for (let i = 0; i < remaining.length; i++) {
-      const bd = breakdowns[i];
-      if (!bd) continue;
-      await db
-        .update(requestPassengers)
-        .set({
-          fareShare: bd.fareShare,
-          appFee: bd.appCommissionPerPassenger,
-          totalPrice: bd.passengerPrice,
-        })
-        .where(eq(requestPassengers.id, remaining[i].id));
-    }
-    const creatorIdx = remaining.findIndex(
-      (m) => m.passengerId === rideRequest.passengerId,
-    );
-    if (creatorIdx >= 0 && breakdowns[creatorIdx]) {
-      await db
-        .update(rideRequests)
-        .set({ estimatedPrice: breakdowns[creatorIdx].passengerPrice })
-        .where(eq(rideRequests.id, requestId));
-    }
   }
 
   // C2: the caller just left, so they are no longer a member (and the

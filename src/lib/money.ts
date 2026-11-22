@@ -159,6 +159,46 @@ export function repricedBookingAmounts(breakdown: {
 }
 
 // ---------------------------------------------------------------------------
+// B6 — multi-seat booking (2026-11-22).
+//
+// A booking is priced PER SEAT: the segment price search shows is the
+// price of ONE seat, and booking N seats charges N x that per-seat
+// price (fare, fee and total all scale — the fee stays 5% of the fare,
+// so totalPrice == fareShare + appFee still holds). The driver is
+// credited the scaled fareShare, so driverPayment == fareShare still
+// holds and a later cancel debits exactly what the driver holds.
+// The same scaling reprices an earlier multi-seat booking when a new
+// rider joins: its new amounts are its seat count x the new per-seat
+// breakdown, so a 2-seat booking is never repriced down to a 1-seat
+// price by the fair-split refund step.
+// ---------------------------------------------------------------------------
+
+/** Per-seat booking amounts (the segment price search shows). */
+export interface PerSeatAmounts {
+  fareShare: number;
+  appFee: number;
+  totalPrice: number;
+  driverPayment: number;
+}
+
+/**
+ * Scale per-seat amounts to a booking of `seats` seats. Every amount
+ * scales linearly, so the ledger invariants (total = fare + fee,
+ * driverPayment = fare) hold for any seat count.
+ */
+export function multiSeatAmounts(
+  perSeat: PerSeatAmounts,
+  seats: number,
+): PerSeatAmounts {
+  return {
+    fareShare: perSeat.fareShare * seats,
+    appFee: perSeat.appFee * seats,
+    totalPrice: perSeat.totalPrice * seats,
+    driverPayment: perSeat.driverPayment * seats,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // D1 — complete-ride settlement (2026-11-22).
 //
 // MONEY STATE MACHINE, as actually implemented (reconciled with Batch 1):
@@ -284,4 +324,327 @@ export function settleRideCompletion(
     else completedIds.push(b.id);
   }
   return { completedIds, noShowIds: settledNoShowIds, deltas: [] };
+}
+
+// ---------------------------------------------------------------------------
+// A4 + D6 — cancellation policy (2026-11-22).
+//
+// ONE RULE for cancelling a confirmed booking / an offered ride, reusing
+// the 3-hour pattern the ride-request cancel already had:
+//
+//   * More than 3 hours before departure: FREE cancellation — the
+//     passenger is refunded the full totalPrice (fare + app fee) and
+//     the driver is debited exactly driverPayment (the fareShare the
+//     driver was credited). The app keeps nothing; driver keeps nothing.
+//   * Inside 3 hours before departure: cancellation is STILL ALLOWED,
+//     but only a PARTIAL refund — the passenger gets back HALF the
+//     fareShare plus the FULL app fee (the app waives its fee on every
+//     cancel, free or late), and the driver is debited exactly the
+//     refunded fare half. The driver KEEPS the other half of the fare
+//     as late-cancel compensation for the held seat.
+//       refund = floor(fareShare / 2) + appFee
+//       driver debit = floor(fareShare / 2)   (driver keeps fare - that)
+//     Worked example (fare 4,950 + fee 247 = 5,197): the passenger gets
+//     2,475 + 247 = 2,722 back, the driver is debited 2,475 and keeps
+//     2,475. Passenger net loss = driver net gain = 2,475 — the ledger
+//     stays consistent, and the fee is never a driver debit (A2 rule).
+//   * After departure: NO cancellation at all. The ride should be
+//     completed (D1), not cancelled — a departed ride's bookings are
+//     settled as rode / no-show, and a no-show fare is forfeited.
+//   * DRIVER cancelling inside 3 hours: the passenger gets the SAME
+//     partial refund as above, but the driver is debited the FULL
+//     driverPayment — the driver is the canceller, so they keep none
+//     of the fare. The retained fare half is forfeited (it joins the
+//     app's implicit take, like the fee — no ledger row owns it).
+//   * Cash bookings: no ledger moves under any policy — no money ever
+//     moved through the wallet, so there is nothing to refund or debit.
+//     The policy (free / partial / not allowed) still applies to the
+//     status change itself.
+//   * Ride-request cancel is NOT changed by this: it already refuses
+//     any cancel inside 3 hours (full refund before that), which is
+//     stricter than the booking rule and stays as-is.
+// ---------------------------------------------------------------------------
+
+/** Free-cancellation deadline: hours before departure. */
+export const FREE_CANCELLATION_HOURS = 3;
+/** Late-cancel refund: fraction of the fareShare returned to the passenger. */
+export const LATE_CANCEL_FARE_REFUND_RATE = 0.5;
+
+/** Outcome of the cancellation-policy gate for one departure time. */
+export type CancelPolicy =
+  | { allowed: true; kind: "free" }
+  | { allowed: true; kind: "partial" }
+  | { allowed: false; error: string };
+
+/**
+ * Which cancellation rule applies at `now` for a ride departing at
+ * `departureTime`. After departure nothing may be cancelled — the ride
+ * must be completed instead (A4).
+ */
+export function cancelPolicy(
+  departureTime: Date | string,
+  now: Date = new Date(),
+): CancelPolicy {
+  const departure =
+    departureTime instanceof Date ? departureTime : new Date(departureTime);
+  if (Number.isNaN(departure.getTime())) {
+    return { allowed: false, error: "Ride has no valid departure time" };
+  }
+  if (departure.getTime() <= now.getTime()) {
+    return {
+      allowed: false,
+      error:
+        "This ride has already departed and cannot be cancelled — it should be completed instead",
+    };
+  }
+  const hoursUntil = (departure.getTime() - now.getTime()) / (1000 * 60 * 60);
+  if (hoursUntil > FREE_CANCELLATION_HOURS) return { allowed: true, kind: "free" };
+  return { allowed: true, kind: "partial" };
+}
+
+/** The partial (inside-3-hours) refund split for one booking. */
+export interface PartialRefund {
+  /** What the passenger gets back: refunded fare half + full app fee. */
+  refundTotal: number;
+  /** Fare half returned to the passenger — also the passenger-canceller
+   * driver debit. floor() so refunded + retained always equals the fare. */
+  refundedFare: number;
+  /** Fare half the driver keeps on a passenger late-cancel. */
+  retainedFare: number;
+  /** The app fee, refunded in full on every cancel (never a driver debit). */
+  feePortion: number;
+}
+
+export function partialCancelRefund(
+  fareShare: number,
+  appFee: number,
+): PartialRefund {
+  const refundedFare = Math.floor(fareShare * LATE_CANCEL_FARE_REFUND_RATE);
+  const retainedFare = fareShare - refundedFare;
+  return {
+    refundTotal: refundedFare + appFee,
+    refundedFare,
+    retainedFare,
+    feePortion: appFee,
+  };
+}
+
+/**
+ * Ledger deltas for cancelling one confirmed booking under a policy.
+ *
+ * - kind "free": identical to cancelBookingDeltas — passenger +totalPrice,
+ *   driver -driverPayment.
+ * - kind "partial", canceller "passenger": passenger gets the partial
+ *   refund (half fare + full fee), driver is debited only the refunded
+ *   fare half and keeps the rest.
+ * - kind "partial", canceller "driver": passenger gets the SAME partial
+ *   refund, but the driver is debited the FULL driverPayment — the
+ *   cancelling driver keeps nothing.
+ * - cash bookings: no deltas under any policy.
+ *
+ * The caller is responsible for the departure gate (cancelPolicy) and
+ * for reporting the passenger refund (see passengerRefundForPolicy).
+ */
+export function cancelBookingDeltasForPolicy(
+  booking: {
+    passengerId: string;
+    fareShare: number;
+    appFee: number;
+    totalPrice: number;
+    driverPayment: number;
+    paymentMethod: string;
+  },
+  driverId: string,
+  policy: { kind: "free" | "partial" },
+  canceller: "passenger" | "driver",
+): LedgerDelta[] {
+  if (booking.paymentMethod === "cash") return [];
+  if (policy.kind === "free") {
+    return [
+      { userId: booking.passengerId, type: "refund" as const, amount: booking.totalPrice },
+      { userId: driverId, type: "adjustment" as const, amount: -booking.driverPayment },
+    ];
+  }
+  const partial = partialCancelRefund(booking.fareShare, booking.appFee);
+  const driverDebit =
+    canceller === "driver" ? booking.driverPayment : partial.refundedFare;
+  return [
+    { userId: booking.passengerId, type: "refund" as const, amount: partial.refundTotal },
+    { userId: driverId, type: "adjustment" as const, amount: -driverDebit },
+  ];
+}
+
+/** The amount the passenger is refunded for a cancel under a policy (0 for cash). */
+export function passengerRefundForPolicy(
+  booking: {
+    fareShare: number;
+    appFee: number;
+    totalPrice: number;
+    paymentMethod: string;
+  },
+  policy: { kind: "free" | "partial" },
+): number {
+  if (booking.paymentMethod === "cash") return 0;
+  if (policy.kind === "free") return booking.totalPrice;
+  return partialCancelRefund(booking.fareShare, booking.appFee).refundTotal;
+}
+
+// ---------------------------------------------------------------------------
+// A4 (ratings) + A6 (future departure) + A7 (dashboard earnings).
+// ---------------------------------------------------------------------------
+
+/**
+ * A4: only a COMPLETED booking on a COMPLETED ride is rateable.
+ * A confirmed (not yet ridden) booking must not be rateable — rating
+ * before completion used to be allowed. A cancelled / no-show booking
+ * is never rateable either.
+ */
+export function isRateableBooking(
+  bookingStatus: string,
+  rideStatus: string,
+): { ok: true } | { ok: false; error: string } {
+  if (bookingStatus !== "completed") {
+    return {
+      ok: false,
+      error:
+        bookingStatus === "confirmed"
+          ? "Only completed bookings can be rated — this ride has not finished yet"
+          : `Only completed bookings can be rated (booking is ${bookingStatus})`,
+    };
+  }
+  if (rideStatus !== "completed") {
+    return {
+      ok: false,
+      error: "Only completed rides can be rated — this ride has not finished yet",
+    };
+  }
+  return { ok: true };
+}
+
+/** A6: a ride / ride request may only be created for a future departure. */
+export function isFutureDeparture(
+  departureTime: Date | string,
+  now: Date = new Date(),
+): boolean {
+  const departure =
+    departureTime instanceof Date ? departureTime : new Date(departureTime);
+  if (Number.isNaN(departure.getTime())) return false;
+  return departure.getTime() > now.getTime();
+}
+
+/**
+ * A7: what the driver actually kept — completed 'ride_earning' rows
+ * MINUS completed 'adjustment' debits (refunds / fair-split repricing
+ * / cancels). Summing ride_earning alone overstates earnings after any
+ * refund. Adjustment rows are negative by construction; both inputs
+ * are plain amounts so the route can pass its two queries straight in.
+ */
+export function driverNetEarnings(
+  earningAmounts: number[],
+  adjustmentAmounts: number[],
+): number {
+  return (
+    earningAmounts.reduce((sum, a) => sum + a, 0) +
+    adjustmentAmounts.reduce((sum, a) => sum + a, 0)
+  );
+}
+
+// ---------------------------------------------------------------------------
+// A5 — leave-price freeze (2026-11-22).
+//
+// A member's fareShare / appFee / totalPrice is what they PREPAID
+// (paidAmount). When a member leaves, the remaining members' prices are
+// FROZEN at those prepaid amounts — the old code recalculated the fair
+// split over the survivors, which RAISED their recorded totalPrice
+// without anyone paying the difference, and accept then credited the
+// driver the raised (never-paid) fareShares. Freezing is the fix: the
+// leave route updates no remaining member's amounts at all, and accept
+// credits exactly the stored (paid) fareShares.
+//
+// freezePricesOnLeave is the explicit, tested form of that rule: the
+// amounts after a leave are the stored amounts, unchanged. The leave
+// route calls it (and notifies the survivors) instead of recalculating.
+// ---------------------------------------------------------------------------
+
+/** Minimal stored price row for one ride-request member. */
+export interface FrozenMemberPrice {
+  fareShare: number;
+  appFee: number;
+  totalPrice: number;
+  paidAmount: number;
+}
+
+/** A5: leaving freezes every remaining member's price at what they paid. */
+export function freezePricesOnLeave(
+  members: FrozenMemberPrice[],
+): FrozenMemberPrice[] {
+  return members.map((m) => ({
+    fareShare: m.fareShare,
+    appFee: m.appFee,
+    totalPrice: m.totalPrice,
+    paidAmount: m.paidAmount,
+  }));
+}
+
+/**
+ * A5 (join side): when a new rider joins and the fair split is
+ * recomputed, an existing member's price may only move DOWN (with a
+ * refund of the difference) — never UP. A recomputed share above what
+ * the member already paid is frozen at the paid amount: nobody is
+ * charged extra, and the recorded totalPrice never exceeds paidAmount,
+ * so accept can never credit the driver money the passenger never paid.
+ */
+export function joinRepriceForMember(
+  previousPaid: number,
+  newPrice: number,
+): { appliedPrice: number; refund: number } {
+  if (newPrice < previousPaid) {
+    return { appliedPrice: newPrice, refund: previousPaid - newPrice };
+  }
+  return { appliedPrice: previousPaid, refund: 0 };
+}
+
+// ---------------------------------------------------------------------------
+// D8a — held prepayments (2026-11-23).
+//
+// Creating or joining a ride request deducts the fare as a 'prepayment'
+// ledger row, but the money is only RELEASED to the driver at accept
+// (A1) and only REFUNDED when the request is cancelled/left. While the
+// request is still 'open' the money is HELD: it is already out of the
+// spendable balance (balance = ledger sum, which includes the negative
+// prepayment row), but the passenger has not actually ridden yet. The
+// wallet shows it separately so the user can tell held money apart
+// from money that is gone.
+//
+// A prepayment row's referenceId is its request id. Only rows whose
+// request is still 'open' count as held — once the request is
+// accepted the fare belongs to the driver, and once it is cancelled
+// the refund row has already put the money back.
+// ---------------------------------------------------------------------------
+
+/** Minimal prepayment ledger row needed for the held total. */
+export interface PrepaymentRow {
+  referenceId: string | null;
+  /** Signed amount: prepayments are negative (money out). */
+  amount: number;
+}
+
+/**
+ * Held prepayments: the sum of the (negative) prepayment amounts
+ * whose request is still open, returned as a POSITIVE total to display
+ * ("held: 8,400 MMK"). Rows for accepted/cancelled requests, rows
+ * with no request id, and non-negative rows are ignored.
+ */
+export function heldPrepaymentTotal(
+  prepayments: PrepaymentRow[],
+  openRequestIds: Iterable<string>,
+): number {
+  const open = new Set(openRequestIds);
+  let held = 0;
+  for (const row of prepayments) {
+    if (!row.referenceId || !open.has(row.referenceId)) continue;
+    if (row.amount >= 0) continue;
+    held += -row.amount;
+  }
+  return held;
 }

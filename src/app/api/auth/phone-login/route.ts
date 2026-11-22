@@ -18,6 +18,7 @@ import { db } from "@/db";
 import { user } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { jsonError } from "@/lib/api-helpers";
+import { normalizePhone } from "@/lib/phone";
 import { rateLimitResponse } from "@/lib/rate-limit";
 
 const phoneLoginSchema = z.object({
@@ -35,13 +36,17 @@ export async function POST(request: Request) {
     return jsonError(parsed.error.issues[0]?.message ?? "Invalid input", 400);
   }
   const { phone, password } = parsed.data;
+  // B5: normalise before lookup (spaces/dashes stripped, +95 -> 0) —
+  // the stored form is normalised at registration, so the lookup must
+  // use the same canonical form or a differently-typed number misses.
+  const normalizedPhone = normalizePhone(phone);
 
   const [found] = await db
     .select()
     .from(user)
-    .where(eq(user.phone, phone))
+    .where(eq(user.phone, normalizedPhone))
     .limit(1);
-  if (!found) return jsonError("Invalid phone or password", 401);
+  if (!found) return jsonError("ဖုန်းနံပါတ် သို့မဟုတ် စကားဝှက် မှားနေပါသည်", 401);
 
   try {
     // asResponse: true so the session cookie Better Auth sets is carried
@@ -51,9 +56,9 @@ export async function POST(request: Request) {
       headers: await headers(),
       asResponse: true,
     });
-    if (!res.ok) return jsonError("Invalid phone or password", 401);
+    if (!res.ok) return jsonError("ဖုန်းနံပါတ် သို့မဟုတ် စကားဝှက် မှားနေပါသည်", 401);
     return res;
   } catch {
-    return jsonError("Invalid phone or password", 401);
+    return jsonError("ဖုန်းနံပါတ် သို့မဟုတ် စကားဝှက် မှားနေပါသည်", 401);
   }
 }

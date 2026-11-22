@@ -72,19 +72,19 @@ export default function LocationField({
           type="text"
           className="input"
           value={value}
-          placeholder={placeholder ?? "Search a place in Yangon…"}
+          placeholder={placeholder ?? "ရန်ကုန်မြို့မှာ နေရာရှာပါ…"}
           onChange={(e) => handleChange(e.target.value)}
           onFocus={() => hits.length > 0 && setOpen(true)}
           autoComplete="off"
         />
         {onUseMyLocation ? (
-          <button type="button" onClick={onUseMyLocation} disabled={locating} className="btn-outline shrink-0 px-3" title="Use my location">
+          <button type="button" onClick={onUseMyLocation} disabled={locating} className="btn-outline shrink-0 px-3" title="ကျွန်တော့်တည်နေရာကို သုံးပါ">
             {locating ? "…" : "📍"}
-            <span className="sr-only">Use my location</span>
+            <span className="sr-only">ကျွန်တော့်တည်နေရာကို သုံးပါ</span>
           </button>
         ) : null}
       </div>
-      {loading ? <p className="mt-1 text-xs text-forest/50 dark:text-mint/50">Searching…</p> : null}
+      {loading ? <p className="mt-1 text-xs text-forest/50 dark:text-mint/50">ရှာဖွေနေသည်…</p> : null}
       {open && hits.length > 0 ? (
         <ul className="absolute inset-x-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-[12px] bg-white shadow-[0_8px_32px_rgba(30,73,39,0.2)] ring-1 ring-forest/10 dark:bg-[#1a3a24] dark:ring-mint/10">
           {hits.map((h, i) => (

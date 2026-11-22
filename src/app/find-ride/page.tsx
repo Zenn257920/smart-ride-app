@@ -25,7 +25,7 @@ import {
   type RideLike,
 } from "@/lib/api";
 
-const RideMap = dynamic(() => import("@/components/RideMap"), { ssr: false, loading: () => <div className="flex h-80 items-center justify-center rounded-[20px] bg-mint-soft text-sm text-forest/60">Loading map…</div> });
+const RideMap = dynamic(() => import("@/components/RideMap"), { ssr: false, loading: () => <div className="flex h-80 items-center justify-center rounded-[20px] bg-mint-soft text-sm text-forest/60">မြေပုံကို ဖွင့်နေသည်…</div> });
 
 export default function FindRidePage() {
   return (
@@ -45,6 +45,16 @@ function FindRideInner() {
   const [picking, setPicking] = useState<"start" | "end">("start");
   const [locating, setLocating] = useState(false);
   const [results, setResults] = useState<RideLike[]>([]);
+  // D8c: max-price filter — client-side, applied to the search results
+  // (the server already priced every match, so no new query is needed).
+  const [maxPrice, setMaxPrice] = useState("");
+  const maxPriceNum = maxPrice.trim() === "" ? null : Number(maxPrice);
+  const visibleResults = maxPriceNum != null && Number.isFinite(maxPriceNum)
+    ? results.filter((r) => {
+        const total = r.totalPrice ?? r.total_price ?? r.discountedPrice ?? r.discounted_price ?? r.price;
+        return total == null || total <= maxPriceNum;
+      })
+    : results;
   const [selected, setSelected] = useState<RideLike | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<Array<[number, number]> | undefined>(undefined);
   const [bookingRide, setBookingRide] = useState<RideLike | null>(null);
@@ -60,7 +70,7 @@ function FindRideInner() {
   }, []);
 
   const onPick = useCallback((lat: number, lng: number) => {
-    const label = picking === "start" ? "Picked on map" : "Picked on map";
+    const label = picking === "start" ? "မြေပုံပေါ်တွင် ရွေးထားသည်" : "မြေပုံပေါ်တွင် ရွေးထားသည်";
     if (picking === "start") {
       setStart({ lat, lng });
       setStartLabel(label);
@@ -72,7 +82,7 @@ function FindRideInner() {
 
   async function useMyLocation() {
     if (!navigator.geolocation) {
-      setError("Geolocation is not available on this device.");
+      setError("ဤစက်တွင် တည်နေရာ ဝန်ဆောင်မှု မရပါ။");
       return;
     }
     setLocating(true);
@@ -84,14 +94,14 @@ function FindRideInner() {
         setStart({ lat, lng });
         try {
           const hits = await geocode(`${lat},${lng}`);
-          setStartLabel(hits[0]?.label ?? "My location");
+          setStartLabel(hits[0]?.label ?? "ကျွန်တော့်တည်နေရာ");
         } catch {
-          setStartLabel("My location");
+          setStartLabel("ကျွန်တော့်တည်နေရာ");
         }
         setLocating(false);
       },
       () => {
-        setError("Could not get your location. Please allow location access or pick on the map.");
+        setError("သင့်တည်နေရာကို ရယူ၍ မရပါ။ တည်နေရာ ခွင့်ပြုချက် ပေးပါ သို့မဟုတ် မြေပုံပေါ်တွင် ရွေးပါ။");
         setLocating(false);
       },
     );
@@ -131,11 +141,11 @@ function FindRideInner() {
     }
     if (!s || !en) {
       const missing = [
-        ...(!s ? [`start location${startLabel.trim() ? ` ("${startLabel.trim()}")` : ""}`] : []),
-        ...(!en ? [`destination${endLabel.trim() ? ` ("${endLabel.trim()}")` : ""}`] : []),
+        ...(!s ? [`ထွက်မည့်နေရာ${startLabel.trim() ? ` ("${startLabel.trim()}")` : ""}`] : []),
+        ...(!en ? [`ဦးတည်ရာ${endLabel.trim() ? ` ("${endLabel.trim()}")` : ""}`] : []),
       ];
       setError(
-        `Could not find ${missing.join(" and ")} — type a place and tap a suggestion, or pick a point on the map.`,
+        `${missing.join(" နှင့် ")} ကို ရှာ၍ မရပါ — နေရာအမည်ကို ရိုက်ပြီး အကြံပြုချက်ကို နှိပ်ပါ၊ သို့မဟုတ် မြေပုံပေါ်တွင် နှိပ်ပြီး ရွေးပါ။`,
       );
       setLoading(false);
       return;
@@ -176,7 +186,7 @@ function FindRideInner() {
         }),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Search failed. Please try again.");
+      setError(err instanceof Error ? err.message : "ရှာဖွေ၍ မရပါ။ ထပ်ကြိုးစားကြည့်ပါ။");
       setResults([]);
     } finally {
       setLoading(false);
@@ -210,13 +220,13 @@ function FindRideInner() {
 
   return (
     <div className="page-wrap">
-      <h1 className="page-title">Find a ride</h1>
-      <p className="section-sub">Search by place or tap the map — AI matches you with drivers going your way.</p>
+      <h1 className="page-title">ခရီးစဉ် ရှာပါ</h1>
+      <p className="section-sub">နေရာဖြင့် ရှာပါ သို့မဟုတ် မြေပုံပေါ်တွင် နှိပ်ပါ — AI က သင့်လမ်းကြောင်းတူ ယာဉ်မောင်းများနှင့် ချိတ်ဆက်ပေးပါမည်။</p>
 
       <form onSubmit={search} className="card mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
         <LocationField
           id="startLocation"
-          label="Start location"
+          label="ထွက်မည့်နေရာ"
           value={startLabel}
           onChange={(v) => { setStartLabel(v); setStart(null); }}
           onSelect={(h: GeocodeHit) => { setStartLabel(h.label); setStart({ lat: h.lat, lng: h.lng }); }}
@@ -225,17 +235,21 @@ function FindRideInner() {
         />
         <LocationField
           id="endLocation"
-          label="Destination"
+          label="ဦးတည်ရာ"
           value={endLabel}
           onChange={(v) => { setEndLabel(v); setEnd(null); }}
           onSelect={(h: GeocodeHit) => { setEndLabel(h.label); setEnd({ lat: h.lat, lng: h.lng }); }}
         />
         <p className="text-xs leading-relaxed text-forest/60 dark:text-mint/60 md:col-span-2">
-          Type a place, then tap a suggestion — or tap the map to pick a point.
+          နေရာအမည်ကို ရိုက်ပြီး အကြံပြုချက်ကို နှိပ်ပါ — သို့မဟုတ် မြေပုံပေါ်တွင် နှိပ်ပြီး ရွေးပါ။
         </p>
         <div>
-          <label htmlFor="departureTime" className="label">Departure time</label>
+          <label htmlFor="departureTime" className="label">ထွက်မည့်အချိန်</label>
           <input id="departureTime" className="input" type="datetime-local" value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} required />
+        </div>
+        <div>
+          <label htmlFor="maxPrice" className="label">အများဆုံး ဈေး (MMK) — မသတ်မှတ်လျှင် အားလုံးပြမည်</label>
+          <input id="maxPrice" className="input" type="number" min={0} step={500} value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="e.g. 10000" />
         </div>
         <div className="flex items-end gap-2">
           <div className="flex rounded-[12px] border border-forest/20 p-1 dark:border-mint/25">
@@ -247,11 +261,11 @@ function FindRideInner() {
                 aria-pressed={picking === k}
                 className={`rounded-[8px] px-3 py-2 text-sm ${picking === k ? "bg-forest text-mint dark:bg-mint dark:text-forest" : "text-forest/70 dark:text-mint/70"}`}
               >
-                Pick {k === "start" ? "start" : "end"} on map
+                မြေပုံပေါ်တွင် {k === "start" ? "ထွက်မည့်နေရာ" : "ဦးတည်ရာ"} ရွေးပါ
               </button>
             ))}
           </div>
-          <button type="submit" disabled={loading} className="btn-primary flex-1">{loading ? "Searching…" : "Search rides"}</button>
+          <button type="submit" disabled={loading} className="btn-primary flex-1">{loading ? "ရှာဖွေနေသည်…" : "ခရီးစဉ်ရှာပါ"}</button>
         </div>
       </form>
 
@@ -266,15 +280,17 @@ function FindRideInner() {
         </div>
         <div className="min-w-0">
           <h2 className="mb-3 text-lg font-medium text-forest dark:text-mint">
-            {searched ? `${results.length} matched ride${results.length === 1 ? "" : "s"}` : "Matched rides will appear here"}
+            {searched ? `ကိုက်ညီသော ခရီးစဉ် ${visibleResults.length} ခု${visibleResults.length !== results.length ? ` (${results.length} ခုထဲမှ ဈေးစစ်ပြီး)` : ""}` : "ကိုက်ညီသော ခရီးစဉ်များ ဤနေရာတွင် ပေါ်လာပါမည်"}
           </h2>
           {loading ? (
-            <p className="text-sm text-forest/60 dark:text-mint/60">Searching for drivers on your route…</p>
+            <p className="text-sm text-forest/60 dark:text-mint/60">သင့်လမ်းကြောင်းပေါ်က ယာဉ်မောင်းများကို ရှာဖွေနေသည်…</p>
           ) : searched && results.length === 0 ? (
-            <div className="card"><p className="text-sm text-forest/70 dark:text-mint/70">No matched rides yet for this route and time. Try a nearby time, or create a ride request instead.</p></div>
+            <div className="card"><p className="text-sm text-forest/70 dark:text-mint/70">ဤလမ်းကြောင်းနှင့် အချိန်အတွက် ကိုက်ညီသော ခရီးစဉ် မရှိသေးပါ။ အချိန်ကို အနီးအနား ပြောင်းကြည့်ပါ၊ သို့မဟုတ် ခရီးစဉ် တောင်းဆိုမှုတစ်ခု ဖန်တီးပါ။</p></div>
+          ) : searched && visibleResults.length === 0 ? (
+            <div className="card"><p className="text-sm text-forest/70 dark:text-mint/70">သတ်မှတ်ထားသော ဈေးအတွင်း ကိုက်ညီသော ခရီးစဉ် မရှိပါ — အများဆုံး ဈေးကို မြှင့်ကြည့်ပါ။</p></div>
           ) : (
             <div className="grid grid-cols-1 gap-4">
-              {results.map((r) => (
+              {visibleResults.map((r) => (
                 <RideCard key={r.id} ride={r} selected={selected?.id === r.id} onSelect={selectRide} onBook={setBookingRide} />
               ))}
             </div>

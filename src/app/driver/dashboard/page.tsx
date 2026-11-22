@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import AuthGuard from "@/components/AuthGuard";
@@ -17,6 +17,7 @@ import {
   rideStartLat,
   rideStartLng,
   rideTime,
+  rideTripStatus,
   type RideLike,
   type RideRequestLike,
 } from "@/lib/api";
@@ -73,6 +74,10 @@ function DriverDashboardInner() {
   const [noShowByRide, setNoShowByRide] = useState<Record<string, string[]>>({});
   const [completeMsg, setCompleteMsg] = useState("");
   const [completingId, setCompletingId] = useState<string | null>(null);
+  // D4: trip state actions (start / arrive) + location posting.
+  const [tripMsg, setTripMsg] = useState("");
+  const [tripBusyId, setTripBusyId] = useState<string | null>(null);
+  const locatingRef = useRef(false);
 
   const load = useCallback(async () => {
     try {
@@ -184,7 +189,70 @@ function DriverDashboardInner() {
     });
   }
 
+  // D4: move the trip through its states. The server guards the
+  // transition (scheduled -> started -> arrived) and notifies the
+  // passengers; the button is only a request — the error message
+  // (e.g. "can only start within 2 hours of departure") comes back
+  // from the server when the gate refuses.
+  async function tripAction(ride: RideLike, action: "start" | "arrive") {
+    setTripMsg("");
+    setTripBusyId(ride.id);
+    try {
+      await apiFetch(`/api/rides/${ride.id}/trip`, {
+        method: "POST",
+        body: JSON.stringify({ action }),
+      });
+      setTripMsg(
+        action === "start"
+          ? "Trip started — your location is now shared live with passengers. Keep this page open."
+          : "Arrival recorded — passengers have been notified.",
+      );
+      await load();
+    } catch (e) {
+      setTripMsg(e instanceof Error ? e.message : "Could not update the trip.");
+    } finally {
+      setTripBusyId(null);
+    }
+  }
+
   const rides = data?.rides ?? data?.offeredRides ?? [];
+
+  // D4: while any offered trip is 'started', post this phone's
+  // geolocation to the server every ~10s so passengers can follow the
+  // trip live. Only runs while the dashboard is open; a failed post
+  // (e.g. location permission denied) is silent — the trip still works,
+  // passengers just see the last known position marked stale.
+  const startedRideIds = rides
+    .filter((r) => (r.status === "open" || r.status === "full") && rideTripStatus(r) === "started")
+    .map((r) => r.id);
+  useEffect(() => {
+    if (startedRideIds.length === 0) return;
+    if (!navigator.geolocation) return;
+    const post = () => {
+      if (locatingRef.current) return;
+      locatingRef.current = true;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          locatingRef.current = false;
+          for (const rideId of startedRideIds) {
+            void apiFetch(`/api/rides/${rideId}/location`, {
+              method: "POST",
+              body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            }).catch(() => undefined);
+          }
+        },
+        () => {
+          locatingRef.current = false;
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 5000 },
+      );
+    };
+    post();
+    const t = setInterval(post, 10_000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startedRideIds.join(",")]);
+
   const stats = data?.stats ?? {};
   const earnings = data?.earnings ?? {};
   const driver = data?.driver ?? {};
@@ -266,6 +334,7 @@ function DriverDashboardInner() {
       <div className="mt-10">
         <h2 className="text-lg font-medium text-forest dark:text-mint">Offered rides</h2>
         {completeMsg ? <p className="mt-3 rounded-[12px] bg-mint-soft px-3 py-2 text-sm dark:bg-forest-soft">{completeMsg}</p> : null}
+        {tripMsg ? <p className="mt-3 rounded-[12px] bg-mint-soft px-3 py-2 text-sm dark:bg-forest-soft">{tripMsg}</p> : null}
         {rides.length === 0 ? (
           <p className="mt-2 text-sm text-forest/60 dark:text-mint/60">No rides offered yet. <Link href="/offer-ride" className="underline">Offer one →</Link></p>
         ) : (
@@ -273,23 +342,68 @@ function DriverDashboardInner() {
             {rides.map((r) => (
               <div key={r.id}>
                 <RideCard ride={r} showMatch={false} />
+                {/* D3: passenger phones — the dashboard response includes
+                    them only for this ride's driver, confirmed bookings
+                    only. */}
                 {ridePassengers(r).length > 0 ? (
-                  <p className="mt-2 px-1 text-sm text-forest/70 dark:text-mint/70">Passengers: {ridePassengers(r).map((p) => p.name).join(", ")}</p>
+                  <p className="mt-2 px-1 text-sm text-forest/70 dark:text-mint/70">
+                    Passengers: {ridePassengers(r).map((p, i) => (
+                      <span key={p.id ?? i}>
+                        {i > 0 ? ", " : ""}
+                        {p.name}
+                        {p.phone ? (
+                          <>
+                            {" "}
+                            <a href={`tel:${p.phone}`} className="underline">📞 {p.phone}</a>
+                          </>
+                        ) : null}
+                      </span>
+                    ))}
+                  </p>
                 ) : null}
                 {r.status === "completed" ? (
                   <p className="mt-2 px-1 text-sm font-medium text-forest dark:text-mint">Completed ✓</p>
                 ) : (r.status === "open" || r.status === "full") ? (
                   <div className="mt-3 px-1">
+                    {/* D4: trip states. Start becomes available within 2
+                        hours of departure (server enforces it); while the
+                        trip is started this page posts the phone's
+                        location every ~10s for the passenger live view. */}
+                    <p className="text-sm text-forest/70 dark:text-mint/70">
+                      ခရီးစဉ် အခြေအနေ: {rideTripStatus(r) === "started" ? "သွားနေသည် (တည်နေရာ live မျှဝေနေသည်)" : rideTripStatus(r) === "arrived" ? "ရောက်ရှိနေသည်" : "မစရသေးပါ"}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {rideTripStatus(r) === "scheduled" ? (
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={tripBusyId === r.id}
+                          onClick={() => tripAction(r, "start")}
+                        >
+                          {tripBusyId === r.id ? "စတင်နေသည်…" : "▶ Start trip"}
+                        </button>
+                      ) : null}
+                      {rideTripStatus(r) === "started" ? (
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={tripBusyId === r.id}
+                          onClick={() => tripAction(r, "arrive")}
+                        >
+                          {tripBusyId === r.id ? "မှတ်တမ်းတင်နေသည်…" : "📍 Arrived"}
+                        </button>
+                      ) : null}
+                    </div>
                     {(() => {
                       const t = rideTime(r);
                       const departed = t ? new Date(t).getTime() <= Date.now() : false;
                       if (!departed) {
-                        return <p className="text-sm text-forest/60 dark:text-mint/60">Mark completed becomes available after departure ({t ? new Date(t).toLocaleString() : "—"}).</p>;
+                        return <p className="mt-3 text-sm text-forest/60 dark:text-mint/60">Mark completed becomes available after departure ({t ? new Date(t).toLocaleString() : "—"}).</p>;
                       }
                       return (
                         <>
                           {ridePassengers(r).length > 0 ? (
-                            <div className="flex flex-wrap gap-x-4 gap-y-1">
+                            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
                               {ridePassengers(r).map((p) =>
                                 p.id ? (
                                   <label key={p.id} className="flex items-center gap-1.5 text-sm text-forest/80 dark:text-mint/80">

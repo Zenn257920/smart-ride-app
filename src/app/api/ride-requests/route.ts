@@ -22,6 +22,7 @@ import {
 } from "@/db/schema";
 import { getSessionUser, jsonError, parseDate } from "@/lib/api-helpers";
 import { routeMatcher } from "@/lib/matching";
+import { isFutureDeparture } from "@/lib/money";
 import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { addTransaction, getBalance } from "@/lib/wallet";
 
@@ -166,6 +167,10 @@ export async function POST(request: Request) {
 
   const departureTime = parseDate(data.departureTime);
   if (!departureTime) return jsonError("Invalid departureTime", 400);
+  // A6: ride requests cannot be created in the past.
+  if (!isFutureDeparture(departureTime)) {
+    return jsonError("Departure time must be in the future", 400);
+  }
 
   const priced = routeMatcher.calculatePriceFromCoords(
     data.startLat,
