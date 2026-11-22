@@ -2,14 +2,17 @@
  * POST /api/rides/:id/cancel — the driver cancels their own offered ride.
  * Status -> 'cancelled'. Each confirmed e-wallet passenger is refunded in
  * full (ledger 'refund') and their booking is cancelled; the driver ledger
- * takes back that booking's driverPayment ('adjustment'). Cash bookings are
- * cancelled with no ledger move.
+ * takes back that booking's driverPayment ('adjustment') — which is
+ * exactly the fareShare the driver was credited at book/accept time
+ * (see src/lib/money), so this reverses the credit and never the
+ * app-fee part. Cash bookings are cancelled with no ledger move.
  */
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings, rides } from "@/db/schema";
 import { getSessionUser, jsonError } from "@/lib/api-helpers";
+import { cancelBookingDeltas } from "@/lib/money";
 import { addTransaction } from "@/lib/wallet";
 import { notifyUser } from "@/lib/notify";
 
@@ -54,20 +57,20 @@ export async function POST(
       .where(eq(bookings.id, booking.id));
 
     if (booking.paymentMethod !== "cash") {
-      await addTransaction({
-        userId: booking.passengerId,
-        type: "refund",
-        amount: booking.totalPrice,
-        description: `Ride cancelled by driver — refund ${booking.totalPrice.toLocaleString()} Kyats`,
-        referenceId: rideId,
-      });
-      await addTransaction({
-        userId: ride.driverId,
-        type: "adjustment",
-        amount: -booking.driverPayment,
-        description: `Cancelled passenger refund ${booking.driverPayment.toLocaleString()} ကျပ်`,
-        referenceId: rideId,
-      });
+      // Amounts come from cancelBookingDeltas (src/lib/money): passenger
+      // +totalPrice, driver -driverPayment (fare only, never the fee part).
+      for (const delta of cancelBookingDeltas(booking, ride.driverId)) {
+        await addTransaction({
+          userId: delta.userId,
+          type: delta.type,
+          amount: delta.amount,
+          description:
+            delta.type === "refund"
+              ? `Ride cancelled by driver — refund ${booking.totalPrice.toLocaleString()} Kyats`
+              : `Cancelled passenger refund ${booking.driverPayment.toLocaleString()} ကျပ်`,
+          referenceId: rideId,
+        });
+      }
       refunded.push({
         passengerId: booking.passengerId,
         refund: booking.totalPrice,

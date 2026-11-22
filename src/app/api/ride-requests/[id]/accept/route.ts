@@ -9,9 +9,13 @@
  * (payment_method 'ewallet', driverPayment = fare_share each), and the
  * creator + joiners are notified.
  *
- * No ledger moves happen here, exactly as in the old app: members already
- * paid their prepayment when creating/joining the request, so their money
- * is held in the ledger until a later settlement step.
+ * Money (A1 fix): members already paid their prepayment when
+ * creating/joining the request, so accept moves no passenger money —
+ * but it DOES credit the driver fareShare per member ('ride_earning').
+ * Before this fix the driver was never credited here while both cancel
+ * routes debited -driverPayment as if paid, so cancelling an
+ * accepted-request ride drove the driver's balance negative. Now the
+ * cancel paths reverse exactly what accept credited (see src/lib/money).
  */
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
@@ -24,7 +28,9 @@ import {
 } from "@/db/schema";
 import { getSessionUser, jsonError, requireDriver } from "@/lib/api-helpers";
 import { routeMatcher } from "@/lib/matching";
+import { acceptDriverDeltas } from "@/lib/money";
 import { notifyUser } from "@/lib/notify";
+import { addTransaction } from "@/lib/wallet";
 
 export async function POST(
   _request: Request,
@@ -113,6 +119,23 @@ export async function POST(
       })
       .returning();
     createdBookings.push(booking);
+  }
+
+  // A1: credit the driver the fare part of each member's prepaid amount.
+  // The 5% app fee stays with the app (it was collected in the
+  // prepayment); the driver is credited fareShare only, matching
+  // booking.driverPayment, so a later cancel reverses exactly this.
+  for (const delta of acceptDriverDeltas(
+    sessionUser.id,
+    createdBookings.map((b) => b.fareShare),
+  )) {
+    await addTransaction({
+      userId: delta.userId,
+      type: delta.type,
+      amount: delta.amount,
+      description: `ခရီးသည်ခ ${delta.amount.toLocaleString()} ကျပ် ရရှိ (ride request လက်ခံခြင်း)`,
+      referenceId: ride.id,
+    });
   }
 
   const driverName = sessionUser.name ?? "Driver";

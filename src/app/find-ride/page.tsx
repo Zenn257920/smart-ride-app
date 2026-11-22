@@ -286,6 +286,8 @@ function FindRideInner() {
         <BookingModal
           ride={bookingRide}
           balance={balance}
+          pickup={start}
+          dropoff={end}
           onClose={() => setBookingRide(null)}
           onBooked={() => {
             setBookingRide(null);

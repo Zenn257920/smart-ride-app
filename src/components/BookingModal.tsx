@@ -12,17 +12,23 @@ import {
   rideStart,
   rideTime,
   rideTotal,
+  type LatLng,
   type RideLike,
 } from "@/lib/api";
 
 interface BookingModalProps {
   ride: RideLike;
   balance: number | null;
+  /** The rider's own pickup/dropoff from the search that found this
+   * ride — sent with the booking so the server prices with the same
+   * segment inputs search used (A2: seen price == charged price). */
+  pickup?: LatLng | null;
+  dropoff?: LatLng | null;
   onClose: () => void;
   onBooked: () => void;
 }
 
-export default function BookingModal({ ride, balance, onClose, onBooked }: BookingModalProps) {
+export default function BookingModal({ ride, balance, pickup, dropoff, onClose, onBooked }: BookingModalProps) {
   const [method, setMethod] = useState<"ewallet" | "cash">("ewallet");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -38,7 +44,17 @@ export default function BookingModal({ ride, balance, onClose, onBooked }: Booki
     try {
       await apiFetch(`/api/rides/${ride.id}/book`, {
         method: "POST",
-        body: JSON.stringify({ paymentMethod: method }),
+        body: JSON.stringify({
+          paymentMethod: method,
+          ...(pickup && dropoff
+            ? {
+                startLat: pickup.lat,
+                startLng: pickup.lng,
+                endLat: dropoff.lat,
+                endLng: dropoff.lng,
+              }
+            : {}),
+        }),
       });
       onBooked();
     } catch (e) {

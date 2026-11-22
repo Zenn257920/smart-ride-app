@@ -132,6 +132,31 @@ export interface PointProjection {
   globalT?: number;
 }
 
+/** Input for priceNewBooking: one ride + the riders already on board. */
+export interface NewBookingPriceInput {
+  /** Listed ride price (MMK) — what the first rider pays as fareShare. */
+  basePrice: number;
+  /** Driver's total route distance in km (when known). */
+  distanceKm?: number;
+  /** Driver route: start/end coords + optional polyline. */
+  ride: RideCoords;
+  /** Passengers already confirmed on the ride, each with the coords they
+   * ride (bookings store none, so callers pass the ride's own coords —
+   * a full-route rider). */
+  existingPassengers: PassengerCoords[];
+  /** The rider now booking / being priced. */
+  newRider: PassengerCoords;
+}
+
+/** Result of priceNewBooking: one breakdown per rider, new rider last. */
+export interface NewBookingPrice {
+  isFirstRider: boolean;
+  /** Breakdowns in rider order: existing passengers first, new rider last. */
+  breakdowns: PriceBreakdown[];
+  /** The new rider's own breakdown (== breakdowns[breakdowns.length - 1]). */
+  newRider: PriceBreakdown;
+}
+
 /** A ride enriched with its match score and the new rider's pricing. */
 export interface MatchResult extends Ride {
   matchScore: number;
@@ -868,6 +893,108 @@ export class RouteMatcher {
     return diffMin <= this.TIME_WINDOW_MINUTES;
   }
 
+  /**
+   * Price a new booking on a ride — the ONE pricing function both search
+   * (findOptimalMatches) and booking (POST /api/rides/:id/book) use, so
+   * the price a rider sees is the price they are charged (A2).
+   *
+   * First rider: pays the full listed price + 5% fee. 2nd+ rider: the
+   * fair segment split is recomputed over everyone on board (existing
+   * passengers + the new rider) and the new rider pays their segment
+   * breakdown — never the old simple split floor(basePrice / N).
+   *
+   * Callers pass the new rider's ACTUAL pickup/dropoff coords when they
+   * have them (search does; booking does when the client sends the coords
+   * it searched with). Without them the rider is treated as riding the
+   * driver's full route, exactly as search treats a booking's passengers.
+   */
+  priceNewBooking(input: NewBookingPriceInput): NewBookingPrice {
+    const { basePrice, distanceKm, ride, existingPassengers, newRider } =
+      input;
+    const passengerKm = this.getPassengerDistance(newRider, ride);
+    const totalPassengers = existingPassengers.length + 1;
+    const isFirstRider = totalPassengers === 1;
+
+    if (isFirstRider) {
+      const appTax = Math.floor(basePrice * this.APP_TAX_RATE);
+      const breakdown: PriceBreakdown = {
+        fareShare: basePrice,
+        driverBonusPerPassenger: 0,
+        appCommissionPerPassenger: appTax,
+        passengerPrice: basePrice + appTax,
+        distanceKm: Math.round(passengerKm * 10) / 10,
+        weightPercent: 100,
+      };
+      return { isFirstRider: true, breakdowns: [breakdown], newRider: breakdown };
+    }
+
+    const existingPassengerDistances = existingPassengers.map((p) => {
+      if (p.startLat != null && p.endLat != null) {
+        return this.calculateDistance(
+          p.startLat,
+          p.startLng as number,
+          p.endLat,
+          p.endLng as number,
+        );
+      }
+      if (ride.startLat != null && ride.endLat != null) {
+        return this.calculateDistance(
+          ride.startLat,
+          ride.startLng as number,
+          ride.endLat,
+          ride.endLng as number,
+        );
+      }
+      return passengerKm || 10;
+    });
+    const allDistances = [...existingPassengerDistances, passengerKm || 10];
+
+    const allPassengerObjs: PassengerCoords[] = [
+      ...existingPassengers.map((p, i) => ({
+        id: p.id || p.passengerId || `p${i}`,
+        startLat: p.startLat ?? ride.startLat,
+        startLng: p.startLng ?? ride.startLng,
+        endLat: p.endLat ?? ride.endLat,
+        endLng: p.endLng ?? ride.endLng,
+      })),
+      {
+        id: newRider.id || newRider.passengerId || "new",
+        startLat: newRider.startLat,
+        startLng: newRider.startLng,
+        endLat: newRider.endLat,
+        endLng: newRider.endLng,
+      },
+    ];
+
+    const driverRouteKm =
+      distanceKm ||
+      this.getPassengerDistance(
+        {
+          startLat: ride.startLat,
+          startLng: ride.startLng,
+          endLat: ride.endLat,
+          endLng: ride.endLng,
+        },
+        ride,
+      ) ||
+      allDistances.reduce((a, b) => Math.max(a, b), 0);
+
+    const segmentData = this.buildSegmentData(
+      allPassengerObjs,
+      ride,
+      driverRouteKm,
+    );
+    const breakdowns = segmentData
+      ? this.calculateFairPriceBreakdown(0, allDistances, { segmentData })
+      : this.calculateFairPriceBreakdown(0, allDistances);
+
+    return {
+      isFirstRider: false,
+      breakdowns,
+      newRider: breakdowns[breakdowns.length - 1],
+    };
+  }
+
   findOptimalMatches(
     userRequest: PassengerCoords,
     availableRides: Ride[],
@@ -902,102 +1029,40 @@ export class RouteMatcher {
     return scoredRides.slice(0, 5).map(({ ride, score }) => {
       const basePrice = ride.price || this.DEFAULT_PRICE;
 
-      const passengerKm = this.getPassengerDistance(userRequest, ride);
-
-      const existingPassengerDistances = (ride.passengers || []).map((p) => {
-        if (p.startLat != null && p.endLat != null) {
-          return this.calculateDistance(
-            p.startLat,
-            p.startLng as number,
-            p.endLat,
-            p.endLng as number,
-          );
-        }
-
-        if (ride.startLat != null && ride.endLat != null) {
-          return this.calculateDistance(
-            ride.startLat,
-            ride.startLng as number,
-            ride.endLat,
-            ride.endLng as number,
-          );
-        }
-        return passengerKm || 10;
+      // One shared pricing path with POST /api/rides/:id/book (A2): the
+      // price shown here is the price booking charges for the same inputs.
+      const priced = this.priceNewBooking({
+        basePrice,
+        distanceKm: ride.distanceKm,
+        ride,
+        existingPassengers: ride.passengers || [],
+        newRider: userRequest,
       });
 
-      const allDistances = [...existingPassengerDistances, passengerKm || 10];
-      const totalPassengers = allDistances.length;
-      const isFirstRider = totalPassengers === 1;
-
-      if (isFirstRider) {
-        const appTax = Math.floor(basePrice * this.APP_TAX_RATE);
-        const passengerCost = basePrice + appTax;
+      if (priced.isFirstRider) {
+        const myBreakdown = priced.newRider;
         return {
           ...ride,
           matchScore: score,
           matchPercentage: score,
           originalPrice: basePrice,
           isFirstRider: true,
-          discountedPrice: passengerCost,
-          fareShare: basePrice,
+          discountedPrice: myBreakdown.passengerPrice,
+          fareShare: myBreakdown.fareShare,
           driverBonusPerPassenger: 0,
-          appCommissionPerPassenger: appTax,
+          appCommissionPerPassenger: myBreakdown.appCommissionPerPassenger,
           driverEarnings: basePrice,
-          appCommissionTotal: appTax,
+          appCommissionTotal: myBreakdown.appCommissionPerPassenger,
           savings: 0,
           savingsPercentage: 0,
           totalPassengers: 1,
-          passengerDistanceKm: Math.round(passengerKm * 10) / 10,
+          passengerDistanceKm: myBreakdown.distanceKm,
           passengerWeightPercent: 100,
         };
       }
 
-      const breakdowns = (() => {
-        // Build segment data for fair pricing
-        const allPassengerObjs: PassengerCoords[] = [
-          ...(ride.passengers || []).map((p) => ({
-            id: p.id || p.passengerId,
-            startLat: p.startLat ?? ride.startLat,
-            startLng: p.startLng ?? ride.startLng,
-            endLat: p.endLat ?? ride.endLat,
-            endLng: p.endLng ?? ride.endLng,
-          })),
-          {
-            id: userRequest.id || userRequest.passengerId || 'new',
-            startLat: userRequest.startLat,
-            startLng: userRequest.startLng,
-            endLat: userRequest.endLat,
-            endLng: userRequest.endLng,
-          },
-        ];
-
-        const driverRouteKm =
-          ride.distanceKm ||
-          this.getPassengerDistance(
-            {
-              startLat: ride.startLat,
-              startLng: ride.startLng,
-              endLat: ride.endLat,
-              endLng: ride.endLng,
-            },
-            ride,
-          ) ||
-          allDistances.reduce((a, b) => Math.max(a, b), 0);
-
-        const segmentData = this.buildSegmentData(
-          allPassengerObjs,
-          ride,
-          driverRouteKm,
-        );
-
-        if (segmentData) {
-          return this.calculateFairPriceBreakdown(0, allDistances, {
-            segmentData,
-          });
-        }
-        return this.calculateFairPriceBreakdown(0, allDistances);
-      })();
-      const myBreakdown = breakdowns[breakdowns.length - 1];
+      const myBreakdown = priced.newRider;
+      const breakdowns = priced.breakdowns;
 
       return {
         ...ride,
@@ -1018,7 +1083,7 @@ export class RouteMatcher {
         savingsPercentage: Math.round(
           ((basePrice - myBreakdown.passengerPrice) / basePrice) * 100,
         ),
-        totalPassengers,
+        totalPassengers: breakdowns.length,
         passengerDistanceKm: myBreakdown.distanceKm,
         passengerWeightPercent: myBreakdown.weightPercent,
       };
