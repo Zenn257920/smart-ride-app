@@ -14,7 +14,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { drivers } from "@/db/schema";
+import { drivers, user } from "@/db/schema";
 
 /** The signed-in Better Auth user, or null when there is no session. */
 export async function getSessionUser() {
@@ -40,6 +40,21 @@ export async function requireDriver(userId: string) {
     .where(eq(drivers.userId, userId))
     .limit(1);
   return row ?? null;
+}
+
+/**
+ * D2 — admin gate. Reads the flag from the DB user row on every call
+ * (never from the session copy, which can be stale), or null when the
+ * user is not an admin. Every /api/admin/* route must call this and
+ * return 403 when it is null.
+ */
+export async function requireAdmin(userId: string) {
+  const [row] = await db
+    .select()
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+  return row?.isAdmin ? row : null;
 }
 
 /** Parse a request body as JSON, returning null when the body is not JSON. */

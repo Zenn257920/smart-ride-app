@@ -40,6 +40,11 @@ export async function POST(
   if (booking.status === "cancelled") {
     return jsonError("Already Cancel this Ride", 409);
   }
+  // D1: a completed ride is settled — its bookings can no longer be
+  // cancelled for a refund (and a no-show fare is forfeited, not refunded).
+  if (booking.status === "completed" || booking.status === "no_show") {
+    return jsonError("This booking is already completed and cannot be cancelled", 409);
+  }
 
   const [ride] = await db
     .select()

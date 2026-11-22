@@ -157,3 +157,131 @@ export function repricedBookingAmounts(breakdown: {
     driverPayment: breakdown.fareShare,
   };
 }
+
+// ---------------------------------------------------------------------------
+// D1 — complete-ride settlement (2026-11-22).
+//
+// MONEY STATE MACHINE, as actually implemented (reconciled with Batch 1):
+//
+//   Direct booking (POST /api/rides/:id/book):
+//     - e-wallet: at BOOK time the passenger pays totalPrice
+//       (fareShare + 5% appFee) as 'ride_payment', and the driver is
+//       credited fareShare as 'ride_earning' AT THE SAME TIME.
+//       bookings.driverPayment = fareShare records what the driver holds.
+//     - cash: NO ledger move at book time — the driver collects cash in
+//       person. driverPayment is still recorded, but nothing was credited.
+//     - 2nd+ rider: earlier e-wallet riders are refunded the fair-split
+//       difference and the driver is debited the fare portion only
+//       (splitRefund); driverPayment is repriced to the new fareShare.
+//   Ride-request flow (create/join -> accept):
+//     - create/join: the passenger prepays totalPrice as 'prepayment'.
+//       No driver credit yet — the money is held, not paid out.
+//     - accept (A1): the driver is credited fareShare per member
+//       ('ride_earning'); bookings are created with
+//       driverPayment = fareShare. No passenger money moves at accept.
+//   Cancel (passenger booking cancel, or driver ride cancel):
+//     - e-wallet: passenger refunded the full totalPrice ('refund'),
+//       driver debited exactly driverPayment ('adjustment') — the fare
+//       part only, never the app-fee part. Cash: no ledger moves.
+//     - Accept-then-cancel therefore nets the driver to exactly 0.
+//   Completion (this section):
+//     - The driver was ALREADY credited at book/accept time for every
+//       e-wallet booking, so completion credits NOTHING — a second
+//       credit here would double-pay the driver. Completion is a status
+//       transition only: ride open/full -> completed, each confirmed
+//       booking -> completed. The 5% app fee stays where it always was:
+//       recorded per booking in bookings.app_fee, never a ledger row.
+//     - Cash bookings: still no ledger move at completion — the cash
+//       was collected (or not) in person, outside the ledger.
+//     - No-show: a passenger who did not show is NOT refunded — the
+//       driver keeps the fareShare already credited, because the seat
+//       was held and the driver turned up. This differs deliberately
+//       from cancel (full refund), which is only possible BEFORE
+//       departure; once the ride has gone, a no-show forfeits the fare.
+//       The booking is marked 'no_show' (not 'completed') so it stays
+//       visible and is never rateable/cancellable afterwards.
+// ---------------------------------------------------------------------------
+
+/** Minimal ride shape needed to decide whether completion is allowed. */
+export interface CompletableRide {
+  status: string;
+  departureTime: Date | string;
+}
+
+/**
+ * Gate for POST /api/rides/:id/complete: only rides still open/full,
+ * and only once the departure time has passed. Completing early would
+ * let a driver settle (and lock in no-shows) before the ride exists;
+ * completing a cancelled/completed ride would be a double-settle.
+ */
+export function canCompleteRide(
+  ride: CompletableRide,
+  now: Date = new Date(),
+): { ok: true } | { ok: false; error: string } {
+  if (ride.status !== "open" && ride.status !== "full") {
+    return {
+      ok: false,
+      error:
+        ride.status === "completed"
+          ? "Ride is already completed"
+          : `Ride cannot be completed while it is ${ride.status}`,
+    };
+  }
+  const departure =
+    ride.departureTime instanceof Date
+      ? ride.departureTime
+      : new Date(ride.departureTime);
+  if (Number.isNaN(departure.getTime())) {
+    return { ok: false, error: "Ride has no valid departure time" };
+  }
+  if (departure.getTime() > now.getTime()) {
+    return { ok: false, error: "Ride has not departed yet" };
+  }
+  return { ok: true };
+}
+
+/** Minimal booking shape needed for settlement. */
+export interface CompletionBooking {
+  id: string;
+  paymentMethod: string;
+  driverPayment: number;
+  status: string;
+}
+
+export interface RideCompletion {
+  /** Confirmed bookings that rode: -> status 'completed'. */
+  completedIds: string[];
+  /** Confirmed bookings marked no-show: -> status 'no_show'. */
+  noShowIds: string[];
+  /**
+   * Ledger moves for completion. ALWAYS empty: the driver was already
+   * credited fareShare at book/accept time (e-wallet) and cash never
+   * touches the ledger, so there is nothing left to credit — and a
+   * no-show forfeits the fare, so there is nothing to refund either.
+   * The empty array is the double-credit guard: any future change
+   * that puts a credit here must prove the driver was NOT already
+   * credited for that booking first.
+   */
+  deltas: LedgerDelta[];
+}
+
+/**
+ * Settle a completed ride: split confirmed bookings into rode vs
+ * no-show. Only 'confirmed' bookings settle — already-cancelled ones
+ * were refunded at cancel time and are skipped. Unknown no-show ids
+ * (not a confirmed booking of this ride) are ignored.
+ */
+export function settleRideCompletion(
+  bookings: CompletionBooking[],
+  noShowIds: string[],
+): RideCompletion {
+  const noShow = new Set(noShowIds);
+  const completedIds: string[] = [];
+  const settledNoShowIds: string[] = [];
+  for (const b of bookings) {
+    if (b.status !== "confirmed") continue;
+    if (noShow.has(b.id)) settledNoShowIds.push(b.id);
+    else completedIds.push(b.id);
+  }
+  return { completedIds, noShowIds: settledNoShowIds, deltas: [] };
+}

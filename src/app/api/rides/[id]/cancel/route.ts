@@ -36,6 +36,11 @@ export async function POST(
   if (ride.status === "cancelled") {
     return jsonError("Ride is already cancelled", 409);
   }
+  // D1: a completed ride is settled — it can no longer be cancelled
+  // for refunds (A4: cancelling after departure used to refund in full).
+  if (ride.status === "completed") {
+    return jsonError("Ride is already completed and cannot be cancelled", 409);
+  }
 
   const confirmed = await db
     .select()

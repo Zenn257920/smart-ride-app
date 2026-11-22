@@ -12,6 +12,10 @@ export const auth = betterAuth({
     additionalFields: {
       phone: { type: "string", required: false },
       user_type: { type: "string", required: false },
+      // D2: admin flag (column user.is_admin). Exposed on the session
+      // user so the UI can hide the Admin link; server routes must
+      // still check the DB row via requireAdmin — never the session copy.
+      is_admin: { type: "boolean", required: false },
     },
   },
   session: {

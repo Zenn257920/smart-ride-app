@@ -121,6 +121,20 @@ function MyRidesInner() {
     }
   }
 
+  // D1: mark an offered ride completed (server allows it only after
+  // departure). All confirmed passengers are marked as rode — use the
+  // driver dashboard to mark individual no-shows.
+  async function completeOffer(ride: RideLike) {
+    setError("");
+    try {
+      await apiFetch(`/api/rides/${ride.id}/complete`, { method: "POST", body: JSON.stringify({ noShowBookingIds: [] }) });
+      setNotice("Ride completed. Passengers can now rate you.");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not complete this ride.");
+    }
+  }
+
   async function submitRating() {
     if (!ratingTarget) return;
     setRatingMsg("");
@@ -215,7 +229,13 @@ function MyRidesInner() {
                 </p>
                 <p className="mt-2 text-sm">Passengers: {ridePassengers(r).length ? ridePassengers(r).map((p) => p.name).join(", ") : "None yet"}</p>
                 {(r.status === "open" || r.status === "full") ? (
-                  <button type="button" className="btn-outline mt-4" onClick={() => cancelOffer(r)}>Cancel ride</button>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button type="button" className="btn-primary" onClick={() => completeOffer(r)}>Mark completed</button>
+                    <button type="button" className="btn-outline" onClick={() => cancelOffer(r)}>Cancel ride</button>
+                  </div>
+                ) : null}
+                {r.status === "completed" ? (
+                  <p className="mt-2 text-sm font-medium text-forest dark:text-mint">Completed ✓</p>
                 ) : null}
               </article>
             ))

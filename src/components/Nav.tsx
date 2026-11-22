@@ -20,6 +20,29 @@ export default function Nav() {
   const user = session?.user as { name?: string; user_type?: string } | undefined;
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  // D2: admin link is shown only when /api/admin/me says so (DB row).
+  // The link is only a hint — /admin and every /api/admin/* route
+  // enforce the flag server-side regardless.
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/admin/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled) setIsAdmin(d?.isAdmin === true);
+      })
+      .catch(() => {
+        /* non-admin / offline — link stays hidden */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   async function handleSignOut() {
     await signOut();
@@ -46,6 +69,11 @@ export default function Nav() {
               {l.label}
             </Link>
           ))}
+          {isAdmin ? (
+            <Link href="/admin" className="rounded-full px-3 py-2 text-sm text-mint transition-colors hover:bg-white/10 hover:text-white">
+              Admin
+            </Link>
+          ) : null}
         </nav>
 
         <div className="flex shrink-0 items-center gap-1.5">
@@ -87,6 +115,11 @@ export default function Nav() {
                 {l.label}
               </Link>
             ))}
+            {isAdmin ? (
+              <Link href="/admin" onClick={() => setOpen(false)} className="rounded-xl px-3 py-2.5 text-sm text-mint hover:bg-white/10">
+                Admin
+              </Link>
+            ) : null}
             {user ? (
               <>
                 <Link href="/dashboard" onClick={() => setOpen(false)} className="rounded-xl px-3 py-2.5 text-sm text-mint hover:bg-white/10">

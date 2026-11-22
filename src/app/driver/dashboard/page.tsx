@@ -16,6 +16,7 @@ import {
   rideRoute,
   rideStartLat,
   rideStartLng,
+  rideTime,
   type RideLike,
   type RideRequestLike,
 } from "@/lib/api";
@@ -68,6 +69,10 @@ function DriverDashboardInner() {
   const [accepting, setAccepting] = useState<RideRequestLike | null>(null);
   const [acceptMsg, setAcceptMsg] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  // D1: no-show booking ids picked per ride (booking id -> checked).
+  const [noShowByRide, setNoShowByRide] = useState<Record<string, string[]>>({});
+  const [completeMsg, setCompleteMsg] = useState("");
+  const [completingId, setCompletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -133,6 +138,50 @@ function DriverDashboardInner() {
     } catch (e) {
       setAcceptMsg(e instanceof Error ? e.message : "Could not skip this request.");
     }
+  }
+
+  // D1: mark a ride completed (only after its departure time — the
+  // server enforces this too). Checked passengers are marked no-show:
+  // they are not refunded and the driver keeps their fareShare, which
+  // was already credited at booking/accept time. Completion itself
+  // moves no money.
+  async function completeRide(ride: RideLike) {
+    setCompleteMsg("");
+    setCompletingId(ride.id);
+    try {
+      const res = await apiFetch<{ noShow?: string[] }>(`/api/rides/${ride.id}/complete`, {
+        method: "POST",
+        body: JSON.stringify({ noShowBookingIds: noShowByRide[ride.id] ?? [] }),
+      });
+      const noShowCount = res.noShow?.length ?? 0;
+      setCompleteMsg(
+        noShowCount > 0
+          ? `Ride completed — ${noShowCount} passenger${noShowCount === 1 ? "" : "s"} marked no-show (fare not refunded).`
+          : "Ride completed — all passengers marked as rode.",
+      );
+      setNoShowByRide((prev) => {
+        const next = { ...prev };
+        delete next[ride.id];
+        return next;
+      });
+      await load();
+    } catch (e) {
+      setCompleteMsg(e instanceof Error ? e.message : "Could not complete this ride.");
+    } finally {
+      setCompletingId(null);
+    }
+  }
+
+  function toggleNoShow(rideId: string, bookingId: string) {
+    setNoShowByRide((prev) => {
+      const list = prev[rideId] ?? [];
+      return {
+        ...prev,
+        [rideId]: list.includes(bookingId)
+          ? list.filter((id) => id !== bookingId)
+          : [...list, bookingId],
+      };
+    });
   }
 
   const rides = data?.rides ?? data?.offeredRides ?? [];
@@ -216,6 +265,7 @@ function DriverDashboardInner() {
 
       <div className="mt-10">
         <h2 className="text-lg font-medium text-forest dark:text-mint">Offered rides</h2>
+        {completeMsg ? <p className="mt-3 rounded-[12px] bg-mint-soft px-3 py-2 text-sm dark:bg-forest-soft">{completeMsg}</p> : null}
         {rides.length === 0 ? (
           <p className="mt-2 text-sm text-forest/60 dark:text-mint/60">No rides offered yet. <Link href="/offer-ride" className="underline">Offer one →</Link></p>
         ) : (
@@ -225,6 +275,48 @@ function DriverDashboardInner() {
                 <RideCard ride={r} showMatch={false} />
                 {ridePassengers(r).length > 0 ? (
                   <p className="mt-2 px-1 text-sm text-forest/70 dark:text-mint/70">Passengers: {ridePassengers(r).map((p) => p.name).join(", ")}</p>
+                ) : null}
+                {r.status === "completed" ? (
+                  <p className="mt-2 px-1 text-sm font-medium text-forest dark:text-mint">Completed ✓</p>
+                ) : (r.status === "open" || r.status === "full") ? (
+                  <div className="mt-3 px-1">
+                    {(() => {
+                      const t = rideTime(r);
+                      const departed = t ? new Date(t).getTime() <= Date.now() : false;
+                      if (!departed) {
+                        return <p className="text-sm text-forest/60 dark:text-mint/60">Mark completed becomes available after departure ({t ? new Date(t).toLocaleString() : "—"}).</p>;
+                      }
+                      return (
+                        <>
+                          {ridePassengers(r).length > 0 ? (
+                            <div className="flex flex-wrap gap-x-4 gap-y-1">
+                              {ridePassengers(r).map((p) =>
+                                p.id ? (
+                                  <label key={p.id} className="flex items-center gap-1.5 text-sm text-forest/80 dark:text-mint/80">
+                                    <input
+                                      type="checkbox"
+                                      checked={(noShowByRide[r.id] ?? []).includes(p.id)}
+                                      onChange={() => toggleNoShow(r.id, p.id!)}
+                                    />
+                                    {p.name} did not show
+                                  </label>
+                                ) : null,
+                              )}
+                            </div>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="btn-primary mt-2"
+                            disabled={completingId === r.id}
+                            onClick={() => completeRide(r)}
+                          >
+                            {completingId === r.id ? "Completing…" : "Mark completed"}
+                          </button>
+                          <p className="mt-1 text-xs text-forest/60 dark:text-mint/60">No-show passengers are not refunded — you keep their fare.</p>
+                        </>
+                      );
+                    })()}
+                  </div>
                 ) : null}
               </div>
             ))}

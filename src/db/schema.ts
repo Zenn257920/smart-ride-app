@@ -25,6 +25,9 @@ export const user = pgTable("user", {
   // Smart Ride extensions
   phone: text("phone").unique(),
   user_type: text("user_type").notNull().default("passenger"),
+  // D2: admin flag. Server routes must check this row (see requireAdmin
+  // in src/lib/api-helpers) — never trust a client-sent value.
+  isAdmin: boolean("is_admin").notNull().default(false),
 });
 
 export const session = pgTable("session", {

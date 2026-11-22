@@ -15,6 +15,13 @@
       "when": 1795359650831,
       "tag": "0001_foamy_titanium_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795366049881,
+      "tag": "0002_cooing_earthquake",
+      "breakpoints": true
     }
   ]
 }
