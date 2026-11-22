@@ -8,6 +8,23 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 6,
   },
+  // C3 — login brute-force: Better Auth HAS a built-in limiter, so no
+  // custom auth limiter was built. It is off by default outside
+  // production, so it is enabled explicitly here:
+  //   - general: 100 requests / 60s per IP (window 60, max 100).
+  //   - built-in special rules (better-auth rate-limiter defaults):
+  //     /sign-in, /sign-up, /change-password, /change-email get
+  //     3 requests / 10s per IP — that is the real brute-force guard.
+  //   - storage is in-memory: counters reset on redeploy and are per
+  //     server instance, not shared across Vercel instances.
+  // The custom /api/auth/phone-login route is NOT covered by this —
+  // it has its own 10/min per-IP limit (see that route).
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 100,
+    storage: "memory",
+  },
   user: {
     additionalFields: {
       phone: { type: "string", required: false },

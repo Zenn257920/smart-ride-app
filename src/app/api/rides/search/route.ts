@@ -3,14 +3,20 @@
  *     &startLabel&endLabel — server-side matching. Loads open rides with
  * free seats, runs routeMatcher.findOptimalMatches and returns the top 5,
  * enriched with match score and the new rider's fair fare.
+ *
+ * C3: auth is required (the find-ride page is behind AuthGuard and
+ * fetches with credentials: include, so the session cookie is sent),
+ * and each IP gets 30 req/min. Not cached — results depend on live
+ * seats and bookings.
  */
 import { NextResponse } from "next/server";
 import { and, asc, eq, gt, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { bookings, rides, user } from "@/db/schema";
-import { jsonError } from "@/lib/api-helpers";
+import { getSessionUser, jsonError } from "@/lib/api-helpers";
 import { routeMatcher } from "@/lib/matching";
+import { rateLimitResponse } from "@/lib/rate-limit";
 
 const searchQuerySchema = z.object({
   startLat: z.coerce.number().min(-90).max(90),
@@ -23,6 +29,11 @@ const searchQuerySchema = z.object({
 });
 
 export async function GET(request: Request) {
+  const limited = rateLimitResponse(request, "search");
+  if (limited) return limited;
+  const sessionUser = await getSessionUser();
+  if (!sessionUser) return jsonError("Unauthorized", 401);
+
   const url = new URL(request.url);
   const parsed = searchQuerySchema.safeParse(
     Object.fromEntries(url.searchParams),

@@ -22,6 +22,13 @@
       "when": 1795366049881,
       "tag": "0002_cooing_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795366940946,
+      "tag": "0003_small_madame_masque",
+      "breakpoints": true
     }
   ]
 }

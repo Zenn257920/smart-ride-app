@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AuthGuard from "@/components/AuthGuard";
 import { apiFetch, asArray, fmtMMK, fmtTime, type WalletTx } from "@/lib/api";
 
@@ -33,6 +33,14 @@ function WalletInner() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawBusy, setWithdrawBusy] = useState(false);
+
+  // A3 idempotency: one key per withdraw-dialog-open. A retry of THIS
+  // withdrawal replays the stored result instead of withdrawing twice;
+  // opening the dialog again mints a fresh key.
+  const withdrawKeyRef = useRef("");
+  useEffect(() => {
+    if (withdrawOpen) withdrawKeyRef.current = crypto.randomUUID();
+  }, [withdrawOpen]);
 
   async function load() {
     try {
@@ -92,6 +100,7 @@ function WalletInner() {
     try {
       await apiFetch("/api/wallet/withdraw", {
         method: "POST",
+        headers: { "Idempotency-Key": withdrawKeyRef.current },
         body: JSON.stringify({ amount }),
       });
       setNotice(`Withdrawal of ${fmtMMK(amount)} requested.`);

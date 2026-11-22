@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   apiFetch,
   fmtMMK,
@@ -33,6 +33,15 @@ export default function BookingModal({ ride, balance, pickup, dropoff, onClose, 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // A3 idempotency: one key per modal-open. A retry of THIS booking
+  // (e.g. after a dropped response) replays the stored result instead
+  // of charging twice; the modal remounts on every open, so a later
+  // booking always gets a fresh key and can never replay this one.
+  const idempotencyKeyRef = useRef<string | null>(null);
+  if (idempotencyKeyRef.current === null) {
+    idempotencyKeyRef.current = crypto.randomUUID();
+  }
+
   const total = rideTotal(ride) ?? 0;
   const fare = rideFareShare(ride);
   const fee = rideAppFee(ride);
@@ -44,6 +53,7 @@ export default function BookingModal({ ride, balance, pickup, dropoff, onClose, 
     try {
       await apiFetch(`/api/rides/${ride.id}/book`, {
         method: "POST",
+        headers: { "Idempotency-Key": idempotencyKeyRef.current ?? "" },
         body: JSON.stringify({
           paymentMethod: method,
           ...(pickup && dropoff

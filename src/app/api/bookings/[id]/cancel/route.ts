@@ -12,7 +12,7 @@
  * to return.
  */
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings, rides } from "@/db/schema";
 import { getSessionUser, jsonError } from "@/lib/api-helpers";
@@ -52,10 +52,21 @@ export async function POST(
     .where(eq(rides.id, booking.rideId))
     .limit(1);
 
-  await db
+  // A3: the cancel transition is GUARDED — only a 'confirmed' booking
+  // can become 'cancelled', and the affected-row count decides. Two
+  // concurrent cancels of the same booking used to both pass the
+  // status check above and refund twice; now the loser gets 0 rows
+  // and a 409 instead of a second refund.
+  const [cancelled] = await db
     .update(bookings)
     .set({ status: "cancelled" })
-    .where(eq(bookings.id, bookingId));
+    .where(
+      and(eq(bookings.id, bookingId), eq(bookings.status, "confirmed")),
+    )
+    .returning();
+  if (!cancelled) {
+    return jsonError("Already Cancel this Ride", 409);
+  }
 
   // Free the seat (and reopen a ride that had filled up).
   if (ride) {

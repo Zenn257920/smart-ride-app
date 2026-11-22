@@ -28,19 +28,56 @@
  * (see splitRefund in src/lib/money) — never the app-fee part — and
  * driverPayment is updated to the new fareShare so a later cancel
  * debits exactly what the driver still holds.
+ *
+ * A3 race guards (Neon HTTP driver has no transactions):
+ * - The seat is taken by a GUARDED update:
+ *     UPDATE rides SET seats_available = seats_available - 1
+ *     WHERE id = $1 AND seats_available > 0
+ *   The affected-row count decides success — two simultaneous bookings
+ *   cannot both take the last seat, and the count can never go below
+ *   zero. The old check-then-write (read seats, compute, write) is gone.
+ *   The hold happens AFTER the balance check and BEFORE any money
+ *   moves; if the money/booking steps then fail, the seat is released
+ *   again (compensating +1). A crash between hold and booking insert
+ *   can still strand one held seat — the known residual risk of having
+ *   no transactions; it only ever costs a seat, never money.
+ * - A driver cannot book their own ride (409).
+ * - A passenger with a confirmed booking on this ride gets 409. The
+ *   route pre-checks, and the partial unique index
+ *   bookings_ride_passenger_confirmed_unique enforces it even when two
+ *   requests race past the pre-check (insert 23505 -> seat released,
+ *   409 returned).
+ * - Idempotency: an `Idempotency-Key` header (or `idempotencyKey` body
+ *   field) makes a retried request replay the stored 201 instead of
+ *   charging/booking twice (see src/lib/idempotency). The stored body
+ *   is JSON, so replayed `createdAt` values come back as ISO strings
+ *   rather than Dates — the client already tolerates both.
  */
 import { NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { bookings, rides, user } from "@/db/schema";
 import { getSessionUser, jsonError } from "@/lib/api-helpers";
+import {
+  extractIdempotencyKey,
+  isUniqueViolation,
+  isValidIdempotencyKey,
+  runIdempotent,
+  type StoredResponse,
+} from "@/lib/idempotency";
+import { dbIdempotencyStore } from "@/lib/idempotency-db";
 import { routeMatcher } from "@/lib/matching";
 import {
   fairSplitRefundDeltas,
   repricedBookingAmounts,
   splitRefund,
 } from "@/lib/money";
+import {
+  guardedDecrement,
+  isDuplicateConfirmedBooking,
+  isOwnRide,
+} from "@/lib/race-guards";
 import { addTransaction, getBalance } from "@/lib/wallet";
 import { notifyUser } from "@/lib/notify";
 
@@ -53,6 +90,7 @@ const bookSchema = z.object({
   startLng: z.number().min(-180).max(180).optional(),
   endLat: z.number().min(-90).max(90).optional(),
   endLng: z.number().min(-180).max(180).optional(),
+  idempotencyKey: z.string().min(8).max(128).optional(),
 });
 
 export async function POST(
@@ -68,20 +106,44 @@ export async function POST(
   if (!parsed.success) {
     return jsonError(parsed.error.issues[0]?.message ?? "Invalid input", 400);
   }
-  const { paymentMethod } = parsed.data;
+  const key = extractIdempotencyKey(request, body);
+  if (key !== null && !isValidIdempotencyKey(key)) {
+    return jsonError("Invalid Idempotency-Key", 400);
+  }
+
+  const outcome = await runIdempotent(
+    dbIdempotencyStore(sessionUser.id, "POST /api/rides/:id/book"),
+    key,
+    () => doBook(rideId, sessionUser.id, parsed.data),
+  );
+  return NextResponse.json(outcome.response.body, {
+    status: outcome.response.status,
+  });
+}
+
+async function doBook(
+  rideId: string,
+  userId: string,
+  input: z.infer<typeof bookSchema>,
+): Promise<StoredResponse> {
+  const err = (message: string, status: number): StoredResponse => ({
+    status,
+    body: { error: message },
+  });
+  const { paymentMethod } = input;
   const isCash = paymentMethod === "cash";
   // Rider coords only count when all four are present; otherwise the
   // rider is priced as riding the driver's full route.
   const riderCoords =
-    parsed.data.startLat != null &&
-    parsed.data.startLng != null &&
-    parsed.data.endLat != null &&
-    parsed.data.endLng != null
+    input.startLat != null &&
+    input.startLng != null &&
+    input.endLat != null &&
+    input.endLng != null
       ? {
-          startLat: parsed.data.startLat,
-          startLng: parsed.data.startLng,
-          endLat: parsed.data.endLat,
-          endLng: parsed.data.endLng,
+          startLat: input.startLat,
+          startLng: input.startLng,
+          endLat: input.endLat,
+          endLng: input.endLng,
         }
       : null;
 
@@ -90,9 +152,13 @@ export async function POST(
     .from(rides)
     .where(eq(rides.id, rideId))
     .limit(1);
-  if (!ride) return jsonError("Ride not found", 404);
+  if (!ride) return err("Ride not found", 404);
   if (ride.status !== "open") {
-    return jsonError("This ride is no longer open for booking", 409);
+    return err("This ride is no longer open for booking", 409);
+  }
+  // A3: a driver cannot book their own ride.
+  if (isOwnRide(ride.driverId, userId)) {
+    return err("You cannot book your own ride", 409);
   }
 
   const confirmed = await db
@@ -102,8 +168,15 @@ export async function POST(
       and(eq(bookings.rideId, rideId), eq(bookings.status, "confirmed")),
     );
   const bookedSeats = confirmed.length;
-  if (bookedSeats >= ride.seatsTotal || ride.seatsAvailable <= 0) {
-    return jsonError("ဤခရီးစဉ်တွင် နေရာလွတ် မရှိတော့ပါ။", 409);
+  // A3: one confirmed booking per passenger per ride (the partial
+  // unique index is the backstop; this pre-check gives the clean error).
+  if (isDuplicateConfirmedBooking(confirmed, rideId, userId)) {
+    return err("You already have a confirmed booking on this ride", 409);
+  }
+  // Friendly early error; the guarded UPDATE below is the real gate —
+  // the count may have changed since this read.
+  if (bookedSeats >= ride.seatsTotal || guardedDecrement(ride.seatsAvailable) === null) {
+    return err("ဤခရီးစဉ်တွင် နေရာလွတ် မရှိတော့ပါ။", 409);
   }
 
   // A2: price with the SAME segment breakdown search shows — the shared
@@ -132,8 +205,8 @@ export async function POST(
       endLng: ride.endLng,
     })),
     newRider: {
-      id: sessionUser.id,
-      passengerId: sessionUser.id,
+      id: userId,
+      passengerId: userId,
       startLat: riderCoords?.startLat ?? ride.startLat,
       startLng: riderCoords?.startLng ?? ride.startLng,
       endLat: riderCoords?.endLat ?? ride.endLat,
@@ -146,60 +219,88 @@ export async function POST(
   const driverPayment = fareShare;
 
   if (!isCash) {
-    const balance = await getBalance(sessionUser.id);
-    if (balance < totalPrice) return jsonError("Insufficient Balance", 409);
+    const balance = await getBalance(userId);
+    if (balance < totalPrice) return err("Insufficient Balance", 409);
   }
 
-  // Ordered sequential writes (no db.transaction() — Neon HTTP driver).
-  // 1. Money moves.
-  if (!isCash) {
-    await addTransaction({
-      userId: sessionUser.id,
-      type: "ride_payment",
-      amount: -totalPrice,
-      description: `ခရီးစဉ်ခ ${fareShare.toLocaleString()} + App အခွန် ${appFee.toLocaleString()} ကျပ် (5%)`,
-      referenceId: rideId,
-    });
-    await addTransaction({
-      userId: ride.driverId,
-      type: "ride_earning",
-      amount: driverPayment,
-      description: `ခရီးသည်ခ ${fareShare.toLocaleString()} ကျပ် ရရှိ (App အခွန် ${appFee.toLocaleString()} ကျပ် နုတ်)`,
-      referenceId: rideId,
-    });
-  }
-
-  // 2. Booking row.
-  const [booking] = await db
-    .insert(bookings)
-    .values({
-      rideId,
-      passengerId: sessionUser.id,
-      seats: 1,
-      fareShare,
-      appFee,
-      totalPrice,
-      driverPayment,
-      paymentMethod,
-      status: "confirmed",
-    })
-    .returning();
-
-  // 3. Seat count / full status.
-  const seatsAvailable = Math.max(0, ride.seatsTotal - (bookedSeats + 1));
-  await db
+  // A3: take the seat with the guarded UPDATE — the affected-row count
+  // is the atomic gate. Zero rows means another booking took the last
+  // seat after our pre-check above.
+  const [held] = await db
     .update(rides)
     .set({
-      seatsAvailable,
-      status: seatsAvailable === 0 ? "full" : "open",
+      seatsAvailable: sql`${rides.seatsAvailable} - 1`,
+      status: sql<string>`CASE WHEN ${rides.seatsAvailable} - 1 <= 0 THEN 'full' ELSE ${rides.status} END`,
     })
-    .where(eq(rides.id, rideId));
+    .where(and(eq(rides.id, rideId), gt(rides.seatsAvailable, 0)))
+    .returning();
+  if (!held) {
+    return err("ဤခရီးစဉ်တွင် နေရာလွတ် မရှိတော့ပါ။", 409);
+  }
 
-  // 4. Notifications.
+  // The seat is held from here on. If the money/booking steps below
+  // fail, release it again — otherwise a failed booking would strand
+  // a seat. (Notifications/refunds happen after the booking exists,
+  // so a failure there must NOT release the seat.)
+  const releaseSeat = () =>
+    db
+      .update(rides)
+      .set({
+        seatsAvailable: sql`${rides.seatsAvailable} + 1`,
+        status: "open",
+      })
+      .where(eq(rides.id, rideId));
+
+  let booking: typeof bookings.$inferSelect;
+  try {
+    // 1. Money moves.
+    if (!isCash) {
+      await addTransaction({
+        userId,
+        type: "ride_payment",
+        amount: -totalPrice,
+        description: `ခရီးစဉ်ခ ${fareShare.toLocaleString()} + App အခွန် ${appFee.toLocaleString()} ကျပ် (5%)`,
+        referenceId: rideId,
+      });
+      await addTransaction({
+        userId: ride.driverId,
+        type: "ride_earning",
+        amount: driverPayment,
+        description: `ခရီးသည်ခ ${fareShare.toLocaleString()} ကျပ် ရရှိ (App အခွန် ${appFee.toLocaleString()} ကျပ် နုတ်)`,
+        referenceId: rideId,
+      });
+    }
+
+    // 2. Booking row.
+    [booking] = await db
+      .insert(bookings)
+      .values({
+        rideId,
+        passengerId: userId,
+        seats: 1,
+        fareShare,
+        appFee,
+        totalPrice,
+        driverPayment,
+        paymentMethod,
+        status: "confirmed",
+      })
+      .returning();
+  } catch (e) {
+    await releaseSeat();
+    if (isUniqueViolation(e)) {
+      // Raced past the pre-check: the partial unique index caught the
+      // duplicate confirmed booking.
+      return err("You already have a confirmed booking on this ride", 409);
+    }
+    throw e;
+  }
+
+  // 3. Notifications.
   const [passenger] = await db
     .select()
     .from(user)
-    .where(eq(user.id, sessionUser.id))
+    .where(eq(user.id, userId))
     .limit(1);
   const passengerName = passenger?.name ?? "Passenger";
   await notifyUser(
@@ -208,12 +309,12 @@ export async function POST(
     "booking",
   );
   await notifyUser(
-    sessionUser.id,
+    userId,
     `Your booking for "${ride.startLabel} → ${ride.endLabel}" is confirmed. Total ${totalPrice.toLocaleString()} MMK${isCash ? " (pay cash to the driver)" : ""}.`,
     "booking",
   );
 
-  // 5. Fair-split refunds for earlier riders (2nd+ rider only).
+  // 4. Fair-split refunds for earlier riders (2nd+ rider only).
   // Reuses the SAME breakdowns that priced this booking (priced.*),
   // so the refund matches the price search showed. The driver is
   // debited only the fare portion of each refund (splitRefund) — the
@@ -268,5 +369,5 @@ export async function POST(
     }
   }
 
-  return NextResponse.json({ booking, refunds }, { status: 201 });
+  return { status: 201, body: { booking, refunds } };
 }

@@ -1,11 +1,14 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   doublePrecision,
+  index,
   integer,
   jsonb,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -112,7 +115,12 @@ export const rides = pgTable("rides", {
   price: integer("price").notNull(),
   distanceKm: doublePrecision("distance_km"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (t) => [
+  // C5: search filters by driver + status; the find-ride list filters by
+  // status + seats + departure time.
+  index("rides_driver_id_idx").on(t.driverId),
+  index("rides_status_idx").on(t.status),
+]);
 
 export const rideRequests = pgTable("ride_requests", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -133,7 +141,11 @@ export const rideRequests = pgTable("ride_requests", {
   estimatedPrice: integer("estimated_price"),
   prepaidAmount: integer("prepaid_amount").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (t) => [
+  // C5: request lists filter by creator + status.
+  index("ride_requests_passenger_id_idx").on(t.passengerId),
+  index("ride_requests_status_idx").on(t.status),
+]);
 
 export const requestPassengers = pgTable("request_passengers", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -155,7 +167,11 @@ export const requestPassengers = pgTable("request_passengers", {
   paidAmount: integer("paid_amount").notNull().default(0),
   status: text("status").notNull().default("joined"),
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
-});
+}, (t) => [
+  // C5: member lookups are always by request, and "my requests" by user.
+  index("request_passengers_request_id_idx").on(t.requestId),
+  index("request_passengers_passenger_id_idx").on(t.passengerId),
+]);
 
 export const bookings = pgTable("bookings", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -173,7 +189,21 @@ export const bookings = pgTable("bookings", {
   paymentMethod: text("payment_method").notNull().default("ewallet"),
   status: text("status").notNull().default("confirmed"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (t) => [
+  // C5: bookings are looked up by ride (pricing, passenger lists) and
+  // by passenger (my-rides), and filtered by status throughout.
+  index("bookings_ride_id_idx").on(t.rideId),
+  index("bookings_passenger_id_idx").on(t.passengerId),
+  index("bookings_status_idx").on(t.status),
+  // A3: one passenger can hold at most ONE confirmed booking per ride.
+  // Partial index, not a plain unique: a passenger who cancelled may
+  // book the same ride again (cancelled rows don't count), and a
+  // completed/no-show booking doesn't block a re-book either. The DB
+  // enforces this even if two requests race past the route's pre-check.
+  uniqueIndex("bookings_ride_passenger_confirmed_unique")
+    .on(t.rideId, t.passengerId)
+    .where(sql`status = 'confirmed'`),
+]);
 
 export const walletTransactions = pgTable("wallet_transactions", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -187,7 +217,12 @@ export const walletTransactions = pgTable("wallet_transactions", {
   referenceId: text("reference_id"),
   status: text("status").notNull().default("completed"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (t) => [
+  // C5: balance is SUM(amount) per user; history lists filter by user
+  // (+ status for pending top-ups).
+  index("wallet_transactions_user_id_idx").on(t.userId),
+  index("wallet_transactions_status_idx").on(t.status),
+]);
 
 export const notifications = pgTable("notifications", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -198,7 +233,11 @@ export const notifications = pgTable("notifications", {
   type: text("type").notNull(),
   read: boolean("read").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (t) => [
+  // C5: bell + unread count filter by user (+ read flag).
+  index("notifications_user_id_idx").on(t.userId),
+  index("notifications_read_idx").on(t.read),
+]);
 
 export const ratings = pgTable("ratings", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -238,3 +277,35 @@ export const requestRejections = pgTable("request_rejections", {
     .references(() => user.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// ---------------------------------------------------------------------------
+// A3 — idempotency keys for book / withdraw.
+//
+// A retried request (double-tap, flaky network, impatient refresh) sends
+// the same key; the server then returns the stored response instead of
+// charging / booking a second time. One row per (user, key):
+//   - a row with response_status NULL means the first attempt is still
+//     in flight — a concurrent duplicate gets 409, not a second charge.
+//   - a row with a stored response means "done": the stored
+//     { status, body } is replayed verbatim.
+//   - non-2xx outcomes are NOT stored: the key row is deleted so the
+//     client can retry cleanly (nothing moved, so a retry is safe).
+// Keys are client-generated UUIDs, scoped to the user (never shared
+// across users), and the endpoint is recorded for audit. Old rows are
+// harmless leftovers — the key space is per-user UUIDs, so there is no
+// cleanup job in v1.
+// ---------------------------------------------------------------------------
+
+export const idempotencyKeys = pgTable("idempotency_keys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  key: text("key").notNull(),
+  endpoint: text("endpoint").notNull(),
+  responseStatus: integer("response_status"),
+  responseBody: jsonb("response_body").$type<Record<string, unknown> | null>(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("idempotency_keys_user_key_unique").on(t.userId, t.key),
+]);
