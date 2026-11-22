@@ -22,6 +22,7 @@ import {
   walletTransactions,
 } from "@/db/schema";
 import { getSessionUser, jsonError, requireDriver } from "@/lib/api-helpers";
+import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { getBalance } from "@/lib/wallet";
 
 export async function GET() {
@@ -143,10 +144,21 @@ export async function GET() {
         passengerName: passengerById.get(b.passengerId)?.name ?? "Passenger",
       })),
     })),
-    pendingRequests: pendingRequests.map((r) => ({
-      ...r,
-      passengers: membersByRequest.get(r.id) ?? [],
-    })),
+    // C2: a browsing driver is neither creator, member, nor the driver
+    // who accepted the request (these are open requests), so the
+    // creator's phone is stripped — unless this driver created or joined
+    // the request as a passenger, in which case they may see it.
+    pendingRequests: pendingRequests.map((r) => {
+      const members = membersByRequest.get(r.id) ?? [];
+      return {
+        ...serializeRideRequest(r, {
+          isCreator: r.passengerId === sessionUser.id,
+          isMember: members.some((m) => m.passengerId === sessionUser.id),
+          isAcceptedDriver: false,
+        }),
+        passengers: members,
+      };
+    }),
     balance,
   });
 }

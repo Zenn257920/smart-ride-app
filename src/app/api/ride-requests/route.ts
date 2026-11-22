@@ -22,6 +22,7 @@ import {
 } from "@/db/schema";
 import { getSessionUser, jsonError, parseDate } from "@/lib/api-helpers";
 import { routeMatcher } from "@/lib/matching";
+import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { addTransaction, getBalance } from "@/lib/wallet";
 
 const createRequestSchema = z.object({
@@ -129,14 +130,26 @@ export async function GET(request: Request) {
     membersByRequest.set(m.requestId, list);
   }
 
+  // C2: passengerPhone is included ONLY for the creator, a joined member,
+  // or the driver who accepted the request. List responses only surface
+  // open requests to non-members (and ?mine=1 only to creator/members),
+  // so the accepted-driver case cannot arise here — see
+  // src/lib/ride-request-privacy.ts.
   return NextResponse.json({
-    requests: requests.map((r) => ({
-      ...r,
-      passengers: (membersByRequest.get(r.id) ?? []).map((m) => ({
-        ...m,
-        passengerName: userById.get(m.passengerId)?.name ?? "Passenger",
-      })),
-    })),
+    requests: requests.map((r) => {
+      const members = membersByRequest.get(r.id) ?? [];
+      return {
+        ...serializeRideRequest(r, {
+          isCreator: r.passengerId === sessionUser.id,
+          isMember: members.some((m) => m.passengerId === sessionUser.id),
+          isAcceptedDriver: false,
+        }),
+        passengers: members.map((m) => ({
+          ...m,
+          passengerName: userById.get(m.passengerId)?.name ?? "Passenger",
+        })),
+      };
+    }),
   });
 }
 
@@ -222,8 +235,16 @@ export async function POST(request: Request) {
     })
     .returning();
 
+  // C2: the response goes to the creator, who may see their own phone.
   return NextResponse.json(
-    { request: rideRequest, passenger: creatorRow },
+    {
+      request: serializeRideRequest(rideRequest, {
+        isCreator: true,
+        isMember: true,
+        isAcceptedDriver: false,
+      }),
+      passenger: creatorRow,
+    },
     { status: 201 },
   );
 }

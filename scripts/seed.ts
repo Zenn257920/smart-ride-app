@@ -11,6 +11,12 @@
  * only inserted once per user, driver rows only once, and rides are only
  * seeded when the rides table is empty.
  *
+ * C1: the demo password is NOT hardcoded anymore. Set DEMO_PASSWORD in the
+ * environment before running (e.g. `DEMO_PASSWORD=<secret> npm run db:seed`).
+ * When it is unset the whole demo seed is skipped — demo users AND the
+ * sample rides that depend on them — so a run against production can never
+ * recreate accounts with a publicly known password.
+ *
  * Run: npm run db:seed
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -30,7 +36,7 @@ if (existsSync(envPath)) {
   }
 }
 
-const DEMO_PASSWORD = "demo1234";
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD;
 const OPENING_BALANCE_DESCRIPTION = "Opening balance (demo seed)";
 
 // --- Demo users (old database.js lines 47-170) ------------------------------
@@ -297,6 +303,17 @@ function setTime(hours: number, minutes: number): Date {
 }
 
 async function main() {
+  // C1: never seed demo accounts without an explicit password. The sample
+  // rides depend on the demo users (drivers + passengers), so they are
+  // skipped too when the demo users are skipped.
+  if (!DEMO_PASSWORD) {
+    console.log(
+      "DEMO_PASSWORD is not set — skipping demo-user + sample-ride seed " +
+        "(set DEMO_PASSWORD in the environment to seed demo accounts)",
+    );
+    return;
+  }
+
   // Dynamic imports AFTER .env.local is loaded (see note at top of file).
   const { db } = await import("../src/db");
   const { bookings, drivers, rides, user, walletTransactions } =

@@ -12,6 +12,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { requestRejections, rideRequests } from "@/db/schema";
 import { getSessionUser, jsonError, requireDriver } from "@/lib/api-helpers";
+import { serializeRideRequest } from "@/lib/ride-request-privacy";
 
 export async function POST(
   _request: Request,
@@ -49,5 +50,14 @@ export async function POST(
     });
   }
 
-  return NextResponse.json({ ok: true, request: rideRequest });
+  // C2: a rejecting driver is neither creator, member, nor the driver
+  // who accepted the request — the creator's phone is stripped.
+  return NextResponse.json({
+    ok: true,
+    request: serializeRideRequest(rideRequest, {
+      isCreator: false,
+      isMember: false,
+      isAcceptedDriver: false,
+    }),
+  });
 }

@@ -28,6 +28,7 @@ import {
 } from "@/db/schema";
 import { getSessionUser, jsonError, requireDriver } from "@/lib/api-helpers";
 import { routeMatcher } from "@/lib/matching";
+import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { acceptDriverDeltas } from "@/lib/money";
 import { notifyUser } from "@/lib/notify";
 import { addTransaction } from "@/lib/wallet";
@@ -147,9 +148,14 @@ export async function POST(
     );
   }
 
+  // C2: the response goes to the driver who just accepted the request,
+  // who may see the creator's phone.
   return NextResponse.json(
     {
-      request: { ...rideRequest, status: "accepted" as const },
+      request: serializeRideRequest(
+        { ...rideRequest, status: "accepted" as const },
+        { isCreator: false, isMember: false, isAcceptedDriver: true },
+      ),
       ride,
       bookings: createdBookings,
     },

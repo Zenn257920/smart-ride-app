@@ -22,6 +22,7 @@ import { requestPassengers, rideRequests, user } from "@/db/schema";
 import { getSessionUser, jsonError } from "@/lib/api-helpers";
 import { routeMatcher } from "@/lib/matching";
 import { recalcRequestBreakdown } from "@/lib/ride-requests";
+import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { addTransaction, getBalance } from "@/lib/wallet";
 import { notifyUser } from "@/lib/notify";
 
@@ -264,8 +265,17 @@ export async function POST(
     "joined",
   );
 
+  // C2: the response goes to the new member, who may see the phone.
   return NextResponse.json(
-    { request: rideRequest, passenger: joinerRow, refunds },
+    {
+      request: serializeRideRequest(rideRequest, {
+        isCreator: false,
+        isMember: true,
+        isAcceptedDriver: false,
+      }),
+      passenger: joinerRow,
+      refunds,
+    },
     { status: 201 },
   );
 }

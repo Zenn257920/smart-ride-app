@@ -11,6 +11,7 @@ import { db } from "@/db";
 import { requestPassengers, rideRequests } from "@/db/schema";
 import { getSessionUser, jsonError } from "@/lib/api-helpers";
 import { recalcRequestBreakdown } from "@/lib/ride-requests";
+import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { addTransaction } from "@/lib/wallet";
 import { notifyUser } from "@/lib/notify";
 
@@ -112,5 +113,14 @@ export async function POST(
     }
   }
 
-  return NextResponse.json({ request: rideRequest, refunded: refundAmount });
+  // C2: the caller just left, so they are no longer a member (and the
+  // creator cannot leave) — the creator's phone is stripped.
+  return NextResponse.json({
+    request: serializeRideRequest(rideRequest, {
+      isCreator: false,
+      isMember: false,
+      isAcceptedDriver: false,
+    }),
+    refunded: refundAmount,
+  });
 }

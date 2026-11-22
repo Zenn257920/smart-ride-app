@@ -9,6 +9,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { requestPassengers, rideRequests } from "@/db/schema";
 import { getSessionUser, jsonError } from "@/lib/api-helpers";
+import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { addTransaction } from "@/lib/wallet";
 import { notifyUser } from "@/lib/notify";
 
@@ -79,8 +80,12 @@ export async function POST(
     .set({ status: "cancelled" })
     .where(eq(rideRequests.id, requestId));
 
+  // C2: the response goes to the creator, who may see their own phone.
   return NextResponse.json({
-    request: { ...rideRequest, status: "cancelled" as const },
+    request: serializeRideRequest(
+      { ...rideRequest, status: "cancelled" as const },
+      { isCreator: true, isMember: true, isAcceptedDriver: false },
+    ),
     totalRefunded,
   });
 }
