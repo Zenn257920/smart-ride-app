@@ -14,6 +14,7 @@ const ITEMS = [
 export default function BottomNav() {
   const pathname = usePathname();
   if (pathname === "/" || pathname === "/login" || pathname === "/register") return null;
+  if (!pathname) return null;
   return (
     <nav
       aria-label="Bottom"
