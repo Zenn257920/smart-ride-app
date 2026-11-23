@@ -38,6 +38,33 @@ export const YANGON_PROBE = { lat: 16.8, lng: 96.15, zoom: 13 } as const;
 /** Consecutive tile errors before the map swaps to the next provider. */
 export const TILE_ERROR_SWAP_THRESHOLD = 3;
 
+/**
+ * No tile progress for this long while tiles are still outstanding
+ * means the provider is stalled, not merely slow. Hung tile requests
+ * never fire `tileerror` (and never finish), so the error-based
+ * fallback above cannot see them — live verification showed Esri
+ * serving 1–2 tiles of an 8-tile viewport and then nothing for 60s,
+ * with no fallback ever engaging. The watchdog in RideMap uses this:
+ * a slow-but-progressing provider keeps resetting the clock on every
+ * `tileload`, so only a true stall (zero progress) triggers a swap.
+ * 15s is long enough that a slow mobile connection still loading
+ * tiles never trips it.
+ */
+export const TILE_STALL_SWAP_MS = 15000;
+
+/**
+ * Stall-swap decision for RideMap's watchdog. Swap providers only
+ * when tiles are still outstanding AND nothing has loaded or errored
+ * recently. A fully loaded map (0 pending) never swaps; a provider
+ * whose tiles are trickling in never reaches the threshold.
+ */
+export function shouldSwapOnStall(
+  pendingTiles: number,
+  msSinceProgress: number,
+): boolean {
+  return pendingTiles > 0 && msSinceProgress >= TILE_STALL_SWAP_MS;
+}
+
 function cartoUrl(key: string): string {
   const base =
     "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";

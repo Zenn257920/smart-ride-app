@@ -14,10 +14,12 @@
 import { describe, expect, test } from "vitest";
 import {
   TILE_ERROR_SWAP_THRESHOLD,
+  TILE_STALL_SWAP_MS,
   fallbackProvider,
   probeProvider,
   probeTileUrl,
   selectTileProvider,
+  shouldSwapOnStall,
   tileProviders,
   tileXY,
   type ProbeImage,
@@ -269,5 +271,32 @@ describe("fallbackProvider — runtime tileerror swap", () => {
       if (prev === undefined) delete process.env.NEXT_PUBLIC_CARTO_KEY;
       else process.env.NEXT_PUBLIC_CARTO_KEY = prev;
     }
+  });
+});
+
+describe("shouldSwapOnStall — hung-tile watchdog", () => {
+  // Live verification showed Esri serving 1–2 tiles of an 8-tile
+  // viewport and then nothing for 60s: hung requests never fire
+  // tileerror, so the error-based fallback cannot see the stall.
+  // The watchdog swaps only on zero progress with tiles outstanding.
+  test("never swaps a fully loaded map (0 pending)", () => {
+    expect(shouldSwapOnStall(0, 999999)).toBe(false);
+    expect(shouldSwapOnStall(0, TILE_STALL_SWAP_MS)).toBe(false);
+  });
+
+  test("no swap while tiles are still arriving", () => {
+    expect(shouldSwapOnStall(4, 0)).toBe(false);
+    expect(shouldSwapOnStall(4, 1000)).toBe(false);
+    expect(shouldSwapOnStall(8, TILE_STALL_SWAP_MS - 1)).toBe(false);
+  });
+
+  test("swaps when tiles are pending and nothing progressed for the threshold", () => {
+    expect(shouldSwapOnStall(1, TILE_STALL_SWAP_MS)).toBe(true);
+    expect(shouldSwapOnStall(8, TILE_STALL_SWAP_MS + 5000)).toBe(true);
+    expect(shouldSwapOnStall(6, 60000)).toBe(true);
+  });
+
+  test("stall threshold is 15s — slow-but-progressing loads never trip it", () => {
+    expect(TILE_STALL_SWAP_MS).toBe(15000);
   });
 });

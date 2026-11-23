@@ -5,7 +5,9 @@ import type { LatLng } from "@/lib/api";
 import { YANGON } from "@/lib/api";
 import {
   fallbackProvider,
+  probeProvider,
   selectTileProvider,
+  shouldSwapOnStall,
   tileProviders,
   type TileProvider,
 } from "@/lib/map-tiles";
@@ -56,6 +58,13 @@ export default function RideMap({
     const providers = tileProviders();
     let providerIndex = 0;
     let consecutiveErrors = 0;
+    // Stall watchdog state: how many tiles are still outstanding and
+    // when the last one made any progress. Hung requests never fire
+    // `tileerror`, so the error-based fallback above cannot see a
+    // stalled provider — the watchdog below swaps on zero progress.
+    let pendingTiles = 0;
+    let lastProgressAt = 0;
+    let swapping = false;
 
     // Adds (or swaps in) a tile layer for one provider. Removing the
     // old layer also drops its attribution — Leaflet's attribution
@@ -68,13 +77,21 @@ export default function RideMap({
         tileLayer = null;
       }
       consecutiveErrors = 0;
+      // A fresh grace period starts with each layer.
+      pendingTiles = 0;
+      lastProgressAt = Date.now();
       const options: import("leaflet").TileLayerOptions = {
         attribution: provider.attribution,
         maxZoom: 19,
       };
       if (provider.id === "carto") options.subdomains = "abcd";
       tileLayer = L.tileLayer(provider.url, options);
+      tileLayer.on("tileloadstart", () => {
+        pendingTiles += 1;
+      });
       tileLayer.on("tileerror", () => {
+        pendingTiles = Math.max(0, pendingTiles - 1);
+        lastProgressAt = Date.now();
         consecutiveErrors += 1;
         const next = fallbackProvider(
           providers,
@@ -87,10 +104,54 @@ export default function RideMap({
         }
       });
       tileLayer.on("tileload", () => {
+        pendingTiles = Math.max(0, pendingTiles - 1);
+        lastProgressAt = Date.now();
         consecutiveErrors = 0;
+      });
+      tileLayer.on("load", () => {
+        // Authoritative: the visible tile set is complete. Also resets
+        // any pending count leaked by tiles pruned mid-flight (pan/zoom
+        // removes them without a load/error event).
+        pendingTiles = 0;
+        lastProgressAt = Date.now();
       });
       tileLayer.addTo(map);
     }
+
+    // Stall watchdog: if tiles are outstanding but nothing has loaded
+    // or errored for TILE_STALL_SWAP_MS, the provider is hung — probe
+    // the next providers in order and swap to the first one whose
+    // probe tile loads. A provider whose probe fails (e.g. OSM blocked
+    // in Myanmar) is never selected, so a slow-but-working provider is
+    // never abandoned for a blocked one; when nothing better answers
+    // we stay put and re-arm, so the map recovers on its own when
+    // connectivity returns.
+    async function checkStall() {
+      if (cancelled || swapping || !map || !tileLayer) return;
+      if (!shouldSwapOnStall(pendingTiles, Date.now() - lastProgressAt)) {
+        return;
+      }
+      swapping = true;
+      try {
+        for (let i = providerIndex + 1; i < providers.length; i++) {
+          if (cancelled) return;
+          if (await probeProvider(providers[i])) {
+            if (cancelled || !map) return;
+            providerIndex = i;
+            addTileLayer(providers[i]);
+            return;
+          }
+        }
+        // Nothing better answered: stay, and re-arm the grace period
+        // so we don't probe in a tight loop.
+        lastProgressAt = Date.now();
+      } finally {
+        swapping = false;
+      }
+    }
+    const stallTimer = setInterval(() => {
+      void checkStall();
+    }, 5000);
 
     (async () => {
       const L = await import("leaflet");
@@ -157,6 +218,7 @@ export default function RideMap({
 
     return () => {
       cancelled = true;
+      clearInterval(stallTimer);
       if (map) map.remove();
       mapRef.current = null;
       layerRef.current = null;
