@@ -16,6 +16,8 @@ import {
   MailNotConfiguredError,
   buildSignupOtpEmail,
   isMailConfigured,
+  mailPass,
+  mailUser,
   sendSignupOtpEmail,
 } from "../src/lib/mail";
 import { createRateLimiter, RATE_LIMITS } from "../src/lib/rate-limit";
@@ -194,12 +196,18 @@ describe("signup OTP email content", () => {
 describe("sendSignupOtpEmail — stub transport, no network", () => {
   const savedUser = process.env.SMTP_USER;
   const savedPass = process.env.SMTP_APP_PASSWORD;
+  const savedGmailUser = process.env.GMAIL_USER;
+  const savedGmailPass = process.env.GMAIL_APP_PASSWORD;
 
   afterEach(() => {
     if (savedUser === undefined) delete process.env.SMTP_USER;
     else process.env.SMTP_USER = savedUser;
     if (savedPass === undefined) delete process.env.SMTP_APP_PASSWORD;
     else process.env.SMTP_APP_PASSWORD = savedPass;
+    if (savedGmailUser === undefined) delete process.env.GMAIL_USER;
+    else process.env.GMAIL_USER = savedGmailUser;
+    if (savedGmailPass === undefined) delete process.env.GMAIL_APP_PASSWORD;
+    else process.env.GMAIL_APP_PASSWORD = savedGmailPass;
   });
 
   test("stub transport receives the right email", async () => {
@@ -246,5 +254,23 @@ describe("sendSignupOtpEmail — stub transport, no network", () => {
     expect(isMailConfigured()).toBe(false);
     process.env.SMTP_APP_PASSWORD = "x";
     expect(isMailConfigured()).toBe(true);
+  });
+
+  test("GMAIL_* aliases configure mail (SMTP_* takes precedence)", () => {
+    delete process.env.SMTP_USER;
+    delete process.env.SMTP_APP_PASSWORD;
+    delete process.env.GMAIL_USER;
+    delete process.env.GMAIL_APP_PASSWORD;
+    expect(isMailConfigured()).toBe(false);
+    process.env.GMAIL_USER = "app@example.com";
+    expect(isMailConfigured()).toBe(false);
+    process.env.GMAIL_APP_PASSWORD = "x";
+    expect(isMailConfigured()).toBe(true);
+    expect(mailUser()).toBe("app@example.com");
+    expect(mailPass()).toBe("x");
+    process.env.SMTP_USER = "smtp@example.com";
+    process.env.SMTP_APP_PASSWORD = "y";
+    expect(mailUser()).toBe("smtp@example.com");
+    expect(mailPass()).toBe("y");
   });
 });
