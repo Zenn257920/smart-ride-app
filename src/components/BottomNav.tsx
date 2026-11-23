@@ -13,12 +13,12 @@ const ITEMS = [
 
 export default function BottomNav() {
   const pathname = usePathname();
-  if (pathname === "/" || pathname === "/login" || pathname === "/register") return null;
+  if (pathname === "/login" || pathname === "/register") return null;
   if (!pathname) return null;
   return (
     <nav
       aria-label="Bottom"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-forest/10 bg-white pb-[env(safe-area-inset-bottom)] dark:border-mint/10 dark:bg-[#122b19] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-forest/10 bg-white pb-[env(safe-area-inset-bottom)] dark:border-mint/10 dark:bg-[#122b19] lg:hidden"
     >
       <div className="grid grid-cols-5">
         {ITEMS.map((it) => {
