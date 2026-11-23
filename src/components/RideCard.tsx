@@ -19,6 +19,7 @@ import {
   rideTotal,
   type RideLike,
 } from "@/lib/api";
+import { Phone } from "lucide-react";
 
 interface RideCardProps {
   ride: RideLike;
@@ -77,7 +78,7 @@ export default function RideCard({ ride, selected, onSelect, onBook, showMatch =
                   <>
                     {" "}
                     <a href={`tel:${p.phone}`} onClick={(e) => e.stopPropagation()} className="underline">
-                      📞 {p.phone}
+                      <Phone aria-hidden className="mr-0.5 inline h-3.5 w-3.5" /> {p.phone}
                     </a>
                   </>
                 ) : null}

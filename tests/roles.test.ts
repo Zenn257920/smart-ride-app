@@ -28,7 +28,7 @@ function src(rel: string): string {
 
 /** hrefs of a `const NAME = [ { href: "..." }, ... ]` array in a source file. */
 function hrefsOf(source: string, name: string): string[] {
-  const m = source.match(new RegExp(`const ${name} = \\[([\\s\\S]*?)\\];`));
+  const m = source.match(new RegExp(`const ${name}(?::[^=]+)? = \\[([\\s\\S]*?)\\];`));
   if (!m) return [];
   return [...m[1].matchAll(/href: "([^"]+)"/g)].map((x) => x[1]);
 }

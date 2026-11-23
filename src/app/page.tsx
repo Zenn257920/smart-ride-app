@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Bus, Car, CarTaxiFront, ChevronRight, CircleCheck, Clock, CreditCard, MapPin, Star, Users, Zap, type LucideIcon } from "lucide-react";
 
 const STATS = [
   { num: "15,000+", label: "နေ့စဉ် ခရီးသည်များ" },
@@ -11,17 +12,17 @@ const STATS = [
   { num: "98.2%", label: "သုံးစွဲသူ စိတ်တိုင်းကျနှုန်း" },
 ];
 
-const STEPS = [
-  { n: "01", icon: "📍", title: "ပိ့်ဆောင်ရန် နေရာ ရွေးပါ", desc: "ထွက်မည့်နေရာနှင့် ဦးတည်ရာကို App မှ ရွေးချယ်ပါ" },
-  { n: "02", icon: "🕐", title: "ထွက်မည့် အချိန် သတ်မှတ်ပါ", desc: "ရုံးတက်/ရုံးဆင်း အချိန်ကို ထည့်ပါ" },
-  { n: "03", icon: "👥", title: "လမ်းကြောင်းတူ ခရီးသည်တွေနဲ့ ချိတ်ဆက်ပေးသည်", desc: "လမ်းကြောင်းတူ ၂–၃ ဦးနှင့် ချိတ်ဆက်ပေးသည်" },
-  { n: "04", icon: "✅", title: "E-Wallet ဖြင့် ပေးချေပါ", desc: "Innovix E-wallet ဖြင့် ပေးချေပါ" },
+const STEPS: { n: string; icon: LucideIcon; title: string; desc: string }[] = [
+  { n: "01", icon: MapPin, title: "ပိ့်ဆောင်ရန် နေရာ ရွေးပါ", desc: "ထွက်မည့်နေရာနှင့် ဦးတည်ရာကို App မှ ရွေးချယ်ပါ" },
+  { n: "02", icon: Clock, title: "ထွက်မည့် အချိန် သတ်မှတ်ပါ", desc: "ရုံးတက်/ရုံးဆင်း အချိန်ကို ထည့်ပါ" },
+  { n: "03", icon: Users, title: "လမ်းကြောင်းတူ ခရီးသည်တွေနဲ့ ချိတ်ဆက်ပေးသည်", desc: "လမ်းကြောင်းတူ ၂–၃ ဦးနှင့် ချိတ်ဆက်ပေးသည်" },
+  { n: "04", icon: CircleCheck, title: "E-Wallet ဖြင့် ပေးချေပါ", desc: "Innovix E-wallet ဖြင့် ပေးချေပါ" },
 ];
 
-const FEATURES = [
-  { icon: "⚡", title: "စက္ကန့်ပိုင်းအတွင်း ဘွတ်ကင်လုပ်ပါ", desc: "နေရာနှင့် အချိန်ကို ရွေးပါ — လမ်းကြောင်းတူ ကားကို မိနစ်ပိုင်းအတွင်း ရှာပေးသည်။" },
-  { icon: "📍", title: "တိုက်ရိုက် ခြေရာခံပါ", desc: "တက်သည့်နေရာမှ ဆင်းသည့်နေရာအထိ သင့်ခရီးစဉ်ကို မြေပုံပေါ်တွင် ကြည့်နိုင်သည်။" },
-  { icon: "💳", title: "လွယ်ကူစွာ ပေးချေပါ", desc: "Innovix E-Wallet သို့မဟုတ် ငွေသားဖြင့် ပေးချေပါ — အခက်အခဲ မရှိ။" },
+const FEATURES: { icon: LucideIcon; title: string; desc: string }[] = [
+  { icon: Zap, title: "စက္ကန့်ပိုင်းအတွင်း ဘွတ်ကင်လုပ်ပါ", desc: "နေရာနှင့် အချိန်ကို ရွေးပါ — လမ်းကြောင်းတူ ကားကို မိနစ်ပိုင်းအတွင်း ရှာပေးသည်။" },
+  { icon: MapPin, title: "တိုက်ရိုက် ခြေရာခံပါ", desc: "တက်သည့်နေရာမှ ဆင်းသည့်နေရာအထိ သင့်ခရီးစဉ်ကို မြေပုံပေါ်တွင် ကြည့်နိုင်သည်။" },
+  { icon: CreditCard, title: "လွယ်ကူစွာ ပေးချေပါ", desc: "Innovix E-Wallet သို့မဟုတ် ငွေသားဖြင့် ပေးချေပါ — အခက်အခဲ မရှိ။" },
 ];
 
 export default function Home() {
@@ -80,7 +81,7 @@ export default function Home() {
               <Link href="/find-ride" className="btn-mint px-7 py-3.5 text-base">အခုပဲ ခရီးရှာပါ</Link>
               <Link href="/driver/register" className="btn rounded-[12px] border border-mint/60 px-7 py-3.5 text-base text-mint hover:bg-white/10">ယာဉ်မောင်းအဖြစ် စာရင်းသွင်းပါ</Link>
             </div>
-            <p className="mt-6 text-sm text-mint/80">★★★★★ · ရန်ကုန်မြို့မှာ နေ့စဉ် ခရီးသည် 15,000+ က ယုံကြည်သုံးစွဲနေသည်</p>
+            <p className="mt-6 text-sm text-mint/80"><span className="inline-flex items-center gap-0.5 align-middle" aria-hidden>{[0, 1, 2, 3, 4].map((i) => (<Star key={i} className="h-4 w-4 fill-current" />))}</span> · ရန်ကုန်မြို့မှာ နေ့စဉ် ခရီးသည် 15,000+ က ယုံကြည်သုံးစွဲနေသည်</p>
           </div>
           <div className="relative min-w-0">
             <div className="overflow-hidden rounded-[24px]">
@@ -117,13 +118,16 @@ export default function Home() {
           <h2 className="section-title">SharedRide ကို ဘာကြောင့် စီးသနည်း</h2>
           <p className="section-sub max-w-xl">မြန်မြန် ဘွတ်ကင်လုပ်၊ တိုက်ရိုက် ခြေရာခံ၊ လွယ်ကူစွာ ပေးချေ — ရန်ကုန် ရုံးတက်/ရုံးဆင်း ခရီးစဉ်များအတွက် တည်ဆောက်ထားသည်။</p>
           <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="card">
-                <span aria-hidden className="text-3xl">{f.icon}</span>
-                <h3 className="mt-3 text-lg font-medium text-forest dark:text-mint">{f.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-forest/70 dark:text-mint/70">{f.desc}</p>
-              </div>
-            ))}
+            {FEATURES.map((f) => {
+              const Icon = f.icon;
+              return (
+                <div key={f.title} className="card">
+                  <Icon aria-hidden className="h-8 w-8 text-forest dark:text-mint" />
+                  <h3 className="mt-3 text-lg font-medium text-forest dark:text-mint">{f.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-forest/70 dark:text-mint/70">{f.desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -131,18 +135,21 @@ export default function Home() {
       {/* How it works — white */}
       <section className="bg-white dark:bg-[#0f2416]">
         <div className="mx-auto w-full max-w-7xl px-4 pb-14 sm:px-6">
-          <p className="text-sm font-medium text-forest/60 dark:text-mint/60">▸ အလုပ်လုပ်ပုံ</p>
+          <p className="text-sm font-medium text-forest/60 dark:text-mint/60"><ChevronRight aria-hidden className="mr-0.5 inline h-4 w-4" />အလုပ်လုပ်ပုံ</p>
           <h2 className="section-title mt-1">အဆင့် ၄ ဆင့်သာ</h2>
           <p className="section-sub">App ဖွင့်ပြီး မိနစ်အနည်းငယ်အတွင်း လမ်းကြောင်းတူ ကားနှင့် ချိတ်ဆက်ပေးသည်</p>
           <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map((s) => (
-              <div key={s.n} className="card relative">
-                <span className="text-xs font-medium text-forest/40 dark:text-mint/40">{s.n}</span>
-                <span aria-hidden className="mt-2 block text-3xl">{s.icon}</span>
-                <h3 className="mt-3 text-base font-medium text-forest dark:text-mint">{s.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-forest/70 dark:text-mint/70">{s.desc}</p>
-              </div>
-            ))}
+            {STEPS.map((s) => {
+              const Icon = s.icon;
+              return (
+                <div key={s.n} className="card relative">
+                  <span className="text-xs font-medium text-forest/40 dark:text-mint/40">{s.n}</span>
+                  <Icon aria-hidden className="mt-2 h-8 w-8 text-forest dark:text-mint" />
+                  <h3 className="mt-3 text-base font-medium text-forest dark:text-mint">{s.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-forest/70 dark:text-mint/70">{s.desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -154,22 +161,22 @@ export default function Home() {
           <p className="section-sub mx-auto max-w-xl text-center">ဘတ်စ်ကားထက် ပိုကောင်းပြီး တက္ကစီထက် ဈေးသက်သာသော ဝန်ဆောင်မှု</p>
           <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
             <div className="card text-center">
-              <span aria-hidden className="text-4xl">🚌</span>
+              <Bus aria-hidden className="mx-auto h-10 w-10 text-forest dark:text-mint" />
               <h3 className="mt-3 text-lg font-medium">ဘတ်စ်ကား</h3>
               <p className="mt-2 text-3xl font-medium text-forest/50 dark:text-mint/50">500</p>
               <p className="text-sm text-forest/60 dark:text-mint/60">ကျပ်</p>
               <p className="mt-3 text-sm leading-relaxed text-forest/70 dark:text-mint/70">ဈေးသက်သာသော်လည်း တိုးဝှေ့စီးရ၍ သက်သောင့်သက်သာမရှိ၊ မှတ်တိုင်နှင့်ကွာဝေးသည်</p>
             </div>
             <div className="card relative text-center ring-2 ring-forest dark:ring-mint">
-              <span className="badge absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">⭐ SharedRide — အကောင်းဆုံး</span>
-              <span aria-hidden className="text-4xl">🚗</span>
+              <span className="badge absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap"><Star aria-hidden className="mr-1 inline h-3.5 w-3.5 fill-current" />SharedRide — အကောင်းဆုံး</span>
+              <Car aria-hidden className="mx-auto h-10 w-10 text-forest dark:text-mint" />
               <h3 className="mt-3 text-lg font-medium">SmartRide Carpool (၃ ဦး)</h3>
               <p className="mt-2 text-3xl font-medium">2,200</p>
               <p className="text-sm text-forest/60 dark:text-mint/60">ကျပ် / တစ်ဦး (~10km)</p>
               <p className="mt-3 text-sm leading-relaxed text-forest/70 dark:text-mint/70">AC ကား၊ Door-to-Door ဝန်ဆောင်မှု<br />တက္ကစီနှင့် ယှဉ်လျှင် <strong>67% သက်သာ</strong><br />ဘတ်စ်ကားထက် သက်သောင့်သက်သာ</p>
             </div>
             <div className="card text-center">
-              <span aria-hidden className="text-4xl">🚕</span>
+              <CarTaxiFront aria-hidden className="mx-auto h-10 w-10 text-forest dark:text-mint" />
               <h3 className="mt-3 text-lg font-medium">ပုံမှန် တက္ကစီ (တစ်ဦး)</h3>
               <p className="mt-2 text-3xl font-medium">6,500</p>
               <p className="text-sm text-forest/60 dark:text-mint/60">ကျပ် (10km)</p>

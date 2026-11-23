@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import AuthGuard from "@/components/AuthGuard";
 import RideCard from "@/components/RideCard";
+import { Banknote, Check, MapPin, Phone, Play, RefreshCw } from "lucide-react";
 import {
   apiFetch,
   asArray,
@@ -307,7 +308,7 @@ function DriverDashboardInner() {
             {driver.verified === false ? " · Not verified yet" : ""}
           </p>
         </div>
-        <button type="button" onClick={refresh} disabled={refreshing} className="btn-outline">{refreshing ? "Refreshing…" : "↻ Refresh"}</button>
+        <button type="button" onClick={refresh} disabled={refreshing} className="btn-outline">{refreshing ? "Refreshing…" : (<><RefreshCw aria-hidden className="mr-1 inline h-4 w-4" />Refresh</>)}</button>
       </div>
 
       {error && !data ? <p role="alert" className="mt-4 rounded-[12px] bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</p> : null}
@@ -326,7 +327,7 @@ function DriverDashboardInner() {
           join the route label from the offered rides below. */}
       {(data?.cashToCollect?.total ?? 0) > 0 ? (
         <div className="card mt-6 border-2 border-forest/20 dark:border-mint/25">
-          <h2 className="text-lg font-medium">💵 ငွေသား ကောက်ခံရန်</h2>
+          <h2 className="flex items-center gap-2 text-lg font-medium"><Banknote aria-hidden className="h-5 w-5" />ငွေသား ကောက်ခံရန်</h2>
           <p className="mt-1 text-2xl font-medium">{fmtMMK(data?.cashToCollect?.total ?? 0)}</p>
           <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">
             ငွေသားဖြင့် ဘွတ်ကင်လုပ်ထားသော ခရီးသည်များထံမှ တိုက်ရိုက် ကောက်ခံရမည့်ငွေ — ငွေအိတ်ထဲ ဝင်မည် မဟုတ်ပါ။
@@ -394,7 +395,7 @@ function DriverDashboardInner() {
                         {p.phone ? (
                           <>
                             {" "}
-                            <a href={`tel:${p.phone}`} className="underline">📞 {p.phone}</a>
+                            <a href={`tel:${p.phone}`} className="underline"><Phone aria-hidden className="mr-0.5 inline h-3.5 w-3.5" /> {p.phone}</a>
                           </>
                         ) : null}
                       </span>
@@ -402,7 +403,7 @@ function DriverDashboardInner() {
                   </p>
                 ) : null}
                 {r.status === "completed" ? (
-                  <p className="mt-2 px-1 text-sm font-medium text-forest dark:text-mint">Completed ✓</p>
+                  <p className="mt-2 px-1 text-sm font-medium text-forest dark:text-mint"><Check aria-hidden className="mr-1 inline h-4 w-4" />Completed</p>
                 ) : (r.status === "open" || r.status === "full") ? (
                   <div className="mt-3 px-1">
                     {/* D4: trip states. Start becomes available within 2
@@ -420,7 +421,7 @@ function DriverDashboardInner() {
                           disabled={tripBusyId === r.id}
                           onClick={() => tripAction(r, "start")}
                         >
-                          {tripBusyId === r.id ? "စတင်နေသည်…" : "▶ Start trip"}
+                          {tripBusyId === r.id ? "စတင်နေသည်…" : (<><Play aria-hidden className="mr-1 inline h-4 w-4 fill-current" />Start trip</>)}
                         </button>
                       ) : null}
                       {rideTripStatus(r) === "started" ? (
@@ -430,7 +431,7 @@ function DriverDashboardInner() {
                           disabled={tripBusyId === r.id}
                           onClick={() => tripAction(r, "arrive")}
                         >
-                          {tripBusyId === r.id ? "မှတ်တမ်းတင်နေသည်…" : "📍 Arrived"}
+                          {tripBusyId === r.id ? "မှတ်တမ်းတင်နေသည်…" : (<><MapPin aria-hidden className="mr-1 inline h-4 w-4" />Arrived</>)}
                         </button>
                       ) : null}
                     </div>

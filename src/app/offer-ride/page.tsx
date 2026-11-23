@@ -9,6 +9,7 @@ import RoleGuard from "@/components/RoleGuard";
 import LocationField from "@/components/LocationField";
 import PricePreview from "@/components/PricePreview";
 import RideCard from "@/components/RideCard";
+import { CircleCheck } from "lucide-react";
 import {
   apiFetch,
   asArray,
@@ -300,7 +301,7 @@ function OfferRideInner() {
       {success ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-forest/60 p-4" role="dialog" aria-modal="true" aria-label="Ride offered">
           <div className="card w-full max-w-sm text-center">
-            <p aria-hidden className="text-4xl">✅</p>
+            <CircleCheck aria-hidden className="mx-auto h-10 w-10 text-forest dark:text-mint" />
             <h2 className="mt-2 text-lg font-medium">ခရီးစဉ် ကမ်းလှမ်းပြီးပါပြီ!</h2>
             <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">သင့်လမ်းကြောင်းပေါ်က ခရီးသည်များ ဤခရီးစဉ်ကို ယခု မြင်ရပါမည်။</p>
             <button type="button" className="btn-primary mt-5 w-full" onClick={() => setSuccess(false)}>ပြီးပါပြီ</button>

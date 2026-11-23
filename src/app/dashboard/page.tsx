@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
 import AuthGuard from "@/components/AuthGuard";
 import { apiFetch, asArray, fmtMMK, fmtTime, type BookingLike, type NotificationLike, type RideLike, type WalletTx } from "@/lib/api";
+import { Car, IdCard, Search, Ticket, Users, Wallet, type LucideIcon } from "lucide-react";
 
 interface BalanceRes {
   balance?: number;
@@ -69,25 +70,25 @@ function DashboardInner() {
   // card is gone entirely — becoming a driver means opening a
   // separate driver account); a driver never sees Find / Request.
   const isDriver = user?.user_type === "driver";
-  const cards = isDriver
+  const cards: { href: string; icon: LucideIcon; title: string; desc: string }[] = isDriver
     ? [
-        { href: "/offer-ride", icon: "🚗", title: "ခရီးစဉ် ကမ်းလှမ်းပါ", desc: "မောင်းပြီး လွတ်နေသော ထိုင်ခုံများကို မျှဝေပါ" },
-        { href: "/driver/dashboard", icon: "🪪", title: "ယာဉ်မောင်း ဒက်ရှ်ဘုတ်", desc: "ကမ်းလှမ်းထားသော ခရီးစဉ်များနှင့် စောင့်ဆိုင်းနေသော တောင်းဆိုမှုများ" },
-        { href: "/my-rides", icon: "🎫", title: "ကျွန်တော့်ခရီးစဉ်များ", desc: "ဘွတ်ကင်များနှင့် သင် ကမ်းလှမ်းထားသော ခရီးစဉ်များ" },
-        { href: "/wallet", icon: "👛", title: "ငွေအိတ်", desc: "လက်ကျန်ငွေ၊ ငွေဖြည့်ခြင်းနှင့် မှတ်တမ်း" },
+        { href: "/offer-ride", icon: Car, title: "ခရီးစဉ် ကမ်းလှမ်းပါ", desc: "မောင်းပြီး လွတ်နေသော ထိုင်ခုံများကို မျှဝေပါ" },
+        { href: "/driver/dashboard", icon: IdCard, title: "ယာဉ်မောင်း ဒက်ရှ်ဘုတ်", desc: "ကမ်းလှမ်းထားသော ခရီးစဉ်များနှင့် စောင့်ဆိုင်းနေသော တောင်းဆိုမှုများ" },
+        { href: "/my-rides", icon: Ticket, title: "ကျွန်တော့်ခရီးစဉ်များ", desc: "ဘွတ်ကင်များနှင့် သင် ကမ်းလှမ်းထားသော ခရီးစဉ်များ" },
+        { href: "/wallet", icon: Wallet, title: "ငွေအိတ်", desc: "လက်ကျန်ငွေ၊ ငွေဖြည့်ခြင်းနှင့် မှတ်တမ်း" },
       ]
     : [
-        { href: "/find-ride", icon: "🔍", title: "ခရီးစဉ် ရှာပါ", desc: "သင့်လမ်းကြောင်းပေါ်က ကိုက်ညီသော မျှဝေခရီးစဉ်များကို ရှာပါ" },
-        { href: "/ride-requests", icon: "👥", title: "ခရီးစဉ် တောင်းဆိုမှုများ", desc: "မျှဝေတောင်းဆိုမှုတစ်ခုမှာ ပါဝင်ပါ သို့မဟုတ် ဖန်တီးပါ" },
-        { href: "/my-rides", icon: "🎫", title: "ကျွန်တော့်ခရီးစဉ်များ", desc: "ဘွတ်ကင်များနှင့် သင် ကမ်းလှမ်းထားသော ခရီးစဉ်များ" },
-        { href: "/wallet", icon: "👛", title: "ငွေအိတ်", desc: "လက်ကျန်ငွေ၊ ငွေဖြည့်ခြင်းနှင့် မှတ်တမ်း" },
+        { href: "/find-ride", icon: Search, title: "ခရီးစဉ် ရှာပါ", desc: "သင့်လမ်းကြောင်းပေါ်က ကိုက်ညီသော မျှဝေခရီးစဉ်များကို ရှာပါ" },
+        { href: "/ride-requests", icon: Users, title: "ခရီးစဉ် တောင်းဆိုမှုများ", desc: "မျှဝေတောင်းဆိုမှုတစ်ခုမှာ ပါဝင်ပါ သို့မဟုတ် ဖန်တီးပါ" },
+        { href: "/my-rides", icon: Ticket, title: "ကျွန်တော့်ခရီးစဉ်များ", desc: "ဘွတ်ကင်များနှင့် သင် ကမ်းလှမ်းထားသော ခရီးစဉ်များ" },
+        { href: "/wallet", icon: Wallet, title: "ငွေအိတ်", desc: "လက်ကျန်ငွေ၊ ငွေဖြည့်ခြင်းနှင့် မှတ်တမ်း" },
       ];
 
   return (
     <div className="page-wrap">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="page-title">မင်္ဂလာပါ{user?.name ? `, ${user.name}` : ""} 👋</h1>
+          <h1 className="page-title">မင်္ဂလာပါ{user?.name ? `, ${user.name}` : ""}</h1>
           <p className="section-sub">သင့် SharedRide ဒက်ရှ်ဘုတ် — {isDriver ? "ယာဉ်မောင်း" : "ခရီးသည်"} အကောင့်</p>
         </div>
         {isDriver ? <Link href="/driver/dashboard" className="btn-outline">ယာဉ်မောင်း ဒက်ရှ်ဘုတ် →</Link> : null}
@@ -115,13 +116,16 @@ function DashboardInner() {
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map((c) => (
-          <Link key={c.href} href={c.href} className="card transition-shadow hover:shadow-[0_4px_24px_rgba(30,73,39,0.16)]">
-            <span aria-hidden className="text-3xl">{c.icon}</span>
-            <h2 className="mt-3 text-lg font-medium text-forest dark:text-mint">{c.title}</h2>
-            <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">{c.desc}</p>
-          </Link>
-        ))}
+        {cards.map((c) => {
+          const Icon = c.icon;
+          return (
+            <Link key={c.href} href={c.href} className="card transition-shadow hover:shadow-[0_4px_24px_rgba(30,73,39,0.16)]">
+              <Icon aria-hidden className="h-8 w-8 text-forest dark:text-mint" />
+              <h2 className="mt-3 text-lg font-medium text-forest dark:text-mint">{c.title}</h2>
+              <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">{c.desc}</p>
+            </Link>
+          );
+        })}
       </div>
 
       <div className="mt-8">

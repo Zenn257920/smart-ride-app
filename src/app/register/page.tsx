@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { normalizePhone } from "@/lib/phone";
+import { Car, Users, type LucideIcon } from "lucide-react";
 
 type Step = "email" | "otp" | "details";
 
@@ -253,26 +254,29 @@ export default function RegisterPage() {
               <div className="grid grid-cols-2 gap-3" role="group" aria-label="အကောင့် အမျိုးအစား">
                 {(
                   [
-                    ["passenger", "🧑‍🤝‍🧑", "ခရီးသည်", "စီးမယ် — ခရီးရှာပြီး ဘွတ်ကင်လုပ်မယ်"],
-                    ["driver", "🚗", "ယာဉ်မောင်း", "မောင်းမယ် — ခရီးစဉ် ကမ်းလှမ်းမယ်"],
-                  ] as ["passenger" | "driver", string, string, string][]
-                ).map(([value, icon, label, desc]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setRole(value)}
-                    aria-pressed={role === value}
-                    className={`rounded-[16px] border-2 p-3 text-left transition-colors ${
-                      role === value
-                        ? "border-forest bg-mint-soft dark:border-mint dark:bg-forest-soft"
-                        : "border-forest/15 bg-white hover:border-forest/40 dark:border-mint/15 dark:bg-[#122b19]"
-                    }`}
-                  >
-                    <span aria-hidden className="text-2xl">{icon}</span>
-                    <span className="mt-1 block font-medium text-forest dark:text-mint">{label}</span>
-                    <span className="mt-0.5 block text-xs leading-relaxed text-forest/70 dark:text-mint/70">{desc}</span>
-                  </button>
-                ))}
+                    ["passenger", Users, "ခရီးသည်", "စီးမယ် — ခရီးရှာပြီး ဘွတ်ကင်လုပ်မယ်"],
+                    ["driver", Car, "ယာဉ်မောင်း", "မောင်းမယ် — ခရီးစဉ် ကမ်းလှမ်းမယ်"],
+                  ] as ["passenger" | "driver", LucideIcon, string, string][]
+                ).map(([value, icon, label, desc]) => {
+                  const Icon = icon;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setRole(value)}
+                      aria-pressed={role === value}
+                      className={`rounded-[16px] border-2 p-3 text-left transition-colors ${
+                        role === value
+                          ? "border-forest bg-mint-soft dark:border-mint dark:bg-forest-soft"
+                          : "border-forest/15 bg-white hover:border-forest/40 dark:border-mint/15 dark:bg-[#122b19]"
+                      }`}
+                    >
+                      <Icon aria-hidden className="h-6 w-6 text-forest dark:text-mint" />
+                      <span className="mt-1 block font-medium text-forest dark:text-mint">{label}</span>
+                      <span className="mt-0.5 block text-xs leading-relaxed text-forest/70 dark:text-mint/70">{desc}</span>
+                    </button>
+                  );
+                })}
               </div>
               <p className="mt-2 text-xs leading-relaxed text-forest/60 dark:text-mint/60">
                 အကောင့် အမျိုးအစားကို ဖွင့်ပြီးမှ ပြောင်း၍ မရပါ။ နှစ်မျိုးလုံး လုပ်ချင်ရင် အီးမေးလ် နှစ်ခုနဲ့ အကောင့် နှစ်ခု ဖွင့်ပါ။

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import AuthGuard from "@/components/AuthGuard";
+import { Banknote, Check, CreditCard, Phone, Star } from "lucide-react";
 import {
   apiFetch,
   asArray,
@@ -93,7 +94,7 @@ function LiveTripView({ rideId }: { rideId: string }) {
     <div className="mt-3 rounded-[12px] bg-mint-soft p-3 dark:bg-forest-soft">
       <p className="text-sm font-medium">
         {live.tripStatus === "arrived"
-          ? "ယာဉ်မောင်း ရောက်ရှိနေပါပြီ ✓"
+          ? (<><Check aria-hidden className="mr-1 inline h-4 w-4" />ယာဉ်မောင်း ရောက်ရှိနေပါပြီ</>)
           : live.locationFresh
             ? "ခရီးစဉ် သွားနေသည် — ယာဉ်မောင်း တည်နေရာ live"
             : "ခရီးစဉ် သွားနေသည် — ယာဉ်မောင်း တည်နေရာ အသစ်မရသေးပါ"}
@@ -285,7 +286,7 @@ function MyRidesInner() {
                   <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">
                     {ride ? `${rideDriverName(ride)} · ${rideCar(ride)} ${ridePlate(ride)} · ${fmtTime(rideTime(ride))}` : fmtTime(b.departureTime ?? b.departure_time)}
                   </p>
-                  {avg ? <p className="mt-1 text-sm">ယာဉ်မောင်း အဆင့်: ★ {avg.average.toFixed(1)} ({avg.count} ခု)</p> : null}
+                  {avg ? <p className="mt-1 text-sm">ယာဉ်မောင်း အဆင့်: <Star aria-hidden className="mr-0.5 inline h-4 w-4 fill-current" />{avg.average.toFixed(1)} ({avg.count} ခု)</p> : null}
                   {/* D3: the driver's phone, shown only for a confirmed /
                       completed booking — the server drops the key
                       otherwise. */}
@@ -293,7 +294,7 @@ function MyRidesInner() {
                     <p className="mt-2 text-sm">
                       ယာဉ်မောင်း ဖုန်း:{" "}
                       <a href={`tel:${rideDriverPhone(ride)}`} className="font-medium underline">
-                        📞 {rideDriverPhone(ride)}
+                        <Phone aria-hidden className="mr-0.5 inline h-3.5 w-3.5" /> {rideDriverPhone(ride)}
                       </a>
                     </p>
                   ) : null}
@@ -314,13 +315,13 @@ function MyRidesInner() {
                     {(b.paymentMethod ?? b.payment_method) === "cash" ? (
                       <p className="col-span-2">
                         <span className="inline-block rounded-full border border-forest/30 bg-mint-soft px-2.5 py-1 text-xs font-medium text-forest dark:border-mint/40 dark:bg-forest-soft dark:text-mint">
-                          💵 ငွေသား — ယာဉ်မောင်းကို {fmtMMK(b.totalPrice ?? b.total_price)} ပေးပါ
+                          <Banknote aria-hidden className="mr-1 inline h-3.5 w-3.5" />ငွေသား — ယာဉ်မောင်းကို {fmtMMK(b.totalPrice ?? b.total_price)} ပေးပါ
                         </span>
                       </p>
                     ) : (
                       <p>
                         <span className="inline-block rounded-full bg-mint-soft px-2.5 py-1 text-xs text-forest/70 dark:bg-forest-soft dark:text-mint/70">
-                          💳 E-Wallet — ငွေအိတ်မှ ပေးပြီးပါပြီ
+                          <CreditCard aria-hidden className="mr-1 inline h-3.5 w-3.5" />E-Wallet — ငွေအိတ်မှ ပေးပြီးပါပြီ
                         </span>
                       </p>
                     )}
@@ -332,7 +333,7 @@ function MyRidesInner() {
                       <button type="button" className="btn-outline" onClick={() => setCancelTarget(b)}>ဘွတ်ကင်ပယ်ဖျက်မယ်</button>
                     ) : null}
                     {rateable ? (
-                      <button type="button" className="btn-primary" onClick={() => { setRatingTarget(b); setRatingMsg(""); }}>★ ယာဉ်မောင်းကို အဆင့်သတ်မှတ်မယ်</button>
+                      <button type="button" className="btn-primary" onClick={() => { setRatingTarget(b); setRatingMsg(""); }}><Star aria-hidden className="mr-1 inline h-4 w-4 fill-current" />ယာဉ်မောင်းကို အဆင့်သတ်မှတ်မယ်</button>
                     ) : null}
                   </div>
                 </article>
@@ -365,7 +366,7 @@ function MyRidesInner() {
                       {p.phone ? (
                         <>
                           {" "}
-                          <a href={`tel:${p.phone}`} className="underline">📞 {p.phone}</a>
+                          <a href={`tel:${p.phone}`} className="underline"><Phone aria-hidden className="mr-0.5 inline h-3.5 w-3.5" /> {p.phone}</a>
                         </>
                       ) : null}
                     </span>
@@ -378,7 +379,7 @@ function MyRidesInner() {
                   </div>
                 ) : null}
                 {r.status === "completed" ? (
-                  <p className="mt-2 text-sm font-medium text-forest dark:text-mint">ပြီးဆုံးပါပြီ ✓</p>
+                  <p className="mt-2 text-sm font-medium text-forest dark:text-mint"><Check aria-hidden className="mr-1 inline h-4 w-4" />ပြီးဆုံးပါပြီ</p>
                 ) : null}
               </article>
             ))
@@ -395,7 +396,7 @@ function MyRidesInner() {
             </p>
             {(cancelTarget.paymentMethod ?? cancelTarget.payment_method) === "cash" ? (
               <p className="mt-2 text-sm font-medium text-forest dark:text-mint">
-                💵 ငွေသားဖြင့် ဘွတ်ကင်လုပ်ထားသောကြောင့် ပေးချေထားခြင်း မရှိသေးပါ — ပယ်ဖျက်လျှင် ပြန်အမ်းငွေ မရှိပါ။
+                <Banknote aria-hidden className="mr-1 inline h-4 w-4" />ငွေသားဖြင့် ဘွတ်ကင်လုပ်ထားသောကြောင့် ပေးချေထားခြင်း မရှိသေးပါ — ပယ်ဖျက်လျှင် ပြန်အမ်းငွေ မရှိပါ။
               </p>
             ) : null}
             <div className="mt-5 flex gap-3">
@@ -415,8 +416,8 @@ function MyRidesInner() {
             </p>
             <div className="mt-4 flex gap-1" role="radiogroup" aria-label="Stars">
               {[1, 2, 3, 4, 5].map((s) => (
-                <button key={s} type="button" aria-label={`${s} star${s === 1 ? "" : "s"}`} aria-pressed={stars === s} onClick={() => setStars(s)} className={`rounded-[8px] px-2 py-1 text-2xl ${stars >= s ? "text-forest dark:text-mint" : "text-forest/25 dark:text-mint/25"}`}>
-                  ★
+                <button key={s} type="button" aria-label={`${s} star${s === 1 ? "" : "s"}`} aria-pressed={stars === s} onClick={() => setStars(s)} className={`inline-flex items-center justify-center rounded-[8px] px-2 py-1 ${stars >= s ? "text-forest dark:text-mint" : "text-forest/25 dark:text-mint/25"}`}>
+                  <Star aria-hidden className="h-6 w-6 fill-current" />
                 </button>
               ))}
             </div>

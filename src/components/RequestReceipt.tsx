@@ -1,6 +1,7 @@
 "use client";
 
 import { fmtMMK, fmtTime } from "@/lib/api";
+import { X } from "lucide-react";
 import type { RequestReceiptData } from "@/lib/receipt";
 
 interface RequestReceiptProps {
@@ -44,9 +45,9 @@ export default function RequestReceipt({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-full px-2 py-1 text-forest/60 hover:bg-mint-soft dark:text-mint/60"
+            className="inline-flex items-center justify-center rounded-full px-2 py-1 text-forest/60 hover:bg-mint-soft dark:text-mint/60"
           >
-            ✕
+            <X aria-hidden className="h-4 w-4" />
           </button>
         </div>
         <p className="mt-2 font-medium">

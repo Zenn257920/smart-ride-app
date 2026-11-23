@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { apiFetch, asArray, fmtTime, type NotificationLike } from "@/lib/api";
+import { Bell } from "lucide-react";
 
 export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
@@ -53,7 +54,7 @@ export default function NotificationsBell() {
         aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
         className="relative flex h-9 w-9 items-center justify-center rounded-full text-mint hover:bg-white/10"
       >
-        <span aria-hidden className="text-lg">🔔</span>
+        <Bell aria-hidden className="h-5 w-5" />
         {unread > 0 ? (
           <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-mint px-1 text-[11px] font-medium text-forest">
             {unread > 9 ? "9+" : unread}

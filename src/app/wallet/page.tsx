@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import AuthGuard from "@/components/AuthGuard";
 import { apiFetch, asArray, fmtMMK, fmtTime, type WalletTx } from "@/lib/api";
 import { MAX_PROOF_IMAGE_BASE64_CHARS } from "@/lib/payment-settings";
+import { Camera, Check, Hourglass, X } from "lucide-react";
 
 // Feature A — guided manual top-up (2026-11-23):
 //   Step 1: amount + provider (a provider with no enabled receiving
@@ -246,7 +247,7 @@ function WalletInner() {
         <p className="mt-1 text-4xl font-medium">{loading ? "…" : balance != null ? fmtMMK(balance) : "—"}</p>
         {heldPrepayments > 0 ? (
           <p className="mt-2 text-sm text-mint/80">
-            ⏳ ဖွင့်ထားသော ခရီးစဉ် တောင်းဆိုမှုများအတွက် ထိန်းထားသောငွေ: {fmtMMK(heldPrepayments)} — တောင်းဆိုမှု လက်ခံခြင်း / ပယ်ဖျက်ခြင်း ပြုလုပ်သောအခါ ပြန်လည် ရှင်းလင်းပါမည်။
+            <Hourglass aria-hidden className="mr-1 inline h-4 w-4" />ဖွင့်ထားသော ခရီးစဉ် တောင်းဆိုမှုများအတွက် ထိန်းထားသောငွေ: {fmtMMK(heldPrepayments)} — တောင်းဆိုမှု လက်ခံခြင်း / ပယ်ဖျက်ခြင်း ပြုလုပ်သောအခါ ပြန်လည် ရှင်းလင်းပါမည်။
           </p>
         ) : null}
         <div className="mt-5 flex flex-wrap gap-3">
@@ -257,7 +258,7 @@ function WalletInner() {
 
       {pendingTopups.length > 0 ? (
         <div className="mt-4 rounded-[20px] bg-mint-soft p-4 text-sm dark:bg-forest-soft">
-          <p className="font-medium">⏳ အတည်ပြုချက် စောင့်နေသော ငွေဖြည့်မှု {pendingTopups.length} ခု</p>
+          <p className="font-medium"><Hourglass aria-hidden className="mr-1 inline h-4 w-4" />အတည်ပြုချက် စောင့်နေသော ငွေဖြည့်မှု {pendingTopups.length} ခု</p>
           <p className="mt-1 text-forest/70 dark:text-mint/70">သင့်လွှဲပြောင်းမှုကို စောင့်ဆိုင်းနေသည့် အခြေအနေဖြင့် မှတ်တမ်းတင်ထားသည် — စီမံခန့်ခွဲသူက ကိုယ်တိုင် အတည်ပြုပေးပါမည်။ v1 တွင် ငွေ အလိုအလျောက် မလှုပ်ရှားပါ။</p>
         </div>
       ) : null}
@@ -292,7 +293,7 @@ function WalletInner() {
           <div className="card w-full max-w-md rounded-b-none p-6 sm:rounded-b-[20px]">
             <div className="flex items-start justify-between gap-3">
               <h2 className="text-lg font-medium">ငွေအိတ် ငွေဖြည့်ပါ</h2>
-              <button type="button" onClick={closeTopup} aria-label="Close" className="rounded-full px-2 py-1 text-forest/60 hover:bg-mint-soft dark:text-mint/60">✕</button>
+              <button type="button" onClick={closeTopup} aria-label="Close" className="inline-flex items-center justify-center rounded-full px-2 py-1 text-forest/60 hover:bg-mint-soft dark:text-mint/60"><X aria-hidden className="h-4 w-4" /></button>
             </div>
 
             {topupStep === 1 ? (
@@ -373,7 +374,7 @@ function WalletInner() {
                         onFocus={(e) => e.target.select()}
                       />
                       <button type="button" className="btn-primary shrink-0 !px-4 !py-2.5 text-sm" onClick={copyAccountNumber}>
-                        {copied ? "ကူးပြီးပါပြီ ✓" : "ကူးယူမယ်"}
+                        {copied ? (<><Check aria-hidden className="mr-1 inline h-4 w-4" />ကူးပြီးပါပြီ</>) : "ကူးယူမယ်"}
                       </button>
                     </div>
                     <p className="mt-2 text-sm">အကောင့်အမည်: <strong>{receivingAccount.accountName}</strong></p>
@@ -434,7 +435,7 @@ function WalletInner() {
                   </div>
                 ) : (
                   <button type="button" className="btn-outline mt-2 w-full" onClick={() => proofInputRef.current?.click()}>
-                    📷 Screenshot ရွေးမယ်
+                    <Camera aria-hidden className="mr-1.5 inline h-4 w-4" />Screenshot ရွေးမယ်
                   </button>
                 )}
                 {topupError ? <p role="alert" className="mt-3 rounded-[12px] bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{topupError}</p> : null}
@@ -445,7 +446,7 @@ function WalletInner() {
               </>
             ) : (
               <>
-                <p aria-hidden className="mt-2 text-4xl">⏳</p>
+                <Hourglass aria-hidden className="mt-2 h-10 w-10 text-forest dark:text-mint" />
                 <h3 className="mt-2 text-lg font-medium">ငွေဖြည့်မှု တင်ပြီးပါပြီ — အတည်ပြုချက် စောင့်နေသည်</h3>
                 <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">
                   {fmtMMK(Number(topupAmount))} via {topupMethod} is recorded as PENDING. Your balance updates once an admin confirms the transfer.
@@ -462,7 +463,7 @@ function WalletInner() {
           <div className="card w-full max-w-sm">
             <div className="flex items-start justify-between gap-3">
               <h2 className="text-lg font-medium">ငွေထုတ်ပါ</h2>
-              <button type="button" onClick={() => setWithdrawOpen(false)} aria-label="Close" className="rounded-full px-2 py-1 text-forest/60 hover:bg-mint-soft dark:text-mint/60">✕</button>
+              <button type="button" onClick={() => setWithdrawOpen(false)} aria-label="Close" className="inline-flex items-center justify-center rounded-full px-2 py-1 text-forest/60 hover:bg-mint-soft dark:text-mint/60"><X aria-hidden className="h-4 w-4" /></button>
             </div>
             <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">Available: {balance != null ? fmtMMK(balance) : "—"}</p>
             <label htmlFor="withdrawAmount" className="label mt-4">Amount (MMK, min 1,000)</label>

@@ -10,6 +10,7 @@ import BookingModal from "@/components/BookingModal";
 import RequestReceipt from "@/components/RequestReceipt";
 import LocationField from "@/components/LocationField";
 import PricePreview from "@/components/PricePreview";
+import { RefreshCw, X } from "lucide-react";
 import { buildRequestReceipt, type RequestReceiptData } from "@/lib/receipt";
 import {
   apiFetch,
@@ -365,7 +366,7 @@ function RideRequestsInner() {
           <h1 className="page-title">Ride requests</h1>
           <p className="section-sub">Shared requests from passengers — join one, or create your own and split the fare.</p>
         </div>
-        <button type="button" onClick={refresh} disabled={refreshing} className="btn-outline">{refreshing ? "Refreshing…" : "↻ Refresh"}</button>
+        <button type="button" onClick={refresh} disabled={refreshing} className="btn-outline">{refreshing ? "Refreshing…" : (<><RefreshCw aria-hidden className="mr-1 inline h-4 w-4" />Refresh</>)}</button>
       </div>
 
       {notice ? <p className="mt-4 rounded-[12px] bg-mint-soft px-3 py-2 text-sm dark:bg-forest-soft">{notice}</p> : null}
@@ -473,7 +474,7 @@ function RideRequestsInner() {
           <div className="card max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-b-none p-6 sm:rounded-b-[20px]">
             <div className="flex items-start justify-between gap-3">
               <h2 className="text-lg font-medium">Join this request</h2>
-              <button type="button" onClick={() => setJoining(null)} aria-label="Close" className="rounded-full px-2 py-1 text-forest/60 hover:bg-mint-soft dark:text-mint/60">✕</button>
+              <button type="button" onClick={() => setJoining(null)} aria-label="Close" className="inline-flex items-center justify-center rounded-full px-2 py-1 text-forest/60 hover:bg-mint-soft dark:text-mint/60"><X aria-hidden className="h-4 w-4" /></button>
             </div>
             <p className="mt-2 text-sm">{joining.startLabel ?? joining.start_label} → {joining.endLabel ?? joining.end_label}</p>
             <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">Estimated total: {fmtMMK(joining.estimatedPrice ?? joining.estimated_price)} · {(joining.passengers ?? []).length + 1} riders after you join</p>

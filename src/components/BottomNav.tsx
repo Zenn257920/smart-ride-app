@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Car, Home, IdCard, Search, Ticket, Users, Wallet, type LucideIcon } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 
 /**
@@ -11,28 +12,28 @@ import { useSession } from "@/lib/auth-client";
  * never sees Request (they accept pending requests in their Driver
  * dashboard). Logged-out visitors see the current 5 items.
  */
-const PUBLIC_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: "🏠" },
-  { href: "/find-ride", label: "Find", icon: "🔍" },
-  { href: "/offer-ride", label: "Offer", icon: "🚗" },
-  { href: "/my-rides", label: "Rides", icon: "🎫" },
-  { href: "/wallet", label: "Wallet", icon: "👛" },
+const PUBLIC_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/find-ride", label: "Find", icon: Search },
+  { href: "/offer-ride", label: "Offer", icon: Car },
+  { href: "/my-rides", label: "Rides", icon: Ticket },
+  { href: "/wallet", label: "Wallet", icon: Wallet },
 ];
 
-const PASSENGER_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: "🏠" },
-  { href: "/find-ride", label: "Find", icon: "🔍" },
-  { href: "/ride-requests", label: "Request", icon: "👥" },
-  { href: "/my-rides", label: "Rides", icon: "🎫" },
-  { href: "/wallet", label: "Wallet", icon: "👛" },
+const PASSENGER_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/find-ride", label: "Find", icon: Search },
+  { href: "/ride-requests", label: "Request", icon: Users },
+  { href: "/my-rides", label: "Rides", icon: Ticket },
+  { href: "/wallet", label: "Wallet", icon: Wallet },
 ];
 
-const DRIVER_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: "🏠" },
-  { href: "/offer-ride", label: "Offer", icon: "🚗" },
-  { href: "/driver/dashboard", label: "Driver", icon: "🪪" },
-  { href: "/my-rides", label: "Rides", icon: "🎫" },
-  { href: "/wallet", label: "Wallet", icon: "👛" },
+const DRIVER_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/offer-ride", label: "Offer", icon: Car },
+  { href: "/driver/dashboard", label: "Driver", icon: IdCard },
+  { href: "/my-rides", label: "Rides", icon: Ticket },
+  { href: "/wallet", label: "Wallet", icon: Wallet },
 ];
 
 export default function BottomNav() {
@@ -82,6 +83,7 @@ export default function BottomNav() {
       <div className="grid grid-cols-5">
         {items.map((it) => {
           const active = pathname === it.href || (it.href !== "/dashboard" && pathname.startsWith(it.href));
+          const Icon = it.icon;
           return (
             <Link
               key={it.href}
@@ -91,7 +93,7 @@ export default function BottomNav() {
               }`}
               aria-current={active ? "page" : undefined}
             >
-              <span aria-hidden className="text-lg leading-none">{it.icon}</span>
+              <Icon aria-hidden className="h-5 w-5" />
               {it.label}
             </Link>
           );

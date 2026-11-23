@@ -16,6 +16,7 @@ import {
   type LatLng,
   type RideLike,
 } from "@/lib/api";
+import { Banknote, CreditCard, X } from "lucide-react";
 
 interface BookingModalProps {
   ride: RideLike;
@@ -92,7 +93,7 @@ export default function BookingModal({ ride, balance, pickup, dropoff, onClose, 
       <div className="card w-full max-w-md rounded-b-none p-6 sm:rounded-b-[20px]">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-lg font-medium text-forest dark:text-mint">ဤခရီးစဉ်ကို ဘွတ်ကင်လုပ်ပါ</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-full px-2 py-1 text-forest/60 hover:bg-mint-soft dark:text-mint/60">✕</button>
+          <button type="button" onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center rounded-full px-2 py-1 text-forest/60 hover:bg-mint-soft dark:text-mint/60"><X aria-hidden className="h-4 w-4" /></button>
         </div>
 
         <p className="mt-2 text-sm text-forest/80 dark:text-mint/80">
@@ -149,7 +150,7 @@ export default function BookingModal({ ride, balance, pickup, dropoff, onClose, 
             aria-pressed={method === "ewallet"}
             className={`rounded-[12px] border-2 p-3 text-left ${method === "ewallet" ? "border-forest bg-mint-soft dark:border-mint dark:bg-forest-soft" : "border-forest/15 dark:border-mint/15"}`}
           >
-            <span className="block text-sm font-medium">💳 E-Wallet</span>
+            <span className="flex items-center gap-1.5 text-sm font-medium"><CreditCard aria-hidden className="h-4 w-4" /> E-Wallet</span>
             <span className="mt-1 block text-xs text-forest/60 dark:text-mint/60">
               လက်ကျန်ငွေ: {balance != null ? fmtMMK(balance) : "—"}
             </span>
@@ -160,7 +161,7 @@ export default function BookingModal({ ride, balance, pickup, dropoff, onClose, 
             aria-pressed={method === "cash"}
             className={`rounded-[12px] border-2 p-3 text-left ${method === "cash" ? "border-forest bg-mint-soft dark:border-mint dark:bg-forest-soft" : "border-forest/15 dark:border-mint/15"}`}
           >
-            <span className="block text-sm font-medium">💵 ငွေသား</span>
+            <span className="flex items-center gap-1.5 text-sm font-medium"><Banknote aria-hidden className="h-4 w-4" /> ငွေသား</span>
             <span className="mt-1 block text-xs text-forest/60 dark:text-mint/60">ယာဉ်မောင်းကို တိုက်ရိုက်ပေးပါ</span>
           </button>
         </div>

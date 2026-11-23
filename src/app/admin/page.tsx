@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, fmtMMK } from "@/lib/api";
 import { proofImageSrc } from "@/lib/payment-settings";
+import { Check } from "lucide-react";
 
 interface Topup {
   id: string;
@@ -318,7 +319,7 @@ export default function AdminPage() {
               <div key={d.id} className="card">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="font-medium">{d.userName ?? "Unknown"} · {d.verified ? "Verified ✓" : "Not verified"}</p>
+                    <p className="font-medium">{d.userName ?? "Unknown"} · {d.verified ? (<span className="inline-flex items-center gap-1"><Check aria-hidden className="h-4 w-4" />Verified</span>) : "Not verified"}</p>
                     <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">
                       {d.userEmail ?? d.userId}
                       {d.userPhone ? ` · ${d.userPhone}` : ""}

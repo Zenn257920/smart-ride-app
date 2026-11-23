@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
+import { MapPin } from "lucide-react";
 
 /**
  * Site footer. It is a client component for two session-dependent
@@ -70,7 +71,7 @@ export default function Footer() {
                 Admin
               </Link>
             ) : null}
-            <span>📍 ရန်ကုန်မြို့</span>
+            <span className="inline-flex items-center gap-1"><MapPin aria-hidden className="h-3.5 w-3.5" /> ရန်ကုန်မြို့</span>
           </span>
         </div>
       </div>

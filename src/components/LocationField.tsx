@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { geocode, type GeocodeHit } from "@/lib/api";
+import { MapPin } from "lucide-react";
 
 interface LocationFieldProps {
   id: string;
@@ -78,8 +79,8 @@ export default function LocationField({
           autoComplete="off"
         />
         {onUseMyLocation ? (
-          <button type="button" onClick={onUseMyLocation} disabled={locating} className="btn-outline shrink-0 px-3" title="ကျွန်တော့်တည်နေရာကို သုံးပါ">
-            {locating ? "…" : "📍"}
+          <button type="button" onClick={onUseMyLocation} disabled={locating} className="btn-outline inline-flex shrink-0 items-center justify-center px-3" title="ကျွန်တော့်တည်နေရာကို သုံးပါ">
+            {locating ? "…" : <MapPin aria-hidden className="h-4 w-4" />}
             <span className="sr-only">ကျွန်တော့်တည်နေရာကို သုံးပါ</span>
           </button>
         ) : null}
