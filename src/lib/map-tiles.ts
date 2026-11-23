@@ -10,10 +10,14 @@
  * geocode / route APIs run server-side on Vercel, so neither is
  * affected by this.
  *
- * No API keys, accounts, or paid services are involved. CARTO has
- * started asking for keys on some accounts, so an optional key is
- * supported via NEXT_PUBLIC_CARTO_KEY — without a key the URL is used
- * as-is, and a 403 just makes the probe fail and fall through to Esri.
+ * CARTO requires an API key for raster tiles: without one its tiles
+ * return an HTTP 200 "API KEY REQUIRED" watermark image instead of
+ * street tiles. A successful image load fires no tileerror, so the
+ * probe cannot distinguish the watermark from a real tile and the
+ * fallback never triggers — the map stays blank white. So CARTO is
+ * only in the provider list when NEXT_PUBLIC_CARTO_KEY is set;
+ * without a key the list is Esri first, OSM last resort. No key is
+ * invented or fetched here — the env var is the only way one enters.
  */
 
 export interface TileProvider {
@@ -34,22 +38,32 @@ export const YANGON_PROBE = { lat: 16.8, lng: 96.15, zoom: 13 } as const;
 /** Consecutive tile errors before the map swaps to the next provider. */
 export const TILE_ERROR_SWAP_THRESHOLD = 3;
 
-function cartoUrl(): string {
+function cartoUrl(key: string): string {
   const base =
     "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-  const key = process.env.NEXT_PUBLIC_CARTO_KEY;
-  return key ? `${base}?key=${encodeURIComponent(key)}` : base;
+  return `${base}?key=${encodeURIComponent(key)}`;
 }
 
-/** Providers in priority order: first working probe wins. */
+/**
+ * Providers in priority order: first working probe wins.
+ *
+ * CARTO Voyager is included ONLY when NEXT_PUBLIC_CARTO_KEY is set.
+ * Keyless CARTO tiles return a 200 "API KEY REQUIRED" watermark
+ * image, which no probe or tileerror can detect, so without a key
+ * CARTO is not in the list at all — Esri first, OSM last resort.
+ */
 export function tileProviders(): TileProvider[] {
-  return [
-    {
+  const key = process.env.NEXT_PUBLIC_CARTO_KEY;
+  const providers: TileProvider[] = [];
+  if (key) {
+    providers.push({
       id: "carto",
       name: "CARTO Voyager",
-      url: cartoUrl(),
+      url: cartoUrl(key),
       attribution: "© OpenStreetMap contributors © CARTO",
-    },
+    });
+  }
+  providers.push(
     {
       id: "esri",
       name: "Esri World Street Map",
@@ -63,7 +77,8 @@ export function tileProviders(): TileProvider[] {
       url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
       attribution: "© OpenStreetMap contributors",
     },
-  ];
+  );
+  return providers;
 }
 
 /** Slippy-map tile coordinates for a lat/lng at a zoom level. */

@@ -2,11 +2,14 @@
  * Map tile providers (2026-11-23).
  *
  * tile.openstreetmap.org is unreachable from Myanmar ISPs without a
- * VPN, so the map must probe CARTO -> Esri -> OSM and fall back at
- * runtime on repeated tile errors. These tests cover the provider
- * list, the probe selection, and the fallback decision — all pure
- * functions in src/lib/map-tiles.ts (the Leaflet wiring in RideMap
- * is a few lines on top of them).
+ * VPN, so the map must probe its providers and fall back at runtime
+ * on repeated tile errors. Keyless CARTO tiles return an HTTP 200
+ * "API KEY REQUIRED" watermark image — a successful load the probe
+ * cannot detect — so CARTO is in the list ONLY when
+ * NEXT_PUBLIC_CARTO_KEY is set; without a key the list is Esri ->
+ * OSM. These tests cover the provider list, the probe selection, and
+ * the fallback decision — all pure functions in src/lib/map-tiles.ts
+ * (the Leaflet wiring in RideMap is a few lines on top of them).
  */
 import { describe, expect, test } from "vitest";
 import {
@@ -22,9 +25,32 @@ import {
 } from "../src/lib/map-tiles";
 
 describe("tileProviders — list is well-formed", () => {
-  test("priority order is CARTO, Esri, OSM", () => {
-    const ids = tileProviders().map((p) => p.id);
-    expect(ids).toEqual(["carto", "esri", "osm"]);
+  test("without a key the list is Esri first, OSM last — no CARTO", () => {
+    const prev = process.env.NEXT_PUBLIC_CARTO_KEY;
+    delete process.env.NEXT_PUBLIC_CARTO_KEY;
+    try {
+      const ids = tileProviders().map((p) => p.id);
+      expect(ids).toEqual(["esri", "osm"]);
+      expect(ids).not.toContain("carto");
+    } finally {
+      if (prev !== undefined) process.env.NEXT_PUBLIC_CARTO_KEY = prev;
+    }
+  });
+
+  test("with a key CARTO is first, with ?key= appended", () => {
+    const prev = process.env.NEXT_PUBLIC_CARTO_KEY;
+    process.env.NEXT_PUBLIC_CARTO_KEY = "testkey123";
+    try {
+      const providers = tileProviders();
+      expect(providers.map((p) => p.id)).toEqual(["carto", "esri", "osm"]);
+      expect(providers[0].url).toContain("?key=testkey123");
+      // The other providers never get a key.
+      expect(providers[1].url).not.toContain("key=");
+      expect(providers[2].url).not.toContain("key=");
+    } finally {
+      if (prev === undefined) delete process.env.NEXT_PUBLIC_CARTO_KEY;
+      else process.env.NEXT_PUBLIC_CARTO_KEY = prev;
+    }
   });
 
   test("every URL has {z}/{x}/{y} placeholders and non-empty attribution", () => {
@@ -39,30 +65,6 @@ describe("tileProviders — list is well-formed", () => {
   test("Esri uses {z}/{y}/{x} order", () => {
     const esri = tileProviders().find((p) => p.id === "esri")!;
     expect(esri.url.indexOf("{y}")).toBeLessThan(esri.url.indexOf("{x}"));
-  });
-
-  test("CARTO URL has no key without the env var", () => {
-    const prev = process.env.NEXT_PUBLIC_CARTO_KEY;
-    delete process.env.NEXT_PUBLIC_CARTO_KEY;
-    try {
-      expect(tileProviders()[0].url).not.toContain("?key=");
-    } finally {
-      if (prev !== undefined) process.env.NEXT_PUBLIC_CARTO_KEY = prev;
-    }
-  });
-
-  test("CARTO URL gains ?key= only when the env var is set", () => {
-    const prev = process.env.NEXT_PUBLIC_CARTO_KEY;
-    process.env.NEXT_PUBLIC_CARTO_KEY = "testkey123";
-    try {
-      expect(tileProviders()[0].url).toContain("?key=testkey123");
-      // The other providers never get a key.
-      expect(tileProviders()[1].url).not.toContain("key=");
-      expect(tileProviders()[2].url).not.toContain("key=");
-    } finally {
-      if (prev === undefined) delete process.env.NEXT_PUBLIC_CARTO_KEY;
-      else process.env.NEXT_PUBLIC_CARTO_KEY = prev;
-    }
   });
 });
 
@@ -85,11 +87,18 @@ describe("probe tile URLs — Yangon centre, z=13", () => {
     );
   });
 
-  test("CARTO probe URL pins subdomain and drops {r}", () => {
-    const carto = tileProviders().find((p) => p.id === "carto")!;
-    expect(probeTileUrl(carto)).toBe(
-      "https://a.basemaps.cartocdn.com/rastertiles/voyager/13/6283/3708.png",
-    );
+  test("CARTO probe URL pins subdomain, drops {r}, keeps ?key=", () => {
+    const prev = process.env.NEXT_PUBLIC_CARTO_KEY;
+    process.env.NEXT_PUBLIC_CARTO_KEY = "testkey123";
+    try {
+      const carto = tileProviders().find((p) => p.id === "carto")!;
+      expect(probeTileUrl(carto)).toBe(
+        "https://a.basemaps.cartocdn.com/rastertiles/voyager/13/6283/3708.png?key=testkey123",
+      );
+    } finally {
+      if (prev === undefined) delete process.env.NEXT_PUBLIC_CARTO_KEY;
+      else process.env.NEXT_PUBLIC_CARTO_KEY = prev;
+    }
   });
 });
 
@@ -130,51 +139,82 @@ function factoryFor(
 }
 
 describe("selectTileProvider — first working provider wins", () => {
-  test("picks CARTO when it loads", async () => {
+  test("keyless: picks Esri when it loads", async () => {
     const seen: string[] = [];
     const provider = await selectTileProvider(
       factoryFor(["load"], seen),
       100,
     );
-    expect(provider.id).toBe("carto");
+    expect(provider.id).toBe("esri");
     expect(seen).toHaveLength(1);
-    expect(seen[0]).toContain("cartocdn");
+    expect(seen[0]).toContain("arcgisonline");
+    expect(seen[0]).not.toContain("cartocdn");
   });
 
-  test("falls through to Esri when CARTO fails", async () => {
+  test("keyless: falls through to OSM when Esri fails", async () => {
     const seen: string[] = [];
     const provider = await selectTileProvider(
       factoryFor(["error", "load"], seen),
       100,
     );
-    expect(provider.id).toBe("esri");
+    expect(provider.id).toBe("osm");
     expect(seen).toHaveLength(2);
-    expect(seen[0]).toContain("cartocdn");
-    expect(seen[1]).toContain("arcgisonline");
+    expect(seen[0]).toContain("arcgisonline");
+    expect(seen[1]).toContain("tile.openstreetmap.org");
   });
 
-  test("falls through to OSM when CARTO and Esri fail", async () => {
+  test("keyless: returns OSM as last resort when nothing loads", async () => {
     const provider = await selectTileProvider(
-      factoryFor(["error", "error", "load"]),
+      factoryFor(["error", "error"]),
       100,
     );
     expect(provider.id).toBe("osm");
   });
 
-  test("returns OSM as last resort when nothing loads", async () => {
-    const provider = await selectTileProvider(
-      factoryFor(["error", "error", "error"]),
-      100,
-    );
-    expect(provider.id).toBe("osm");
-  });
-
-  test("a hanging provider times out and falls through", async () => {
+  test("keyless: a hanging provider times out and falls through", async () => {
     const provider = await selectTileProvider(
       factoryFor(["hang", "load"]),
       10,
     );
-    expect(provider.id).toBe("esri");
+    expect(provider.id).toBe("osm");
+  });
+
+  test("keyed: picks CARTO when it loads", async () => {
+    const prev = process.env.NEXT_PUBLIC_CARTO_KEY;
+    process.env.NEXT_PUBLIC_CARTO_KEY = "testkey123";
+    try {
+      const seen: string[] = [];
+      const provider = await selectTileProvider(
+        factoryFor(["load"], seen),
+        100,
+      );
+      expect(provider.id).toBe("carto");
+      expect(seen).toHaveLength(1);
+      expect(seen[0]).toContain("cartocdn");
+      expect(seen[0]).toContain("?key=testkey123");
+    } finally {
+      if (prev === undefined) delete process.env.NEXT_PUBLIC_CARTO_KEY;
+      else process.env.NEXT_PUBLIC_CARTO_KEY = prev;
+    }
+  });
+
+  test("keyed: falls through to Esri when CARTO fails", async () => {
+    const prev = process.env.NEXT_PUBLIC_CARTO_KEY;
+    process.env.NEXT_PUBLIC_CARTO_KEY = "testkey123";
+    try {
+      const seen: string[] = [];
+      const provider = await selectTileProvider(
+        factoryFor(["error", "load"], seen),
+        100,
+      );
+      expect(provider.id).toBe("esri");
+      expect(seen).toHaveLength(2);
+      expect(seen[0]).toContain("cartocdn");
+      expect(seen[1]).toContain("arcgisonline");
+    } finally {
+      if (prev === undefined) delete process.env.NEXT_PUBLIC_CARTO_KEY;
+      else process.env.NEXT_PUBLIC_CARTO_KEY = prev;
+    }
   });
 });
 
@@ -188,9 +228,11 @@ describe("probeProvider — timeout", () => {
 });
 
 describe("fallbackProvider — runtime tileerror swap", () => {
-  const providers: TileProvider[] = tileProviders();
-
+  // Keyless list is [esri, osm]; compute inside each test so a
+  // leaked env var from another test cannot change the list here.
   test("no swap below the threshold", () => {
+    const providers: TileProvider[] = tileProviders();
+    expect(providers.map((p) => p.id)).toEqual(["esri", "osm"]);
     expect(
       fallbackProvider(providers, 0, TILE_ERROR_SWAP_THRESHOLD - 1),
     ).toBeNull();
@@ -198,16 +240,34 @@ describe("fallbackProvider — runtime tileerror swap", () => {
   });
 
   test("swaps to the next provider at the threshold", () => {
+    const providers: TileProvider[] = tileProviders();
     expect(fallbackProvider(providers, 0, TILE_ERROR_SWAP_THRESHOLD)).toBe(
       providers[1],
-    );
-    expect(fallbackProvider(providers, 1, TILE_ERROR_SWAP_THRESHOLD)).toBe(
-      providers[2],
     );
   });
 
   test("no swap past the last provider", () => {
-    expect(fallbackProvider(providers, 2, TILE_ERROR_SWAP_THRESHOLD)).toBeNull();
-    expect(fallbackProvider(providers, 2, 99)).toBeNull();
+    const providers: TileProvider[] = tileProviders();
+    expect(fallbackProvider(providers, 1, TILE_ERROR_SWAP_THRESHOLD)).toBeNull();
+    expect(fallbackProvider(providers, 1, 99)).toBeNull();
+  });
+
+  test("keyed list swaps CARTO -> Esri -> OSM", () => {
+    const prev = process.env.NEXT_PUBLIC_CARTO_KEY;
+    process.env.NEXT_PUBLIC_CARTO_KEY = "testkey123";
+    try {
+      const providers: TileProvider[] = tileProviders();
+      expect(providers.map((p) => p.id)).toEqual(["carto", "esri", "osm"]);
+      expect(fallbackProvider(providers, 0, TILE_ERROR_SWAP_THRESHOLD)).toBe(
+        providers[1],
+      );
+      expect(fallbackProvider(providers, 1, TILE_ERROR_SWAP_THRESHOLD)).toBe(
+        providers[2],
+      );
+      expect(fallbackProvider(providers, 2, TILE_ERROR_SWAP_THRESHOLD)).toBeNull();
+    } finally {
+      if (prev === undefined) delete process.env.NEXT_PUBLIC_CARTO_KEY;
+      else process.env.NEXT_PUBLIC_CARTO_KEY = prev;
+    }
   });
 });
