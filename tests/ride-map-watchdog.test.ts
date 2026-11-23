@@ -77,22 +77,32 @@ describe("RideMap stall watchdog wiring", () => {
     expect(rideMap.indexOf("layerAddedAt = Date.now();", rearmAt)).toBeGreaterThan(rearmAt);
   });
 
-  test("invalidateSize after tile-layer setup, delayed, and on resize", () => {
+  test("ResizeObserver on the container replaces the timer + window-resize approach", () => {
     // A container that was small at creation requests only a few
-    // tiles; growth alone never re-requests them. invalidateSize
-    // after the layer is added (and once more 500ms later, for layout
-    // still settling) makes Leaflet request the full tile set.
+    // tiles; growth alone never re-requests them. The old 500ms timer
+    // missed growth when layout settled later than 500ms, and the
+    // window-resize listener never fired because the WINDOW does not
+    // resize — only the container grows. The observer fires on every
+    // container-size change, whenever it happens.
     const addAt = rideMap.indexOf("addTileLayer(provider);");
     expect(addAt).toBeGreaterThan(-1);
+    // Immediate invalidateSize after the layer is added is kept.
     const invalAt = rideMap.indexOf("map.invalidateSize();", addAt);
     expect(invalAt).toBeGreaterThan(addAt);
-    expect(rideMap).toContain("setTimeout(() => {");
-    expect(rideMap).toContain("}, 500);");
-    // Debounced window-resize backstop, cleaned up on unmount.
-    expect(rideMap).toContain('window.addEventListener("resize", onResize)');
-    expect(rideMap).toContain('window.removeEventListener("resize", onResize)');
-    expect(rideMap).toContain("}, 150);");
-    expect(rideMap).toContain("clearTimeout(resizeTimer)");
-    expect(rideMap).toContain("clearTimeout(sizeTimer)");
+    // Observer wired from effect setup on the container div, calling
+    // invalidateSize (guarded on cancelled + map, which is null until
+    // Leaflet loads) and disconnected on unmount.
+    expect(rideMap).toContain("new ResizeObserver(() => {");
+    expect(rideMap).toContain("resizeObserver.observe(divRef.current)");
+    expect(rideMap).toContain("if (!cancelled && map) map.invalidateSize();");
+    expect(rideMap).toContain("resizeObserver.disconnect()");
+    // The fragile timing approach is gone entirely.
+    expect(rideMap).not.toContain("sizeTimer");
+    expect(rideMap).not.toContain("resizeTimer");
+    expect(rideMap).not.toContain("onResize");
+    expect(rideMap).not.toContain("}, 500);");
+    expect(rideMap).not.toContain('window.addEventListener("resize"');
+    expect(rideMap).not.toContain('window.removeEventListener("resize"');
+    expect(rideMap).not.toContain("setTimeout(");
   });
 });

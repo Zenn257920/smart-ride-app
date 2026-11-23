@@ -73,10 +73,6 @@ export default function RideMap({
     // never fires) — see shouldSwapOnMissingLoad in map-tiles.ts.
     let layerAddedAt = 0;
     let loadFired = false;
-    // invalidateSize timers: a delayed re-check after setup, and the
-    // debounced window-resize re-check (see below).
-    let sizeTimer: ReturnType<typeof setTimeout> | null = null;
-    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
 
     // Adds (or swaps in) a tile layer for one provider. Removing the
     // old layer also drops its attribution — Leaflet's attribution
@@ -177,21 +173,27 @@ export default function RideMap({
       void checkStall();
     }, 5000);
 
-    // The map container can still be settling when this effect runs
-    // (dynamic import + auth gating + font/layout shifts): Leaflet
-    // only requests tiles for the size it sees at creation, and a
-    // later growth fires no Leaflet event — the map stays half-blank
-    // with its small tile set already `load`ed, which also blinds the
-    // stall watchdog (pendingTiles is 0). Leaflet already handles
-    // window resize itself; this debounced listener is a backstop so
-    // a resize during the probe delay is not missed either.
-    function onResize() {
-      if (resizeTimer) clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
+    // ResizeObserver on the map container: the container can grow long
+    // after mount (dynamic import + auth gating + font/layout shifts),
+    // and the WINDOW never resizes — only the container grows. Leaflet
+    // only requests tiles for the size it sees at layer-add, so a
+    // later growth fires no Leaflet event and the map stays half-blank
+    // with its small tile set already `load`ed (which also blinds the
+    // stall watchdog — pendingTiles is 0). A 500ms timer missed the
+    // growth when layout settled later than 500ms, so the observer —
+    // which fires on every container-size change, whenever it happens
+    // — replaces it. invalidateSize is a no-op when the size did not
+    // change, so the callback is harmless on correctly-sized mounts.
+    // Observed from effect setup so growth during the probe delay is
+    // caught too; the callback guards on `map` (null until Leaflet
+    // loads) and `cancelled`.
+    let resizeObserver: ResizeObserver | null = null;
+    if (divRef.current && typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => {
         if (!cancelled && map) map.invalidateSize();
-      }, 150);
+      });
+      resizeObserver.observe(divRef.current);
     }
-    window.addEventListener("resize", onResize);
 
     (async () => {
       const L = await import("leaflet");
@@ -223,13 +225,10 @@ export default function RideMap({
       addTileLayer(provider);
       // The container may have grown while the probe was running —
       // re-read its size now so Leaflet requests the full tile set
-      // for the final layout, not the size at creation time. A second
-      // check 500ms later covers layout still settling (fonts, grid);
+      // for the final layout, not the size at creation time. Any
+      // later growth is caught by the ResizeObserver above;
       // invalidateSize is a no-op when the size did not change.
       map.invalidateSize();
-      sizeTimer = setTimeout(() => {
-        if (!cancelled && map) map.invalidateSize();
-      }, 500);
     })();
 
     function draw() {
@@ -268,9 +267,7 @@ export default function RideMap({
     return () => {
       cancelled = true;
       clearInterval(stallTimer);
-      if (sizeTimer) clearTimeout(sizeTimer);
-      if (resizeTimer) clearTimeout(resizeTimer);
-      window.removeEventListener("resize", onResize);
+      if (resizeObserver) resizeObserver.disconnect();
       if (map) map.remove();
       mapRef.current = null;
       layerRef.current = null;
