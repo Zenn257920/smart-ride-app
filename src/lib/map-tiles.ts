@@ -65,6 +65,35 @@ export function shouldSwapOnStall(
   return pendingTiles > 0 && msSinceProgress >= TILE_STALL_SWAP_MS;
 }
 
+/**
+ * A tile layer that has been on the map this long without its `load`
+ * event ever firing is stalled even when the pending counter says
+ * otherwise. The counter can be blinded: a layer added while its
+ * container has zero area requests no tiles at all (no tileloadstart,
+ * so pendingTiles stays 0 and `load` can never fire), and tiles
+ * pruned mid-flight are removed from Leaflet's set without a
+ * load/error event. A healthy layer fires `load` within seconds of
+ * being added (even when every tile errors — Leaflet fires `load`
+ * once the visible set is settled), so 20s without it means the
+ * visible set never completed. The watchdog treats this as a stall
+ * and swaps to the next probed provider.
+ */
+export const TILE_LOAD_STALL_MS = 20000;
+
+/**
+ * Missing-load stall decision for RideMap's watchdog. Swap only when
+ * the layer is older than TILE_LOAD_STALL_MS and its `load` event
+ * has never fired. Once `load` has fired the visible set is complete
+ * and no swap is needed — even if the set was small (that case is
+ * fixed by invalidateSize, not by swapping providers).
+ */
+export function shouldSwapOnMissingLoad(
+  msSinceLayerAdded: number,
+  loadFired: boolean,
+): boolean {
+  return !loadFired && msSinceLayerAdded >= TILE_LOAD_STALL_MS;
+}
+
 function cartoUrl(key: string): string {
   const base =
     "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";

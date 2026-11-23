@@ -14,11 +14,13 @@
 import { describe, expect, test } from "vitest";
 import {
   TILE_ERROR_SWAP_THRESHOLD,
+  TILE_LOAD_STALL_MS,
   TILE_STALL_SWAP_MS,
   fallbackProvider,
   probeProvider,
   probeTileUrl,
   selectTileProvider,
+  shouldSwapOnMissingLoad,
   shouldSwapOnStall,
   tileProviders,
   tileXY,
@@ -298,5 +300,34 @@ describe("shouldSwapOnStall — hung-tile watchdog", () => {
 
   test("stall threshold is 15s — slow-but-progressing loads never trip it", () => {
     expect(TILE_STALL_SWAP_MS).toBe(15000);
+  });
+});
+
+describe("shouldSwapOnMissingLoad — `load` never fired", () => {
+  // The pending counter can be blinded: a layer added while its
+  // container had zero area requests no tiles (pending stays 0 and
+  // `load` can never fire), so shouldSwapOnStall can never become
+  // true. A healthy layer fires `load` within seconds of being added
+  // (even when every tile errors), so 20s without it means the
+  // visible set never completed.
+  test("never swaps once `load` has fired — the visible set is complete", () => {
+    expect(shouldSwapOnMissingLoad(999999, true)).toBe(false);
+    expect(shouldSwapOnMissingLoad(TILE_LOAD_STALL_MS, true)).toBe(false);
+  });
+
+  test("no swap while the layer is still young", () => {
+    expect(shouldSwapOnMissingLoad(0, false)).toBe(false);
+    expect(shouldSwapOnMissingLoad(1000, false)).toBe(false);
+    expect(shouldSwapOnMissingLoad(TILE_LOAD_STALL_MS - 1, false)).toBe(false);
+  });
+
+  test("swaps when the layer is old and `load` never fired", () => {
+    expect(shouldSwapOnMissingLoad(TILE_LOAD_STALL_MS, false)).toBe(true);
+    expect(shouldSwapOnMissingLoad(TILE_LOAD_STALL_MS + 5000, false)).toBe(true);
+    expect(shouldSwapOnMissingLoad(60000, false)).toBe(true);
+  });
+
+  test("missing-load threshold is 20s", () => {
+    expect(TILE_LOAD_STALL_MS).toBe(20000);
   });
 });

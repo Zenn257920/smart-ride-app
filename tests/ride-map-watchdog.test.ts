@@ -60,4 +60,39 @@ describe("RideMap stall watchdog wiring", () => {
     expect(rideMap).toContain("fallbackProvider(");
     expect(rideMap).toContain("consecutiveErrors = 0;");
   });
+
+  test("watchdog also swaps when the layer's `load` never fired", () => {
+    // The pending counter can be blinded (zero-area mount requests no
+    // tiles, so pending sits at 0 and `load` never fires) — the
+    // missing-load rule is the second trigger in checkStall.
+    expect(rideMap).toContain("shouldSwapOnMissingLoad(Date.now() - layerAddedAt, loadFired)");
+    expect(rideMap).toContain("layerAddedAt = Date.now();");
+    expect(rideMap).toContain("loadFired = false;");
+    expect(rideMap).toContain("loadFired = true;");
+    // The re-arm after "nothing better answered" resets both clocks,
+    // so the watchdog does not probe in a tight loop.
+    expect(rideMap).toContain("layerAddedAt = Date.now();");
+    const rearmAt = rideMap.indexOf("// Nothing better answered: stay");
+    expect(rearmAt).toBeGreaterThan(-1);
+    expect(rideMap.indexOf("layerAddedAt = Date.now();", rearmAt)).toBeGreaterThan(rearmAt);
+  });
+
+  test("invalidateSize after tile-layer setup, delayed, and on resize", () => {
+    // A container that was small at creation requests only a few
+    // tiles; growth alone never re-requests them. invalidateSize
+    // after the layer is added (and once more 500ms later, for layout
+    // still settling) makes Leaflet request the full tile set.
+    const addAt = rideMap.indexOf("addTileLayer(provider);");
+    expect(addAt).toBeGreaterThan(-1);
+    const invalAt = rideMap.indexOf("map.invalidateSize();", addAt);
+    expect(invalAt).toBeGreaterThan(addAt);
+    expect(rideMap).toContain("setTimeout(() => {");
+    expect(rideMap).toContain("}, 500);");
+    // Debounced window-resize backstop, cleaned up on unmount.
+    expect(rideMap).toContain('window.addEventListener("resize", onResize)');
+    expect(rideMap).toContain('window.removeEventListener("resize", onResize)');
+    expect(rideMap).toContain("}, 150);");
+    expect(rideMap).toContain("clearTimeout(resizeTimer)");
+    expect(rideMap).toContain("clearTimeout(sizeTimer)");
+  });
 });

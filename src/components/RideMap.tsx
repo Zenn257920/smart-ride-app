@@ -7,6 +7,7 @@ import {
   fallbackProvider,
   probeProvider,
   selectTileProvider,
+  shouldSwapOnMissingLoad,
   shouldSwapOnStall,
   tileProviders,
   type TileProvider,
@@ -65,6 +66,17 @@ export default function RideMap({
     let pendingTiles = 0;
     let lastProgressAt = 0;
     let swapping = false;
+    // Missing-load watchdog state: when the current tile layer was
+    // added and whether its `load` event has ever fired. The pending
+    // counter can be blinded (a layer added while its container had
+    // zero area requests no tiles, so pending sits at 0 and `load`
+    // never fires) — see shouldSwapOnMissingLoad in map-tiles.ts.
+    let layerAddedAt = 0;
+    let loadFired = false;
+    // invalidateSize timers: a delayed re-check after setup, and the
+    // debounced window-resize re-check (see below).
+    let sizeTimer: ReturnType<typeof setTimeout> | null = null;
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
 
     // Adds (or swaps in) a tile layer for one provider. Removing the
     // old layer also drops its attribution — Leaflet's attribution
@@ -80,6 +92,8 @@ export default function RideMap({
       // A fresh grace period starts with each layer.
       pendingTiles = 0;
       lastProgressAt = Date.now();
+      layerAddedAt = Date.now();
+      loadFired = false;
       const options: import("leaflet").TileLayerOptions = {
         attribution: provider.attribution,
         maxZoom: 19,
@@ -114,6 +128,7 @@ export default function RideMap({
         // removes them without a load/error event).
         pendingTiles = 0;
         lastProgressAt = Date.now();
+        loadFired = true;
       });
       tileLayer.addTo(map);
     }
@@ -125,10 +140,18 @@ export default function RideMap({
     // in Myanmar) is never selected, so a slow-but-working provider is
     // never abandoned for a blocked one; when nothing better answers
     // we stay put and re-arm, so the map recovers on its own when
-    // connectivity returns.
+    // connectivity returns. The second trigger covers a layer whose
+    // `load` event never fired at all (pending counter blinded — e.g.
+    // added while the container had zero area): a healthy layer fires
+    // `load` within seconds, so 20s without it means the visible set
+    // never completed. Once `load` has fired, the visible set is
+    // complete and no swap is needed.
     async function checkStall() {
       if (cancelled || swapping || !map || !tileLayer) return;
-      if (!shouldSwapOnStall(pendingTiles, Date.now() - lastProgressAt)) {
+      const stalled =
+        shouldSwapOnStall(pendingTiles, Date.now() - lastProgressAt) ||
+        shouldSwapOnMissingLoad(Date.now() - layerAddedAt, loadFired);
+      if (!stalled) {
         return;
       }
       swapping = true;
@@ -142,9 +165,10 @@ export default function RideMap({
             return;
           }
         }
-        // Nothing better answered: stay, and re-arm the grace period
+        // Nothing better answered: stay, and re-arm both grace periods
         // so we don't probe in a tight loop.
         lastProgressAt = Date.now();
+        layerAddedAt = Date.now();
       } finally {
         swapping = false;
       }
@@ -152,6 +176,22 @@ export default function RideMap({
     const stallTimer = setInterval(() => {
       void checkStall();
     }, 5000);
+
+    // The map container can still be settling when this effect runs
+    // (dynamic import + auth gating + font/layout shifts): Leaflet
+    // only requests tiles for the size it sees at creation, and a
+    // later growth fires no Leaflet event — the map stays half-blank
+    // with its small tile set already `load`ed, which also blinds the
+    // stall watchdog (pendingTiles is 0). Leaflet already handles
+    // window resize itself; this debounced listener is a backstop so
+    // a resize during the probe delay is not missed either.
+    function onResize() {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (!cancelled && map) map.invalidateSize();
+      }, 150);
+    }
+    window.addEventListener("resize", onResize);
 
     (async () => {
       const L = await import("leaflet");
@@ -181,6 +221,15 @@ export default function RideMap({
         providers.findIndex((p) => p.id === provider.id),
       );
       addTileLayer(provider);
+      // The container may have grown while the probe was running —
+      // re-read its size now so Leaflet requests the full tile set
+      // for the final layout, not the size at creation time. A second
+      // check 500ms later covers layout still settling (fonts, grid);
+      // invalidateSize is a no-op when the size did not change.
+      map.invalidateSize();
+      sizeTimer = setTimeout(() => {
+        if (!cancelled && map) map.invalidateSize();
+      }, 500);
     })();
 
     function draw() {
@@ -219,6 +268,9 @@ export default function RideMap({
     return () => {
       cancelled = true;
       clearInterval(stallTimer);
+      if (sizeTimer) clearTimeout(sizeTimer);
+      if (resizeTimer) clearTimeout(resizeTimer);
+      window.removeEventListener("resize", onResize);
       if (map) map.remove();
       mapRef.current = null;
       layerRef.current = null;
