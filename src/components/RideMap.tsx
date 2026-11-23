@@ -3,6 +3,12 @@
 import { useEffect, useRef } from "react";
 import type { LatLng } from "@/lib/api";
 import { YANGON } from "@/lib/api";
+import {
+  fallbackProvider,
+  selectTileProvider,
+  tileProviders,
+  type TileProvider,
+} from "@/lib/map-tiles";
 
 export interface MapMarker {
   lat: number;
@@ -42,7 +48,49 @@ export default function RideMap({
     let cancelled = false;
     let map: import("leaflet").Map | null = null;
     let layer: import("leaflet").LayerGroup | null = null;
+    let tileLayer: import("leaflet").TileLayer | null = null;
     let Lmod: typeof import("leaflet") | null = null;
+    // Tile-provider fallback state: providers in priority order, the
+    // index of the one in use, and the current consecutive-error streak
+    // (a successful tile load resets it).
+    const providers = tileProviders();
+    let providerIndex = 0;
+    let consecutiveErrors = 0;
+
+    // Adds (or swaps in) a tile layer for one provider. Removing the
+    // old layer also drops its attribution — Leaflet's attribution
+    // control re-reads attributions from the layers on the map.
+    function addTileLayer(provider: TileProvider) {
+      if (!Lmod || !map) return;
+      const L = Lmod;
+      if (tileLayer) {
+        map.removeLayer(tileLayer);
+        tileLayer = null;
+      }
+      consecutiveErrors = 0;
+      const options: import("leaflet").TileLayerOptions = {
+        attribution: provider.attribution,
+        maxZoom: 19,
+      };
+      if (provider.id === "carto") options.subdomains = "abcd";
+      tileLayer = L.tileLayer(provider.url, options);
+      tileLayer.on("tileerror", () => {
+        consecutiveErrors += 1;
+        const next = fallbackProvider(
+          providers,
+          providerIndex,
+          consecutiveErrors,
+        );
+        if (next && !cancelled) {
+          providerIndex += 1;
+          addTileLayer(next);
+        }
+      });
+      tileLayer.on("tileload", () => {
+        consecutiveErrors = 0;
+      });
+      tileLayer.addTo(map);
+    }
 
     (async () => {
       const L = await import("leaflet");
@@ -52,10 +100,6 @@ export default function RideMap({
         [propsRef.current.center.lat, propsRef.current.center.lng],
         13,
       );
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19,
-      }).addTo(map);
       layer = L.layerGroup().addTo(map);
       mapRef.current = map;
       layerRef.current = layer;
@@ -65,6 +109,17 @@ export default function RideMap({
         });
       }
       draw();
+      // Tiles: tile.openstreetmap.org is unreachable from Myanmar ISPs
+      // without a VPN, so probe the providers in order and use the
+      // first one that answers. Markers/route above are already drawn —
+      // only the tiles wait on the probe.
+      const provider = await selectTileProvider();
+      if (cancelled || !map) return;
+      providerIndex = Math.max(
+        0,
+        providers.findIndex((p) => p.id === provider.id),
+      );
+      addTileLayer(provider);
     })();
 
     function draw() {
