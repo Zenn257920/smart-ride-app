@@ -16,7 +16,7 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { requestPassengers, rideRequests } from "@/db/schema";
-import { getSessionUser, jsonError } from "@/lib/api-helpers";
+import { getSessionUser, jsonError, requireRole } from "@/lib/api-helpers";
 import { freezePricesOnLeave } from "@/lib/money";
 import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { addTransaction } from "@/lib/wallet";
@@ -29,6 +29,12 @@ export async function POST(
   const { id: requestId } = await params;
   const sessionUser = await getSessionUser();
   if (!sessionUser) return jsonError("Unauthorized", 401);
+
+  // Passenger only (role read from the DB row, never the session copy).
+  const roleRow = await requireRole(sessionUser.id, "passenger");
+  if (!roleRow) {
+    return jsonError("ခရီးသည် အကောင့်ဖြင့်သာ တောင်းဆိုမှုမှ ထွက်နိုင်ပါသည်။", 403);
+  }
 
   const [rideRequest] = await db
     .select()

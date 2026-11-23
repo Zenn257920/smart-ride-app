@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSession } from "@/lib/auth-client";
 import AuthGuard from "@/components/AuthGuard";
+import RoleGuard from "@/components/RoleGuard";
 import LocationField from "@/components/LocationField";
 import PricePreview from "@/components/PricePreview";
 import {
@@ -11,12 +12,14 @@ import {
   asArray,
   fmtMMK,
   fmtTime,
+  geocode,
   localInputValue,
   YANGON,
   type GeocodeHit,
   type LatLng,
   type RideRequestLike,
 } from "@/lib/api";
+import { resolveTypedLocation } from "@/lib/geocode-fallback";
 
 const RideMap = dynamic(() => import("@/components/RideMap"), { ssr: false, loading: () => <div className="flex h-80 items-center justify-center rounded-[20px] bg-mint-soft text-sm text-forest/60">Loading map…</div> });
 
@@ -25,14 +28,19 @@ type Tab = "all" | "create" | "mine";
 export default function RideRequestsPage() {
   return (
     <AuthGuard>
-      <RideRequestsInner />
+      <RoleGuard
+        allow={["passenger"]}
+        redirectTo="/driver/dashboard"
+        message="ဤစာမျက်နှာသည် ခရီးသည် အကောင့်အတွက်သာ ဖြစ်သည်။ ယာဉ်မောင်း အကောင့်ဖြင့် တောင်းဆိုမှု ဖန်တီး/ပါဝင်၍ မရပါ — တောင်းဆိုမှုများကို ယာဉ်မောင်း ဒက်ရှ်ဘုတ်မှာ လက်ခံရပါသည်။"
+      >
+        <RideRequestsInner />
+      </RoleGuard>
     </AuthGuard>
   );
 }
 
 function RideRequestsInner() {
   const { data: session } = useSession();
-  const user = session?.user as { user_type?: string } | undefined;
   const [tab, setTab] = useState<Tab>("all");
   const [requests, setRequests] = useState<RideRequestLike[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,8 +102,36 @@ function RideRequestsInner() {
     e.preventDefault();
     setCreateError("");
     setNotice("");
-    if (!start || !end) {
-      setCreateError("Please pick both a start and a destination.");
+    // Typed-only labels have no coords (LocationField sets them only
+    // onSelect) — resolve them with /api/geocode first, same as
+    // find-ride's search(). Only when nothing matches do we error,
+    // naming the field that failed.
+    let s = start;
+    let en = end;
+    if (!s && startLabel.trim()) {
+      const resolved = await resolveTypedLocation(startLabel, s, geocode);
+      if (resolved.coords) {
+        s = resolved.coords;
+        setStart(s);
+        if (resolved.label) setStartLabel(resolved.label);
+      }
+    }
+    if (!en && endLabel.trim()) {
+      const resolved = await resolveTypedLocation(endLabel, en, geocode);
+      if (resolved.coords) {
+        en = resolved.coords;
+        setEnd(en);
+        if (resolved.label) setEndLabel(resolved.label);
+      }
+    }
+    if (!s || !en) {
+      const missing = [
+        ...(!s ? [`ထွက်မည့်နေရာ${startLabel.trim() ? ` ("${startLabel.trim()}")` : ""}`] : []),
+        ...(!en ? [`ဦးတည်ရာ${endLabel.trim() ? ` ("${endLabel.trim()}")` : ""}`] : []),
+      ];
+      setCreateError(
+        `${missing.join(" နှင့် ")} ကို ရှာ၍ မရပါ — နေရာအမည်ကို ရိုက်ပြီး အကြံပြုချက်ကို နှိပ်ပါ၊ သို့မဟုတ် မြေပုံပေါ်တွင် နှိပ်ပြီး ရွေးပါ။`,
+      );
       return;
     }
     // A6: departure must be in the future (server enforces this too).
@@ -109,11 +145,11 @@ function RideRequestsInner() {
         method: "POST",
         body: JSON.stringify({
           startLabel,
-          startLat: start.lat,
-          startLng: start.lng,
+          startLat: s.lat,
+          startLng: s.lng,
           endLabel,
-          endLat: end.lat,
-          endLng: end.lng,
+          endLat: en.lat,
+          endLng: en.lng,
           departureTime: new Date(departureTime).toISOString(),
         }),
       });
@@ -132,8 +168,37 @@ function RideRequestsInner() {
   }
 
   async function joinRequest() {
-    if (!joining || !joinStart || !joinEnd) {
-      setJoinError("Please pick your own start and destination.");
+    // The modal only renders when joining is set; this is unreachable
+    // in practice, but TypeScript needs the null narrowing.
+    if (!joining) return;
+    // Same typed-label fallback as create: resolve with /api/geocode
+    // when coords are null, and name the field that failed.
+    let js = joinStart;
+    let je = joinEnd;
+    if (!js && joinStartLabel.trim()) {
+      const resolved = await resolveTypedLocation(joinStartLabel, js, geocode);
+      if (resolved.coords) {
+        js = resolved.coords;
+        setJoinStart(js);
+        if (resolved.label) setJoinStartLabel(resolved.label);
+      }
+    }
+    if (!je && joinEndLabel.trim()) {
+      const resolved = await resolveTypedLocation(joinEndLabel, je, geocode);
+      if (resolved.coords) {
+        je = resolved.coords;
+        setJoinEnd(je);
+        if (resolved.label) setJoinEndLabel(resolved.label);
+      }
+    }
+    if (!js || !je) {
+      const missing = [
+        ...(!js ? [`တက်မည့်နေရာ${joinStartLabel.trim() ? ` ("${joinStartLabel.trim()}")` : ""}`] : []),
+        ...(!je ? [`ဆင်းမည့်နေရာ${joinEndLabel.trim() ? ` ("${joinEndLabel.trim()}")` : ""}`] : []),
+      ];
+      setJoinError(
+        `${missing.join(" နှင့် ")} ကို ရှာ၍ မရပါ — နေရာအမည်ကို ရိုက်ပြီး အကြံပြုချက်ကို နှိပ်ပါ၊ သို့မဟုတ် မြေပုံပေါ်တွင် နှိပ်ပြီး ရွေးပါ။`,
+      );
       return;
     }
     setJoinError("");
@@ -143,11 +208,11 @@ function RideRequestsInner() {
         method: "POST",
         body: JSON.stringify({
           startLabel: joinStartLabel,
-          startLat: joinStart.lat,
-          startLng: joinStart.lng,
+          startLat: js.lat,
+          startLng: js.lng,
           endLabel: joinEndLabel,
-          endLat: joinEnd.lat,
-          endLng: joinEnd.lng,
+          endLat: je.lat,
+          endLng: je.lng,
         }),
       });
       setNotice("You joined the ride request — fares were recalculated for everyone sharing.");
@@ -181,18 +246,6 @@ function RideRequestsInner() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not cancel this request. Requests cannot be cancelled less than 3 hours before departure.");
-    }
-  }
-
-  async function driverAction(id: string, action: "accept" | "reject") {
-    setNotice("");
-    setError("");
-    try {
-      await apiFetch(`/api/ride-requests/${id}/${action}`, { method: "POST", body: JSON.stringify({}) });
-      setNotice(action === "accept" ? "Request accepted — an offered ride was created from it." : "Request skipped.");
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : `Could not ${action} this request.`);
     }
   }
 
@@ -281,12 +334,6 @@ function RideRequestsInner() {
                       ) : null}
                       {isMine ? (
                         <button type="button" className="btn-outline" onClick={() => cancelRequest(req.id)}>Cancel request</button>
-                      ) : null}
-                      {user?.user_type === "driver" && req.status === "open" ? (
-                        <>
-                          <button type="button" className="btn-mint" onClick={() => driverAction(req.id, "accept")}>Accept as driver</button>
-                          <button type="button" className="btn-ghost" onClick={() => driverAction(req.id, "reject")}>Skip</button>
-                        </>
                       ) : null}
                     </div>
                   </article>

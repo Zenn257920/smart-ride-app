@@ -20,7 +20,7 @@ import {
   rideRequests,
   user,
 } from "@/db/schema";
-import { getSessionUser, jsonError, parseDate } from "@/lib/api-helpers";
+import { getSessionUser, jsonError, parseDate, requireRole } from "@/lib/api-helpers";
 import { routeMatcher } from "@/lib/matching";
 import { isFutureDeparture } from "@/lib/money";
 import { serializeRideRequest } from "@/lib/ride-request-privacy";
@@ -76,6 +76,11 @@ export async function GET(request: Request) {
       (a, b) => a.departureTime.getTime() - b.departureTime.getTime(),
     );
   } else if (pending) {
+    // Driver only (role read from the DB row, never the session copy).
+    const roleRow = await requireRole(sessionUser.id, "driver");
+    if (!roleRow) {
+      return jsonError("ယာဉ်မောင်း အကောင့်ဖြင့်သာ စောင့်ဆိုင်းနေသော တောင်းဆိုမှုများ ကြည့်နိုင်ပါသည်။", 403);
+    }
     const rejectedRows = await db
       .select()
       .from(requestRejections)
@@ -157,6 +162,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const sessionUser = await getSessionUser();
   if (!sessionUser) return jsonError("Unauthorized", 401);
+
+  // Passenger only (role read from the DB row, never the session copy).
+  const roleRow = await requireRole(sessionUser.id, "passenger");
+  if (!roleRow) {
+    return jsonError("ခရီးသည် အကောင့်ဖြင့်သာ တောင်းဆိုမှု ဖန်တီးနိုင်ပါသည်။", 403);
+  }
 
   const body = await request.json().catch(() => null);
   const parsed = createRequestSchema.safeParse(body);

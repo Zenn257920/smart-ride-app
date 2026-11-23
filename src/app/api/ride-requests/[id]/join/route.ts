@@ -23,7 +23,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { requestPassengers, rideRequests, user } from "@/db/schema";
-import { getSessionUser, jsonError } from "@/lib/api-helpers";
+import { getSessionUser, jsonError, requireRole } from "@/lib/api-helpers";
 import { routeMatcher, PICKUP_THRESHOLD_KM, DROPOFF_THRESHOLD_KM } from "@/lib/matching";
 import { joinRepriceForMember } from "@/lib/money";
 import { recalcRequestBreakdown } from "@/lib/ride-requests";
@@ -53,6 +53,12 @@ export async function POST(
   const { id: requestId } = await params;
   const sessionUser = await getSessionUser();
   if (!sessionUser) return jsonError("Unauthorized", 401);
+
+  // Passenger only (role read from the DB row, never the session copy).
+  const roleRow = await requireRole(sessionUser.id, "passenger");
+  if (!roleRow) {
+    return jsonError("ခရီးသည် အကောင့်ဖြင့်သာ တောင်းဆိုမှုမှာ ပါဝင်နိုင်ပါသည်။", 403);
+  }
 
   const body = await request.json().catch(() => null);
   const parsed = joinSchema.safeParse(body);

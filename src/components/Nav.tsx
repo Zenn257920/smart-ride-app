@@ -7,11 +7,32 @@ import { useSession, signOut } from "@/lib/auth-client";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationsBell from "@/components/NotificationsBell";
 
-const LINKS = [
+/**
+ * One account = one role, so the top nav is role-based. A passenger
+ * never sees Offer; a driver never sees Ride Requests. Logged-out
+ * visitors see the full public set (guards redirect them to /login).
+ */
+const PUBLIC_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/find-ride", label: "Find Ride" },
   { href: "/offer-ride", label: "Drive" },
   { href: "/ride-requests", label: "Ride Requests" },
+  { href: "/my-rides", label: "My Rides" },
+  { href: "/wallet", label: "Wallet" },
+];
+
+const PASSENGER_LINKS = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/find-ride", label: "Find Ride" },
+  { href: "/ride-requests", label: "Ride Requests" },
+  { href: "/my-rides", label: "My Rides" },
+  { href: "/wallet", label: "Wallet" },
+];
+
+const DRIVER_LINKS = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/offer-ride", label: "Drive" },
+  { href: "/driver/dashboard", label: "Driver Dashboard" },
   { href: "/my-rides", label: "My Rides" },
   { href: "/wallet", label: "Wallet" },
 ];
@@ -71,7 +92,12 @@ export default function Nav() {
               Admin
             </Link>
           ) : (
-            LINKS.map((l) => (
+            (!user
+              ? PUBLIC_LINKS
+              : user.user_type === "driver"
+                ? DRIVER_LINKS
+                : PASSENGER_LINKS
+            ).map((l) => (
               <Link key={l.href} href={l.href} className="rounded-full px-2 py-2 text-[13px] text-mint transition-colors hover:bg-white/10 hover:text-white lg:px-3 lg:text-sm">
                 {l.label}
               </Link>

@@ -15,6 +15,7 @@ import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { drivers, user } from "@/db/schema";
+import { roleMatches, type UserRole } from "@/lib/roles";
 
 /** The signed-in Better Auth user, or null when there is no session. */
 export async function getSessionUser() {
@@ -40,6 +41,23 @@ export async function requireDriver(userId: string) {
     .where(eq(drivers.userId, userId))
     .limit(1);
   return row ?? null;
+}
+
+/**
+ * Role gate. Reads user_type from the DB user row on every call
+ * (never from the session copy, which can be stale), or null when the
+ * user does not have the required role. Every role-gated route must
+ * call this and return 403 when it is null. Admins are NOT exempt:
+ * an admin account is a passenger-role account unless it signed up
+ * as a driver, so an admin hitting a driver-only route still 403s.
+ */
+export async function requireRole(userId: string, role: UserRole) {
+  const [row] = await db
+    .select()
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+  return roleMatches(row?.user_type, role) ? row : null;
 }
 
 /**

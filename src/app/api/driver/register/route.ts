@@ -1,13 +1,16 @@
 /**
- * POST /api/driver/register — upsert the drivers row for the signed-in
- * user and set user.user_type = 'driver'.
+ * POST /api/driver/register — upsert the drivers row for a driver-role
+ * user (vehicle profile). This does NOT convert a passenger account
+ * into a driver: one account = one role, chosen once at signup. A
+ * passenger calling this gets 403 and must open a separate driver
+ * account instead.
  */
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { drivers, user } from "@/db/schema";
-import { getSessionUser, jsonError } from "@/lib/api-helpers";
+import { drivers } from "@/db/schema";
+import { getSessionUser, jsonError, requireRole } from "@/lib/api-helpers";
 
 const registerSchema = z.object({
   licenseNumber: z.string().min(1),
@@ -21,6 +24,13 @@ const registerSchema = z.object({
 export async function POST(request: Request) {
   const sessionUser = await getSessionUser();
   if (!sessionUser) return jsonError("Unauthorized", 401);
+
+  // Driver role only (read from the DB row, never the session copy).
+  // This route no longer converts passengers into drivers.
+  const roleRow = await requireRole(sessionUser.id, "driver");
+  if (!roleRow) {
+    return jsonError("ယာဉ်မောင်း အကောင့်ဖြင့်သာ ယာဉ်မောင်း စာရင်းသွင်းနိုင်ပါသည်။ ယာဉ်မောင်း အကောင့်အသစ် သပ်သပ် ဖွင့်ပါ။", 403);
+  }
 
   const body = await request.json().catch(() => null);
   const parsed = registerSchema.safeParse(body);
@@ -64,11 +74,6 @@ export async function POST(request: Request) {
       })
       .returning();
   }
-
-  await db
-    .update(user)
-    .set({ user_type: "driver" })
-    .where(eq(user.id, sessionUser.id));
 
   return NextResponse.json({ driver }, { status: 201 });
 }

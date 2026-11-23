@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
+import RoleGuard from "@/components/RoleGuard";
 import RideCard from "@/components/RideCard";
 import BookingModal from "@/components/BookingModal";
 import LocationField from "@/components/LocationField";
@@ -30,7 +31,13 @@ const RideMap = dynamic(() => import("@/components/RideMap"), { ssr: false, load
 export default function FindRidePage() {
   return (
     <AuthGuard>
-      <FindRideInner />
+      <RoleGuard
+        allow={["passenger"]}
+        redirectTo="/driver/dashboard"
+        message="ဤစာမျက်နှာသည် ခရီးသည် အကောင့်အတွက်သာ ဖြစ်သည်။ ယာဉ်မောင်း အကောင့်ဖြင့် ခရီးရှာ၍ မရပါ — ယာဉ်မောင်း ဒက်ရှ်ဘုတ်သို့ ပို့ဆောင်နေပါသည်။"
+      >
+        <FindRideInner />
+      </RoleGuard>
     </AuthGuard>
   );
 }

@@ -10,7 +10,7 @@ import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { bookings, drivers, ratings, rides, user } from "@/db/schema";
-import { getSessionUser, jsonError, parseDate } from "@/lib/api-helpers";
+import { getSessionUser, jsonError, parseDate, requireRole } from "@/lib/api-helpers";
 import { routeMatcher } from "@/lib/matching";
 import { isFutureDeparture } from "@/lib/money";
 
@@ -147,6 +147,12 @@ export async function POST(request: Request) {
   const sessionUser = await getSessionUser();
   if (!sessionUser) return jsonError("Unauthorized", 401);
 
+  // Driver only (role read from the DB row, never the session copy).
+  const roleRow = await requireRole(sessionUser.id, "driver");
+  if (!roleRow) {
+    return jsonError("ယာဉ်မောင်း အကောင့်ဖြင့်သာ ခရီးစဉ် ကမ်းလှမ်းနိုင်ပါသည်။", 403);
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = offerRideSchema.safeParse(body);
   if (!parsed.success) {
@@ -168,7 +174,7 @@ export async function POST(request: Request) {
     .where(eq(drivers.userId, sessionUser.id))
     .limit(1);
   if (!driver) {
-    return jsonError("driver registration required", 409);
+    return jsonError("ယာဉ်မောင်း ပရိုဖိုင် မပြည့်စုံသေးပါ။ ယာဉ်မောင်း စာရင်းအရင် သွင်းပါ။", 409);
   }
 
   const priced = routeMatcher.calculatePriceFromCoords(

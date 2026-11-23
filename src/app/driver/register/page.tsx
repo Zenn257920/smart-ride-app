@@ -1,14 +1,26 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
+import RoleGuard from "@/components/RoleGuard";
 import { apiFetch } from "@/lib/api";
 
 export default function DriverRegisterPage() {
   return (
     <AuthGuard>
-      <DriverRegisterInner />
+      <RoleGuard
+        allow={["driver"]}
+        message="ယာဉ်မောင်း စာရင်းသွင်းရန် ယာဉ်မောင်း အကောင့် သပ်သပ် လိုအပ်ပါသည်။ ခရီးသည် အကောင့်ဖြင့် ယာဉ်မောင်း ဖြစ်လာ၍ မရပါ — ယာဉ်မောင်းအကောင့် အသစ်တစ်ခု ဖွင့်ရပါမည်။"
+        action={
+          <Link href="/register" className="btn-primary">
+            ယာဉ်မောင်း အကောင့်အသစ် ဖွင့်ပါ →
+          </Link>
+        }
+      >
+        <DriverRegisterInner />
+      </RoleGuard>
     </AuthGuard>
   );
 }
@@ -53,7 +65,7 @@ function DriverRegisterInner() {
     <div className="page-wrap max-w-xl">
       <div className="card">
         <h1 className="page-title">Register as a driver</h1>
-        <p className="section-sub">Add your licence, NRC and car details. Your account becomes a driver account and you can start offering rides.</p>
+        <p className="section-sub">ယာဉ်မောင်း အကောင့်အတွက် လိုင်စင်၊ NRC နှင့် ကားအချက်အလက် ဖြည့်ပါ။ ပြီးရင် ခရီးစဉ် ကမ်းလှမ်းနိုင်ပါပြီ။</p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>

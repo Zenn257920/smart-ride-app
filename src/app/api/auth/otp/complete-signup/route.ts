@@ -21,6 +21,7 @@ import { auth } from "@/lib/auth";
 import { jsonError } from "@/lib/api-helpers";
 import { normalizeEmail, verifiedIdentifier } from "@/lib/otp";
 import { normalizePhone } from "@/lib/phone";
+import { signupRoleSchema } from "@/lib/roles";
 
 const completeSchema = z.object({
   email: z.email({ message: "အီးမေးလ် မှားနေပါသည်။" }),
@@ -28,6 +29,9 @@ const completeSchema = z.object({
   name: z.string().trim().min(1, "အမည် ထည့်ပါ။"),
   phone: z.string().trim().min(1, "ဖုန်းနံပါတ် ထည့်ပါ။"),
   password: z.string().min(6, "စကားဝှက်သည် အနည်းဆုံး ၆ လုံး ရှိရပါမည်။"),
+  // One account = one role, chosen once at signup and never changed.
+  // Missing means the default (passenger); anything else is rejected.
+  role: signupRoleSchema.optional(),
 });
 
 const TOKEN_ERROR =
@@ -46,6 +50,7 @@ export async function POST(request: Request) {
   const { token, name } = parsed.data;
   const phone = normalizePhone(parsed.data.phone);
   const { password } = parsed.data;
+  const role = parsed.data.role ?? "passenger";
 
   // Consume the marker atomically: one token, one account.
   const markerId = verifiedIdentifier(email);
@@ -71,10 +76,12 @@ export async function POST(request: Request) {
   }
 
   // asResponse: true so the session cookie Better Auth sets is carried
-  // back to the caller (same pattern as phone-login).
+  // back to the caller (same pattern as phone-login). user_type is a
+  // Better Auth additional field (see src/lib/auth.ts) — it is stored
+  // on the user row exactly like phone.
   const res = await auth.api
     .signUpEmail({
-      body: { email, password, name, phone },
+      body: { email, password, name, phone, user_type: role },
       headers: await headers(),
       asResponse: true,
     })

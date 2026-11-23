@@ -64,23 +64,33 @@ function DashboardInner() {
     })();
   }, [session?.user?.id]);
 
-  const cards = [
-    { href: "/find-ride", icon: "🔍", title: "ခရီးစဉ် ရှာပါ", desc: "သင့်လမ်းကြောင်းပေါ်က ကိုက်ညီသော မျှဝေခရီးစဉ်များကို ရှာပါ" },
-    { href: "/offer-ride", icon: "🚗", title: "ခရီးစဉ် ကမ်းလှမ်းပါ", desc: "မောင်းပြီး လွတ်နေသော ထိုင်ခုံများကို မျှဝေပါ" },
-    { href: "/my-rides", icon: "🎫", title: "ကျွန်တော့်ခရီးစဉ်များ", desc: "ဘွတ်ကင်များနှင့် သင် ကမ်းလှမ်းထားသော ခရီးစဉ်များ" },
-    { href: "/wallet", icon: "👛", title: "ငွေအိတ်", desc: "လက်ကျန်ငွေ၊ ငွေဖြည့်ခြင်းနှင့် မှတ်တမ်း" },
-    { href: "/ride-requests", icon: "👥", title: "ခရီးစဉ် တောင်းဆိုမှုများ", desc: "မျှဝေတောင်းဆိုမှုတစ်ခုမှာ ပါဝင်ပါ သို့မဟုတ် ဖန်တီးပါ" },
-    { href: "/driver/register", icon: "🪪", title: "ယာဉ်မောင်း ဖြစ်ပါ", desc: "သင့်ကားနှင့် လိုင်စင်ကို စာရင်းသွင်းပါ" },
-  ];
+  // One account = one role, so the dashboard shows only that role's
+  // cards. A passenger never sees Offer (and the "become a driver"
+  // card is gone entirely — becoming a driver means opening a
+  // separate driver account); a driver never sees Find / Request.
+  const isDriver = user?.user_type === "driver";
+  const cards = isDriver
+    ? [
+        { href: "/offer-ride", icon: "🚗", title: "ခရီးစဉ် ကမ်းလှမ်းပါ", desc: "မောင်းပြီး လွတ်နေသော ထိုင်ခုံများကို မျှဝေပါ" },
+        { href: "/driver/dashboard", icon: "🪪", title: "ယာဉ်မောင်း ဒက်ရှ်ဘုတ်", desc: "ကမ်းလှမ်းထားသော ခရီးစဉ်များနှင့် စောင့်ဆိုင်းနေသော တောင်းဆိုမှုများ" },
+        { href: "/my-rides", icon: "🎫", title: "ကျွန်တော့်ခရီးစဉ်များ", desc: "ဘွတ်ကင်များနှင့် သင် ကမ်းလှမ်းထားသော ခရီးစဉ်များ" },
+        { href: "/wallet", icon: "👛", title: "ငွေအိတ်", desc: "လက်ကျန်ငွေ၊ ငွေဖြည့်ခြင်းနှင့် မှတ်တမ်း" },
+      ]
+    : [
+        { href: "/find-ride", icon: "🔍", title: "ခရီးစဉ် ရှာပါ", desc: "သင့်လမ်းကြောင်းပေါ်က ကိုက်ညီသော မျှဝေခရီးစဉ်များကို ရှာပါ" },
+        { href: "/ride-requests", icon: "👥", title: "ခရီးစဉ် တောင်းဆိုမှုများ", desc: "မျှဝေတောင်းဆိုမှုတစ်ခုမှာ ပါဝင်ပါ သို့မဟုတ် ဖန်တီးပါ" },
+        { href: "/my-rides", icon: "🎫", title: "ကျွန်တော့်ခရီးစဉ်များ", desc: "ဘွတ်ကင်များနှင့် သင် ကမ်းလှမ်းထားသော ခရီးစဉ်များ" },
+        { href: "/wallet", icon: "👛", title: "ငွေအိတ်", desc: "လက်ကျန်ငွေ၊ ငွေဖြည့်ခြင်းနှင့် မှတ်တမ်း" },
+      ];
 
   return (
     <div className="page-wrap">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">မင်္ဂလာပါ{user?.name ? `, ${user.name}` : ""} 👋</h1>
-          <p className="section-sub">သင့် SharedRide ဒက်ရှ်ဘုတ် — {user?.user_type === "driver" ? "ယာဉ်မောင်း" : "ခရီးသည်"} အကောင့်</p>
+          <p className="section-sub">သင့် SharedRide ဒက်ရှ်ဘုတ် — {isDriver ? "ယာဉ်မောင်း" : "ခရီးသည်"} အကောင့်</p>
         </div>
-        <Link href="/driver/dashboard" className="btn-outline">ယာဉ်မောင်း ဒက်ရှ်ဘုတ် →</Link>
+        {isDriver ? <Link href="/driver/dashboard" className="btn-outline">ယာဉ်မောင်း ဒက်ရှ်ဘုတ် →</Link> : null}
       </div>
 
       {error ? <p role="alert" className="mt-4 rounded-[12px] bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</p> : null}

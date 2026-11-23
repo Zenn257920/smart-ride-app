@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
 import AuthGuard from "@/components/AuthGuard";
+import RoleGuard from "@/components/RoleGuard";
 import LocationField from "@/components/LocationField";
 import PricePreview from "@/components/PricePreview";
 import RideCard from "@/components/RideCard";
@@ -12,19 +13,27 @@ import {
   apiFetch,
   asArray,
   fetchRoute,
+  geocode,
   localInputValue,
   YANGON,
   type GeocodeHit,
   type LatLng,
   type RideLike,
 } from "@/lib/api";
+import { resolveTypedLocation } from "@/lib/geocode-fallback";
 
 const RideMap = dynamic(() => import("@/components/RideMap"), { ssr: false, loading: () => <div className="flex h-80 items-center justify-center rounded-[20px] bg-mint-soft text-sm text-forest/60">မြေပုံကို ဖွင့်နေသည်…</div> });
 
 export default function OfferRidePage() {
   return (
     <AuthGuard>
-      <OfferRideInner />
+      <RoleGuard
+        allow={["driver"]}
+        redirectTo="/dashboard"
+        message="ဤစာမျက်နှာသည် ယာဉ်မောင်း အကောင့်အတွက်သာ ဖြစ်သည်။ ခရီးသည် အကောင့်ဖြင့် ခရီးစဉ် ကမ်းလှမ်း၍ မရပါ — ဒက်ရှ်ဘုတ်သို့ ပို့ဆောင်နေပါသည်။"
+      >
+        <OfferRideInner />
+      </RoleGuard>
     </AuthGuard>
   );
 }
@@ -98,8 +107,36 @@ function OfferRideInner() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!start || !end) {
-      setError("ထွက်မည့်နေရာနှင့် ဦးတည်ရာ နှစ်ခုလုံး ရွေးပါ။");
+    // Typed-only labels have no coords (LocationField sets them only
+    // onSelect) — resolve them with /api/geocode first, same as
+    // find-ride's search(). Only when nothing matches do we error,
+    // naming the field that failed.
+    let s = start;
+    let en = end;
+    if (!s && startLabel.trim()) {
+      const resolved = await resolveTypedLocation(startLabel, s, geocode);
+      if (resolved.coords) {
+        s = resolved.coords;
+        setStart(s);
+        if (resolved.label) setStartLabel(resolved.label);
+      }
+    }
+    if (!en && endLabel.trim()) {
+      const resolved = await resolveTypedLocation(endLabel, en, geocode);
+      if (resolved.coords) {
+        en = resolved.coords;
+        setEnd(en);
+        if (resolved.label) setEndLabel(resolved.label);
+      }
+    }
+    if (!s || !en) {
+      const missing = [
+        ...(!s ? [`ထွက်မည့်နေရာ${startLabel.trim() ? ` ("${startLabel.trim()}")` : ""}`] : []),
+        ...(!en ? [`ဦးတည်ရာ${endLabel.trim() ? ` ("${endLabel.trim()}")` : ""}`] : []),
+      ];
+      setError(
+        `${missing.join(" နှင့် ")} ကို ရှာ၍ မရပါ — နေရာအမည်ကို ရိုက်ပြီး အကြံပြုချက်ကို နှိပ်ပါ၊ သို့မဟုတ် မြေပုံပေါ်တွင် နှိပ်ပြီး ရွေးပါ။`,
+      );
       return;
     }
     // A6: departure must be in the future (server enforces this too).
@@ -113,11 +150,11 @@ function OfferRideInner() {
         method: "POST",
         body: JSON.stringify({
           startLabel,
-          startLat: start.lat,
-          startLng: start.lng,
+          startLat: s.lat,
+          startLng: s.lng,
           endLabel,
-          endLat: end.lat,
-          endLng: end.lng,
+          endLat: en.lat,
+          endLng: en.lng,
           departureTime: new Date(departureTime).toISOString(),
           carModel,
           carPlate,

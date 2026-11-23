@@ -19,6 +19,10 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  // One account = one role, chosen once at signup and never changed.
+  // A person who wants both roles registers two accounts with two
+  // emails. Passenger is the default.
+  const [role, setRole] = useState<"passenger" | "driver">("passenger");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
@@ -114,8 +118,11 @@ export default function RegisterPage() {
         name: name.trim(),
         phone: normalizePhone(phone),
         password,
+        role,
       });
-      router.push("/dashboard");
+      // Drivers complete their vehicle profile next; passengers go
+      // straight to their dashboard.
+      router.push(role === "driver" ? "/driver/register" : "/dashboard");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "စာရင်းသွင်း၍ မရပါ။ ထပ်ကြိုးစားကြည့်ပါ။");
@@ -240,6 +247,36 @@ export default function RegisterPage() {
             <div>
               <label htmlFor="phone" className="label">ဖုန်းနံပါတ်</label>
               <input id="phone" className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="09xxxxxxxxx" required />
+            </div>
+            <div>
+              <span className="label">အကောင့် အမျိုးအစား</span>
+              <div className="grid grid-cols-2 gap-3" role="group" aria-label="အကောင့် အမျိုးအစား">
+                {(
+                  [
+                    ["passenger", "🧑‍🤝‍🧑", "ခရီးသည်", "စီးမယ် — ခရီးရှာပြီး ဘွတ်ကင်လုပ်မယ်"],
+                    ["driver", "🚗", "ယာဉ်မောင်း", "မောင်းမယ် — ခရီးစဉ် ကမ်းလှမ်းမယ်"],
+                  ] as ["passenger" | "driver", string, string, string][]
+                ).map(([value, icon, label, desc]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setRole(value)}
+                    aria-pressed={role === value}
+                    className={`rounded-[16px] border-2 p-3 text-left transition-colors ${
+                      role === value
+                        ? "border-forest bg-mint-soft dark:border-mint dark:bg-forest-soft"
+                        : "border-forest/15 bg-white hover:border-forest/40 dark:border-mint/15 dark:bg-[#122b19]"
+                    }`}
+                  >
+                    <span aria-hidden className="text-2xl">{icon}</span>
+                    <span className="mt-1 block font-medium text-forest dark:text-mint">{label}</span>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-forest/70 dark:text-mint/70">{desc}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-forest/60 dark:text-mint/60">
+                အကောင့် အမျိုးအစားကို ဖွင့်ပြီးမှ ပြောင်း၍ မရပါ။ နှစ်မျိုးလုံး လုပ်ချင်ရင် အီးမေးလ် နှစ်ခုနဲ့ အကောင့် နှစ်ခု ဖွင့်ပါ။
+              </p>
             </div>
             <div>
               <label htmlFor="password" className="label">စကားဝှက်</label>

@@ -64,7 +64,7 @@ import { and, eq, gte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { bookings, rides, user } from "@/db/schema";
-import { getSessionUser, jsonError } from "@/lib/api-helpers";
+import { getSessionUser, jsonError, requireRole } from "@/lib/api-helpers";
 import {
   extractIdempotencyKey,
   isUniqueViolation,
@@ -142,6 +142,13 @@ async function doBook(
     status,
     body: { error: message },
   });
+
+  // Passenger only (role read from the DB row, never the session copy).
+  const roleRow = await requireRole(userId, "passenger");
+  if (!roleRow) {
+    return err("ခရီးသည် အကောင့်ဖြင့်သာ ဘွတ်ကင်လုပ်နိုင်ပါသည်။", 403);
+  }
+
   const { paymentMethod } = input;
   // B6: seat count for this booking (1 by default).
   const seats = input.seats ?? 1;

@@ -26,7 +26,7 @@ import {
   rideRequests,
   rides,
 } from "@/db/schema";
-import { getSessionUser, jsonError, requireDriver } from "@/lib/api-helpers";
+import { getSessionUser, jsonError, requireDriver, requireRole } from "@/lib/api-helpers";
 import { routeMatcher } from "@/lib/matching";
 import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { acceptDriverDeltas } from "@/lib/money";
@@ -40,6 +40,12 @@ export async function POST(
   const { id: requestId } = await params;
   const sessionUser = await getSessionUser();
   if (!sessionUser) return jsonError("Unauthorized", 401);
+
+  // Driver only (role read from the DB row, never the session copy).
+  const roleRow = await requireRole(sessionUser.id, "driver");
+  if (!roleRow) {
+    return jsonError("ယာဉ်မောင်း အကောင့်ဖြင့်သာ တောင်းဆိုမှု လက်ခံနိုင်ပါသည်။", 403);
+  }
 
   const driver = await requireDriver(sessionUser.id);
   if (!driver) return jsonError("driver registration required", 403);
