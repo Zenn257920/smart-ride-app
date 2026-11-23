@@ -80,6 +80,12 @@ export async function POST(
     .set({ status: "cancelled" })
     .where(eq(rideRequests.id, requestId));
 
+  // `refunded` is the creator's own refund (for their cancel notice);
+  // totalRefunded is the sum over every member.
+  const creatorRow = members.find((m) => m.passengerId === sessionUser.id);
+  const refunded = creatorRow
+    ? (creatorRow.paidAmount ?? creatorRow.totalPrice)
+    : 0;
   // C2: the response goes to the creator, who may see their own phone.
   return NextResponse.json({
     request: serializeRideRequest(
@@ -87,5 +93,6 @@ export async function POST(
       { isCreator: true, isMember: true, isAcceptedDriver: false },
     ),
     totalRefunded,
+    refunded,
   });
 }

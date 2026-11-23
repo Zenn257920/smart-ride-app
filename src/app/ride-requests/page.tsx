@@ -7,8 +7,10 @@ import { useSession } from "@/lib/auth-client";
 import AuthGuard from "@/components/AuthGuard";
 import RoleGuard from "@/components/RoleGuard";
 import BookingModal from "@/components/BookingModal";
+import RequestReceipt from "@/components/RequestReceipt";
 import LocationField from "@/components/LocationField";
 import PricePreview from "@/components/PricePreview";
+import { buildRequestReceipt, type RequestReceiptData } from "@/lib/receipt";
 import {
   apiFetch,
   asArray,
@@ -51,6 +53,10 @@ function RideRequestsInner() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  // Payment receipt (create + join): built from the API response +
+  // a fresh wallet balance, replacing the old one-line notices that
+  // showed no amounts.
+  const [receipt, setReceipt] = useState<RequestReceiptData | null>(null);
 
   // Create form
   const [startLabel, setStartLabel] = useState("");
@@ -198,7 +204,7 @@ function RideRequestsInner() {
     setExistingOffers([]);
     setCreating(true);
     try {
-      await apiFetch("/api/ride-requests", {
+      const data = await apiFetch<unknown>("/api/ride-requests", {
         method: "POST",
         body: JSON.stringify({
           startLabel,
@@ -210,7 +216,23 @@ function RideRequestsInner() {
           departureTime: new Date(departureTime).toISOString(),
         }),
       });
-      setNotice("Ride request created — the prepayment was taken from your wallet.");
+      // Fresh balance after the prepayment, so the receipt can show
+      // before (after + prepaid) and after.
+      let balanceAfter: number | null = null;
+      try {
+        const b = await apiFetch<{ balance?: number }>("/api/wallet/balance");
+        if (typeof b.balance === "number") {
+          balanceAfter = b.balance;
+          setBalance(b.balance);
+        }
+      } catch {
+        /* balance optional */
+      }
+      const built =
+        balanceAfter != null
+          ? buildRequestReceipt("create", data, balanceAfter)
+          : null;
+      if (built) setReceipt(built);
       setStartLabel("");
       setEndLabel("");
       setStart(null);
@@ -261,7 +283,7 @@ function RideRequestsInner() {
     setJoinError("");
     setJoiningBusy(true);
     try {
-      await apiFetch(`/api/ride-requests/${joining.id}/join`, {
+      const data = await apiFetch<unknown>(`/api/ride-requests/${joining.id}/join`, {
         method: "POST",
         body: JSON.stringify({
           startLabel: joinStartLabel,
@@ -272,7 +294,21 @@ function RideRequestsInner() {
           endLng: je.lng,
         }),
       });
-      setNotice("You joined the ride request — fares were recalculated for everyone sharing.");
+      let balanceAfter: number | null = null;
+      try {
+        const b = await apiFetch<{ balance?: number }>("/api/wallet/balance");
+        if (typeof b.balance === "number") {
+          balanceAfter = b.balance;
+          setBalance(b.balance);
+        }
+      } catch {
+        /* balance optional */
+      }
+      const built =
+        balanceAfter != null
+          ? buildRequestReceipt("join", data, balanceAfter)
+          : null;
+      if (built) setReceipt(built);
       setJoining(null);
       await load();
     } catch (err) {
@@ -286,8 +322,13 @@ function RideRequestsInner() {
     setNotice("");
     setError("");
     try {
-      await apiFetch(`/api/ride-requests/${id}/leave`, { method: "POST", body: JSON.stringify({}) });
-      setNotice("You left the ride request.");
+      const data = await apiFetch<{ refunded?: number }>(`/api/ride-requests/${id}/leave`, { method: "POST", body: JSON.stringify({}) });
+      const refunded = typeof data.refunded === "number" ? data.refunded : 0;
+      setNotice(
+        refunded > 0
+          ? `တောင်းဆိုမှုမှ ထွက်ပြီးပါပြီ — ${fmtMMK(refunded)} ပြန်အမ်းပါမည်။`
+          : "You left the ride request.",
+      );
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not leave this request.");
@@ -298,8 +339,14 @@ function RideRequestsInner() {
     setNotice("");
     setError("");
     try {
-      await apiFetch(`/api/ride-requests/${id}/cancel`, { method: "POST", body: JSON.stringify({}) });
-      setNotice("Ride request cancelled.");
+      const data = await apiFetch<{ refunded?: number; totalRefunded?: number }>(`/api/ride-requests/${id}/cancel`, { method: "POST", body: JSON.stringify({}) });
+      const refunded = typeof data.refunded === "number" ? data.refunded : 0;
+      const totalRefunded = typeof data.totalRefunded === "number" ? data.totalRefunded : 0;
+      setNotice(
+        refunded > 0
+          ? `တောင်းဆိုမှု ပယ်ဖျက်ပြီးပါပြီ — သင့် ${fmtMMK(refunded)} ပြန်အမ်းပါမည်။${totalRefunded > refunded ? ` (ပါဝင်သူ အားလုံး စုစုပေါင်း ${fmtMMK(totalRefunded)})` : ""}`
+          : "Ride request cancelled.",
+      );
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not cancel this request. Requests cannot be cancelled less than 3 hours before departure.");
@@ -458,6 +505,17 @@ function RideRequestsInner() {
             setExistingOffers([]);
             router.push("/my-rides");
           }}
+        />
+      ) : null}
+
+      {receipt ? (
+        <RequestReceipt
+          receipt={receipt}
+          onViewRequest={() => {
+            setReceipt(null);
+            setTab("mine");
+          }}
+          onClose={() => setReceipt(null)}
         />
       ) : null}
     </div>

@@ -7,8 +7,10 @@ import AuthGuard from "@/components/AuthGuard";
 import RoleGuard from "@/components/RoleGuard";
 import RideCard from "@/components/RideCard";
 import BookingModal from "@/components/BookingModal";
+import RequestReceipt from "@/components/RequestReceipt";
 import LocationField from "@/components/LocationField";
 import PricePreview from "@/components/PricePreview";
+import { buildRequestReceipt, type RequestReceiptData } from "@/lib/receipt";
 import {
   apiFetch,
   asArray,
@@ -74,7 +76,9 @@ function FindRideInner() {
   // prepay only — the same join endpoint as the ride-requests page.
   const [requestMatches, setRequestMatches] = useState<RideRequestLike[]>([]);
   const [joiningReqId, setJoiningReqId] = useState<string | null>(null);
-  const [joinNotice, setJoinNotice] = useState("");
+  // Join receipt (replaces the old one-line join notice): built from
+  // the join response + a fresh wallet balance after the prepayment.
+  const [receipt, setReceipt] = useState<RequestReceiptData | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -222,11 +226,11 @@ function FindRideInner() {
     // direction / pickup / dropoff distance against the request, so
     // the searched route is the right input (it is what matched).
     if (!start || !end) return;
-    setJoinNotice("");
+    setReceipt(null);
     setError("");
     setJoiningReqId(req.id);
     try {
-      await apiFetch(`/api/ride-requests/${req.id}/join`, {
+      const data = await apiFetch<unknown>(`/api/ride-requests/${req.id}/join`, {
         method: "POST",
         body: JSON.stringify({
           startLabel,
@@ -237,7 +241,23 @@ function FindRideInner() {
           endLng: end.lng,
         }),
       });
-      setJoinNotice(`"${req.startLabel ?? req.start_label} → ${req.endLabel ?? req.end_label}" တောင်းဆိုမှုမှာ ပါဝင်ပြီးပါပြီ — ဈေးကို မျှဝေတွက်ချက်ပေးလိုက်ပါပြီ။`);
+      // Fresh balance after the prepayment, so the receipt can show
+      // before (after + paid) and after.
+      let balanceAfter: number | null = null;
+      try {
+        const b = await apiFetch<{ balance?: number }>("/api/wallet/balance");
+        if (typeof b.balance === "number") {
+          balanceAfter = b.balance;
+          setBalance(b.balance);
+        }
+      } catch {
+        /* balance optional — receipt falls back to the paid amount only */
+      }
+      const built =
+        balanceAfter != null
+          ? buildRequestReceipt("join", data, balanceAfter)
+          : null;
+      if (built) setReceipt(built);
       setRequestMatches((prev) => prev.filter((r) => r.id !== req.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "တောင်းဆိုမှုမှာ ပါဝင်၍ မရပါ။");
@@ -323,7 +343,6 @@ function FindRideInner() {
       </form>
 
       {error ? <p role="alert" className="mt-4 rounded-[12px] bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</p> : null}
-      {joinNotice ? <p className="mt-4 rounded-[12px] bg-mint-soft px-3 py-2 text-sm dark:bg-forest-soft">{joinNotice}</p> : null}
 
       <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
         <div className="min-w-0">
@@ -398,6 +417,17 @@ function FindRideInner() {
             setBookingRide(null);
             router.push("/my-rides");
           }}
+        />
+      ) : null}
+
+      {receipt ? (
+        <RequestReceipt
+          receipt={receipt}
+          onViewRequest={() => {
+            setReceipt(null);
+            router.push("/ride-requests");
+          }}
+          onClose={() => setReceipt(null)}
         />
       ) : null}
     </div>

@@ -305,6 +305,7 @@ export async function POST(
   );
 
   // C2: the response goes to the new member, who may see the phone.
+  // memberCount is for the join receipt: riders sharing after this join.
   return NextResponse.json(
     {
       request: serializeRideRequest(rideRequest, {
@@ -314,6 +315,7 @@ export async function POST(
       }),
       passenger: joinerRow,
       refunds,
+      memberCount: existingMembers.length + 1,
     },
     { status: 201 },
   );
