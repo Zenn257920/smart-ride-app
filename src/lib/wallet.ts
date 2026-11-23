@@ -63,6 +63,10 @@ export interface AddTransactionInput {
   description: string;
   referenceId?: string | null;
   status?: WalletTxStatus;
+  /** Manual top-up proof (Feature A): transaction ID + optional
+   * receipt screenshot. Only top-up rows carry these. */
+  transactionId?: string | null;
+  proofImageBase64?: string | null;
 }
 
 /** Insert a single ledger row and return it. Defaults to 'completed'. */
@@ -76,6 +80,8 @@ export async function addTransaction(input: AddTransactionInput) {
       description: input.description,
       referenceId: input.referenceId ?? null,
       status: input.status ?? "completed",
+      transactionId: input.transactionId ?? null,
+      proofImageBase64: input.proofImageBase64 ?? null,
     })
     .returning();
   return row;

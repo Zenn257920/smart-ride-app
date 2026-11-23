@@ -234,6 +234,13 @@ export const walletTransactions = pgTable("wallet_transactions", {
   description: text("description").notNull(),
   referenceId: text("reference_id"),
   status: text("status").notNull().default("completed"),
+  // Manual top-up proof (Feature A, 2026-11-23): the transaction ID
+  // the user got from their KBZPay/WavePay app (required on submit)
+  // and an optional screenshot of the transfer receipt (base64 data
+  // URL, capped at ~1MB — see MAX_PROOF_IMAGE_BASE64_CHARS in
+  // src/lib/payment-settings.ts). Admins see both when confirming.
+  transactionId: text("transaction_id"),
+  proofImageBase64: text("proof_image_base64"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
   // C5: balance is SUM(amount) per user; history lists filter by user
@@ -275,6 +282,29 @@ export const ratings = pgTable("ratings", {
   stars: integer("stars").notNull(),
   comment: text("comment"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// Feature A — manual top-up receiving accounts (2026-11-23).
+//
+// The app has no payment gateway: a user sends money from their own
+// KBZPay/WavePay app to one of the app's receiving accounts, then
+// submits the transaction ID (+ optional screenshot) for an admin to
+// confirm. One row per provider (unique provider); an admin configures
+// the account number + name in /admin — NOTHING is hardcoded or
+// seeded, so until an admin saves a row the provider shows as
+// unavailable in the top-up flow. `enabled` lets an admin temporarily
+// take a provider offline without deleting its details.
+// ---------------------------------------------------------------------------
+
+export const paymentSettings = pgTable("payment_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  provider: text("provider").notNull().unique(),
+  accountNumber: text("account_number").notNull(),
+  accountName: text("account_name").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // ---------------------------------------------------------------------------

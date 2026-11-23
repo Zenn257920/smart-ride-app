@@ -93,22 +93,26 @@ export default function Nav() {
               Login
             </Link>
           )}
+          {/* Hamburger: hidden by default, shown ONLY below lg.
+              Base `hidden` + `max-lg:flex` (not `flex` + `lg:hidden`) so
+              the button can never show on desktop, even if the menu was
+              opened on a narrow viewport and the window was then widened. */}
           <button
             type="button"
-            className="flex h-9 w-9 flex-col items-center justify-center gap-1 rounded-full text-mint hover:bg-white/10 lg:hidden"
+            className="hidden h-8 w-8 flex-col items-center justify-center gap-[3px] rounded-full text-mint/80 hover:bg-white/10 hover:text-mint max-lg:flex"
             aria-label="Menu"
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
           >
-            <span className="block h-0.5 w-5 bg-current" />
-            <span className="block h-0.5 w-5 bg-current" />
-            <span className="block h-0.5 w-5 bg-current" />
+            <span className="block h-0.5 w-4 bg-current" />
+            <span className="block h-0.5 w-4 bg-current" />
+            <span className="block h-0.5 w-4 bg-current" />
           </button>
         </div>
       </div>
 
       {open ? (
-        <nav className="border-t border-white/10 px-4 pb-4 pt-2 lg:hidden" aria-label="Mobile">
+        <nav className="hidden border-t border-white/10 px-4 pb-4 pt-2 max-lg:block" aria-label="Mobile">
           <div className="grid grid-cols-1 gap-1">
             {LINKS.map((l) => (
               <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="rounded-xl px-3 py-2.5 text-sm text-mint hover:bg-white/10">

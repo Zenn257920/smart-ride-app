@@ -188,8 +188,11 @@ function MyRidesInner() {
     if (!cancelTarget) return;
     setError("");
     try {
-      await apiFetch(`/api/bookings/${cancelTarget.id}/cancel`, { method: "POST", body: JSON.stringify({}) });
-      setNotice("ဘွတ်ကင်ကို ပယ်ဖျက်ပြီးပါပြီ။ ပြန်အမ်းငွေ ရှိပါက သင့်ငွေအိတ်ထဲ ပြန်ရောက်ပါမည်။");
+      const res = await apiFetch<{ note?: string; refunded?: number }>(`/api/bookings/${cancelTarget.id}/cancel`, { method: "POST", body: JSON.stringify({}) });
+      // Feature B — a cash booking refunds nothing (nothing was ever
+      // taken); the server says so in `note`, so show that instead of
+      // the generic "refund back to your wallet" line.
+      setNotice(res.note ?? "ဘွတ်ကင်ကို ပယ်ဖျက်ပြီးပါပြီ။ ပြန်အမ်းငွေ ရှိပါက သင့်ငွေအိတ်ထဲ ပြန်ရောက်ပါမည်။");
       setCancelTarget(null);
       await load();
     } catch (err) {
@@ -305,7 +308,22 @@ function MyRidesInner() {
                     <p>Fare: {fmtMMK(b.fareShare ?? b.fare_share)}</p>
                     <p>App fee: {fmtMMK(b.appFee ?? b.app_fee)}</p>
                     <p>Total: <span className="font-medium">{fmtMMK(b.totalPrice ?? b.total_price)}</span></p>
-                    <p>Payment: {b.paymentMethod ?? b.payment_method ?? "—"}</p>
+                    {/* Feature B — payment badge. Cash is paid to the
+                        driver in person, so the amount to hand over is
+                        shown; e-wallet was already paid from the wallet. */}
+                    {(b.paymentMethod ?? b.payment_method) === "cash" ? (
+                      <p className="col-span-2">
+                        <span className="inline-block rounded-full border border-forest/30 bg-mint-soft px-2.5 py-1 text-xs font-medium text-forest dark:border-mint/40 dark:bg-forest-soft dark:text-mint">
+                          💵 ငွေသား — ယာဉ်မောင်းကို {fmtMMK(b.totalPrice ?? b.total_price)} ပေးပါ
+                        </span>
+                      </p>
+                    ) : (
+                      <p>
+                        <span className="inline-block rounded-full bg-mint-soft px-2.5 py-1 text-xs text-forest/70 dark:bg-forest-soft dark:text-mint/70">
+                          💳 E-Wallet — ငွေအိတ်မှ ပေးပြီးပါပြီ
+                        </span>
+                      </p>
+                    )}
                     <p>Status: {b.status ?? "—"}</p>
                     <p>Seats: {b.seats ?? 1}</p>
                   </div>
@@ -375,6 +393,11 @@ function MyRidesInner() {
             <p className="mt-2 text-sm text-forest/70 dark:text-mint/70">
               ပယ်ဖျက်လိုက်လျှင် သင့်ထိုင်ခုံ လွတ်သွားပါမည်။ ပယ်ဖျက်မှုစည်းကမ်းအရ ပြန်အမ်းငွေ ရှိပါက သင့်ငွေအိတ်ထဲ ပြန်ရောက်ပါမည်။
             </p>
+            {(cancelTarget.paymentMethod ?? cancelTarget.payment_method) === "cash" ? (
+              <p className="mt-2 text-sm font-medium text-forest dark:text-mint">
+                💵 ငွေသားဖြင့် ဘွတ်ကင်လုပ်ထားသောကြောင့် ပေးချေထားခြင်း မရှိသေးပါ — ပယ်ဖျက်လျှင် ပြန်အမ်းငွေ မရှိပါ။
+              </p>
+            ) : null}
             <div className="mt-5 flex gap-3">
               <button type="button" className="btn-outline flex-1" onClick={() => setCancelTarget(null)}>ဘွတ်ကင်ကို ဆက်ထားမယ်</button>
               <button type="button" className="btn-danger flex-1" onClick={cancelBooking}>ဟုတ်ကဲ့၊ ပယ်ဖျက်မယ်</button>

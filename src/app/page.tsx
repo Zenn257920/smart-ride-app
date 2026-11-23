@@ -7,19 +7,19 @@ import Image from "next/image";
 const STATS = [
   { num: "15,000+", label: "နေ့စဉ် ခရီးသည်များ" },
   { num: "67%", label: "ပျမ်းမျှ ငွေသက်သာမှု" },
-  { num: "၃ မိနစ်", label: "ပျမ်းမျှ AI Matching အချိန်" },
+  { num: "၃ မိနစ်", label: "ပျမ်းမျှ ချိတ်ဆက်ချိန်" },
   { num: "98.2%", label: "သုံးစွဲသူ စိတ်တိုင်းကျနှုန်း" },
 ];
 
 const STEPS = [
   { n: "01", icon: "📍", title: "ပိ့်ဆောင်ရန် နေရာ ရွေးပါ", desc: "ထွက်မည့်နေရာနှင့် ဦးတည်ရာကို App မှ ရွေးချယ်ပါ" },
   { n: "02", icon: "🕐", title: "ထွက်မည့် အချိန် သတ်မှတ်ပါ", desc: "ရုံးတက်/ရုံးဆင်း အချိန်ကို ထည့်ပါ" },
-  { n: "03", icon: "👥", title: "AI က ချိတ်ဆက်ပေးသည်", desc: "လမ်းကြောင်းတူ ၂–၃ ဦးနှင့် AI က အလိုအလျောက် ချိတ်ဆက်" },
+  { n: "03", icon: "👥", title: "လမ်းကြောင်းတူ ခရီးသည်တွေနဲ့ ချိတ်ဆက်ပေးသည်", desc: "လမ်းကြောင်းတူ ၂–၃ ဦးနှင့် ချိတ်ဆက်ပေးသည်" },
   { n: "04", icon: "✅", title: "E-Wallet ဖြင့် ပေးချေပါ", desc: "Innovix E-wallet ဖြင့် ပေးချေပါ" },
 ];
 
 const FEATURES = [
-  { icon: "⚡", title: "စက္ကန့်ပိုင်းအတွင်း ဘွတ်ကင်လုပ်ပါ", desc: "နေရာနှင့် အချိန်ကို ရွေးပါ — AI က အကောင်းဆုံး ကားကို မိနစ်ပိုင်းအတွင်း ရှာပေးသည်။" },
+  { icon: "⚡", title: "စက္ကန့်ပိုင်းအတွင်း ဘွတ်ကင်လုပ်ပါ", desc: "နေရာနှင့် အချိန်ကို ရွေးပါ — လမ်းကြောင်းတူ ကားကို မိနစ်ပိုင်းအတွင်း ရှာပေးသည်။" },
   { icon: "📍", title: "တိုက်ရိုက် ခြေရာခံပါ", desc: "တက်သည့်နေရာမှ ဆင်းသည့်နေရာအထိ သင့်ခရီးစဉ်ကို မြေပုံပေါ်တွင် ကြည့်နိုင်သည်။" },
   { icon: "💳", title: "လွယ်ကူစွာ ပေးချေပါ", desc: "Innovix E-Wallet သို့မဟုတ် ငွေသားဖြင့် ပေးချေပါ — အခက်အခဲ မရှိ။" },
 ];
@@ -69,12 +69,12 @@ export default function Home() {
       <section className="bg-forest">
         <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:py-20">
           <div className="min-w-0">
-            <p className="badge mb-5"><span className="inline-block h-2 w-2 animate-pulse rounded-full bg-forest" /> AI-Powered Carpooling · ရန်ကုန်မြို့</p>
+            <p className="badge mb-5"><span className="inline-block h-2 w-2 animate-pulse rounded-full bg-forest" /> လမ်းကြောင်းတူ Carpooling · ရန်ကုန်မြို့</p>
             <h1 className="text-[40px] font-medium leading-[1.1] text-mint sm:text-5xl lg:text-[60px]">
               တက္ကစီခ ၃ ပုံ ၁ ပုံနဲ့ သက်သောင့်သက်သာ ခရီးဆက်ပါ
             </h1>
             <p className="mt-5 max-w-md text-base leading-relaxed text-white/85">
-              AI Algorithm ကနေ လမ်းကြောင်းတူ ခရီးသည်များကို အလိုအလျောက် ချိတ်ဆက်ပေးတဲ့ Smart Carpooling
+              လမ်းကြောင်းနဲ့ အချိန်တူ ခရီးသည်တွေကို ချိတ်ဆက်ပေးတဲ့ Smart Carpooling
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/find-ride" className="btn-mint px-7 py-3.5 text-base">အခုပဲ ခရီးရှာပါ</Link>
@@ -92,7 +92,7 @@ export default function Home() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="badge">အိမ်တံခါးဝအထိ</span>
                 <span className="badge">67% သက်သာသည်</span>
-                <span className="badge">AI ချိတ်ဆက်ပေးသည်</span>
+                <span className="badge">လမ်းကြောင်းတူ ချိတ်ဆက်ပေးသည်</span>
               </div>
             </div>
           </div>
@@ -133,7 +133,7 @@ export default function Home() {
         <div className="mx-auto w-full max-w-7xl px-4 pb-14 sm:px-6">
           <p className="text-sm font-medium text-forest/60 dark:text-mint/60">▸ အလုပ်လုပ်ပုံ</p>
           <h2 className="section-title mt-1">အဆင့် ၄ ဆင့်သာ</h2>
-          <p className="section-sub">App ဖွင့်ပြီး မိနစ်အနည်းငယ်အတွင်း AI က အကောင်းဆုံး ကားနှင့် ချိတ်ဆက်ပေးသည်</p>
+          <p className="section-sub">App ဖွင့်ပြီး မိနစ်အနည်းငယ်အတွင်း လမ်းကြောင်းတူ ကားနှင့် ချိတ်ဆက်ပေးသည်</p>
           <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s) => (
               <div key={s.n} className="card relative">
@@ -198,7 +198,7 @@ export default function Home() {
         <div className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-6 px-4 py-12 sm:px-6 lg:flex-row lg:items-center">
           <div className="min-w-0">
             <h2 className="text-2xl font-medium leading-tight text-mint sm:text-3xl">တက္ကစီခရဲ့ ၃ ပုံ ၁ ပုံနဲ့ စီးဖို့ အဆင်သင့်ဖြစ်ပြီလား?</h2>
-            <p className="mt-2 text-sm text-white/80">အကောင့်ဖွင့်ပါ၊ လမ်းကြောင်းကို ရွေးပါ၊ AI က ၃ မိနစ်ခန့်အတွင်း ချိတ်ဆက်ပေးပါမယ်။</p>
+            <p className="mt-2 text-sm text-white/80">အကောင့်ဖွင့်ပါ၊ လမ်းကြောင်းကို ရွေးပါ၊ ၃ မိနစ်ခန့်အတွင်း လမ်းကြောင်းတူ ကားနဲ့ ချိတ်ဆက်ပေးပါမယ်။</p>
           </div>
           <Link href="/register" className="btn-mint shrink-0 px-7 py-3.5 text-base">အခုပဲ စတင်ပါ</Link>
         </div>

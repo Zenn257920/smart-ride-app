@@ -11,7 +11,7 @@ export default function Footer() {
             <span className="font-medium text-white">Innovix SharedRide Myanmar</span>
           </div>
           <p className="max-w-xs text-sm leading-relaxed text-mint/80">
-            AI-Powered Carpooling Platform — ရန်ကုန်မြို့ပေါ်ရှိ No.1 လမ်းကြုံမျှစီးဝန်ဆောင်မှု
+            Carpooling Platform — ရန်ကုန်မြို့ပေါ်ရှိ No.1 လမ်းကြုံမျှစီးဝန်ဆောင်မှု
           </p>
         </div>
         <div>

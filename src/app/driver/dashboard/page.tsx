@@ -10,10 +10,12 @@ import {
   asArray,
   fmtMMK,
   fmtNum,
+  rideEnd,
   rideEndLat,
   rideEndLng,
   ridePassengers,
   rideRoute,
+  rideStart,
   rideStartLat,
   rideStartLng,
   rideTime,
@@ -48,6 +50,14 @@ interface DashboardData {
   stats?: Record<string, number>;
   earnings?: { base?: number; bonus?: number; total?: number; rideCount?: number; passengerCount?: number };
   balance?: number;
+  // Feature B — cash to collect (server-computed, see
+  // /api/driver/dashboard): cash bookings are paid in person, never
+  // through the wallet. byRide covers confirmed + completed cash
+  // bookings only; cancelled / no-show owe nothing.
+  cashToCollect?: {
+    total?: number;
+    byRide?: Array<{ rideId: string; count: number; amount: number }>;
+  };
   pendingRequests?: RideRequestLike[];
   [key: string]: unknown;
 }
@@ -161,7 +171,7 @@ function DriverDashboardInner() {
       const noShowCount = res.noShow?.length ?? 0;
       setCompleteMsg(
         noShowCount > 0
-          ? `Ride completed — ${noShowCount} passenger${noShowCount === 1 ? "" : "s"} marked no-show (fare not refunded).`
+          ? `Ride completed — ${noShowCount} passenger${noShowCount === 1 ? "" : "s"} marked no-show (e-wallet fares are not refunded; cash no-shows pay nothing).`
           : "Ride completed — all passengers marked as rode.",
       );
       setNoShowByRide((prev) => {
@@ -309,6 +319,36 @@ function DriverDashboardInner() {
         <div className="card"><p className="text-sm text-forest/60 dark:text-mint/60">Total passengers</p><p className="mt-1 text-2xl font-medium">{fmtNum(stats.totalPassengers ?? stats.total_passengers ?? totalPassengers)}</p></div>
       </div>
 
+      {/* Feature B — cash to collect. Cash bookings never touch the
+          wallet, so this is the only place the driver sees what
+          passengers still owe in person: confirmed + completed cash
+          bookings (cancelled / no-show owe nothing). Per-ride rows
+          join the route label from the offered rides below. */}
+      {(data?.cashToCollect?.total ?? 0) > 0 ? (
+        <div className="card mt-6 border-2 border-forest/20 dark:border-mint/25">
+          <h2 className="text-lg font-medium">💵 ငွေသား ကောက်ခံရန်</h2>
+          <p className="mt-1 text-2xl font-medium">{fmtMMK(data?.cashToCollect?.total ?? 0)}</p>
+          <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">
+            ငွေသားဖြင့် ဘွတ်ကင်လုပ်ထားသော ခရီးသည်များထံမှ တိုက်ရိုက် ကောက်ခံရမည့်ငွေ — ငွေအိတ်ထဲ ဝင်မည် မဟုတ်ပါ။
+          </p>
+          <dl className="mt-3 space-y-1.5 text-sm">
+            {(data?.cashToCollect?.byRide ?? []).map((row) => {
+              const ride = rides.find((r) => r.id === row.rideId);
+              return (
+                <div key={row.rideId} className="flex justify-between gap-3">
+                  <dt className="min-w-0">
+                    {ride ? `${rideStart(ride)} → ${rideEnd(ride)}` : row.rideId}
+                    {ride?.status ? ` · ${ride.status === "completed" ? "ပြီးဆုံးပြီး" : "အတည်ပြုပြီး"}` : ""}
+                    {` · ${row.count} ယောက်`}
+                  </dt>
+                  <dd className="shrink-0 font-medium">{fmtMMK(row.amount)}</dd>
+                </div>
+              );
+            })}
+          </dl>
+        </div>
+      ) : null}
+
       <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
         <div className="card">
           <h2 className="text-lg font-medium">Earnings summary</h2>
@@ -426,7 +466,7 @@ function DriverDashboardInner() {
                           >
                             {completingId === r.id ? "Completing…" : "Mark completed"}
                           </button>
-                          <p className="mt-1 text-xs text-forest/60 dark:text-mint/60">No-show passengers are not refunded — you keep their fare.</p>
+                          <p className="mt-1 text-xs text-forest/60 dark:text-mint/60">No-show passengers are not refunded — you keep their e-wallet fare; a cash no-show owes nothing.</p>
                         </>
                       );
                     })()}

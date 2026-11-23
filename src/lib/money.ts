@@ -490,6 +490,87 @@ export function passengerRefundForPolicy(
 }
 
 // ---------------------------------------------------------------------------
+// Cash fares — app-fee treatment in v1 (Feature B, 2026-11-23).
+//
+// EXPLICIT RULE: cash fares move NO wallet money at all — not the fare,
+// not the 5% app fee, not a refund, not a driver debit, at book, reprice,
+// cancel or completion time. The fee on a cash fare is WAIVED and NOT
+// TRACKED: bookings.app_fee still records the 5% figure for display
+// (so totalPrice == fareShare + appFee still holds and the passenger
+// sees the same price as an e-wallet rider), but no ledger row ever
+// owns it, nobody is credited or debited it, and the driver simply
+// collects the full totalPrice in cash in person — including the fee
+// portion, which the app does not collect in v1. If a future version
+// wants the app to take its cut on cash fares, that needs a settlement
+// step (driver remits the fee) — it cannot be bolted onto the ledger
+// helpers below, because the driver was never credited for a cash
+// booking in the first place.
+// ---------------------------------------------------------------------------
+
+/** Minimal booking shape needed to work out cash the driver collects. */
+export interface CashToCollectBooking {
+  rideId: string;
+  paymentMethod: string;
+  status: string;
+  totalPrice: number;
+}
+
+/**
+ * Cash to collect for one ride's bookings: the sum of totalPrice over
+ * CASH bookings that are confirmed or completed. Cancelled and
+ * no-show bookings are excluded (nothing to collect: the ride did not
+ * happen for that passenger), and e-wallet bookings are excluded
+ * (already paid through the wallet). A completed cash booking stays
+ * in the total: v1 has no "marked as collected" flag, so the driver
+ * sees the full amount still to collect / collected in person.
+ */
+export function cashToCollectForRide(
+  bookings: Array<Omit<CashToCollectBooking, "rideId">>,
+): number {
+  let total = 0;
+  for (const b of bookings) {
+    if (b.paymentMethod !== "cash") continue;
+    if (b.status !== "confirmed" && b.status !== "completed") continue;
+    total += b.totalPrice;
+  }
+  return total;
+}
+
+/** One ride's share of the driver's cash to collect. */
+export interface CashToCollectByRide {
+  rideId: string;
+  /** Cash bookings counted (confirmed + completed). */
+  count: number;
+  amount: number;
+}
+
+/**
+ * Cash to collect across the driver's rides, grouped per ride (rides
+ * with no collectable cash are omitted). The caller supplies every
+ * booking of the driver's rides — this helper only filters and sums,
+ * it never reads the database. Total = sum of the per-ride amounts.
+ */
+export function cashToCollectByRide(
+  bookings: CashToCollectBooking[],
+): CashToCollectByRide[] {
+  const byRide = new Map<string, CashToCollectByRide>();
+  for (const b of bookings) {
+    if (b.paymentMethod !== "cash") continue;
+    if (b.status !== "confirmed" && b.status !== "completed") continue;
+    const row = byRide.get(b.rideId) ?? { rideId: b.rideId, count: 0, amount: 0 };
+    row.count += 1;
+    row.amount += b.totalPrice;
+    byRide.set(b.rideId, row);
+  }
+  return [...byRide.values()];
+}
+
+/** Total cash to collect across all of the driver's rides. */
+export function cashToCollectTotal(bookings: CashToCollectBooking[]): number {
+  return cashToCollectByRide(bookings).reduce((sum, r) => sum + r.amount, 0);
+}
+
+// ---------------------------------------------------------------------------
 // A4 (ratings) + A6 (future departure) + A7 (dashboard earnings).
 // ---------------------------------------------------------------------------
 

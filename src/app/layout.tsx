@@ -10,7 +10,7 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Innovix SharedRide Myanmar",
   description:
-    "AI Algorithm ကနေ လမ်းကြောင်းတူ ခရီးသည်များကို အလိုအလျောက် ချိတ်ဆက်ပေးတဲ့ Smart Carpooling — ရန်ကုန်မြို့",
+    "လမ်းကြောင်းနဲ့ အချိန်တူ ခရီးသည်တွေနဲ့ ချိတ်ဆက်ပေးတဲ့ Carpooling — ရန်ကုန်မြို့",
   manifest: "/manifest.webmanifest",
   themeColor: "#1E4927",
 };

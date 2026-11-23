@@ -221,7 +221,7 @@ function FindRideInner() {
   return (
     <div className="page-wrap">
       <h1 className="page-title">ခရီးစဉ် ရှာပါ</h1>
-      <p className="section-sub">နေရာဖြင့် ရှာပါ သို့မဟုတ် မြေပုံပေါ်တွင် နှိပ်ပါ — AI က သင့်လမ်းကြောင်းတူ ယာဉ်မောင်းများနှင့် ချိတ်ဆက်ပေးပါမည်။</p>
+      <p className="section-sub">နေရာဖြင့် ရှာပါ သို့မဟုတ် မြေပုံပေါ်တွင် နှိပ်ပါ — သင့်လမ်းကြောင်းတူ ယာဉ်မောင်းများကို ရှာပေးပါမည်။</p>
 
       <form onSubmit={search} className="card mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
         <LocationField

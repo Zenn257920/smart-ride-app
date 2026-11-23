@@ -131,7 +131,27 @@ export const RATE_LIMITS = {
   route: { windowMs: 60_000, max: 60 },
   search: { windowMs: 60_000, max: 30 },
   phoneLogin: { windowMs: 60_000, max: 10 },
+  // Email-OTP signup (see src/lib/otp.ts for the constants):
+  //   otpSendCooldown — 1 send / 60s per email (resend button cooldown).
+  //   otpSendEmailHourly — 5 sends / hour per email.
+  //   otpSendIpHourly — 20 sends / hour per IP (across all emails).
+  otpSendCooldown: { windowMs: 60_000, max: 1 },
+  otpSendEmailHourly: { windowMs: 3_600_000, max: 5 },
+  otpSendIpHourly: { windowMs: 3_600_000, max: 20 },
 } as const;
+
+/**
+ * Generic per-key check against the shared limiter (routes compose
+ * their own keys, e.g. `otpSend:email:${email}`). Tests use the
+ * createRateLimiter factory directly; this is the server-side entry.
+ */
+export function checkRateLimit(
+  key: string,
+  opts: RateLimitOptions,
+  now: number = Date.now(),
+): RateLimitCheck {
+  return limiter.check(key, opts);
+}
 
 /**
  * Check the per-IP limit for an endpoint. Returns a 429 response when

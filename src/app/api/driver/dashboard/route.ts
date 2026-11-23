@@ -22,7 +22,7 @@ import {
   walletTransactions,
 } from "@/db/schema";
 import { getSessionUser, jsonError, requireDriver } from "@/lib/api-helpers";
-import { driverNetEarnings } from "@/lib/money";
+import { driverNetEarnings, cashToCollectByRide, cashToCollectTotal } from "@/lib/money";
 import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { getBalance } from "@/lib/wallet";
 
@@ -151,9 +151,22 @@ export async function GET() {
 
   const balance = await getBalance(sessionUser.id);
 
+  // Feature B — cash to collect: cash bookings on this driver's rides
+  // are paid in person, never through the wallet, so the driver needs
+  // to see what to collect. Rule (see src/lib/money): sum of
+  // totalPrice over cash bookings that are confirmed or completed —
+  // cancelled / no-show bookings owe nothing, e-wallet bookings were
+  // already paid. rideBookings covers every status, which is what
+  // the helper needs (confirmed + completed both count).
+  const cashToCollect = {
+    total: cashToCollectTotal(rideBookings),
+    byRide: cashToCollectByRide(rideBookings),
+  };
+
   return NextResponse.json({
     driver,
     driverName: sessionUser.name ?? "Driver",
+    cashToCollect,
     stats: {
       activeRides: activeRides.length,
       availableSeats,

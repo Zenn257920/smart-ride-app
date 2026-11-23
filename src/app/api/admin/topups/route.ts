@@ -24,6 +24,11 @@ export async function GET() {
       amount: walletTransactions.amount,
       description: walletTransactions.description,
       status: walletTransactions.status,
+      // Feature A: the admin checks the transaction ID (and the
+      // receipt screenshot, when the user attached one) against the
+      // real transfer before confirming.
+      transactionId: walletTransactions.transactionId,
+      proofImageBase64: walletTransactions.proofImageBase64,
       createdAt: walletTransactions.createdAt,
       userName: user.name,
       userEmail: user.email,

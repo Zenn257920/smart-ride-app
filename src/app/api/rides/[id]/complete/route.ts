@@ -98,11 +98,20 @@ export async function POST(
 
   for (const booking of confirmed) {
     const rode = settlement.completedIds.includes(booking.id);
+    // Feature B — cash bookings never paid through the wallet, so the
+    // messages must not talk about refunds for them: a cash passenger
+    // who rode is reminded to hand the fare to the driver in person,
+    // and a cash no-show simply owes nothing.
+    const isCash = booking.paymentMethod === "cash";
     await notifyUser(
       booking.passengerId,
       rode
-        ? `Your ride "${ride.startLabel} → ${ride.endLabel}" is completed. Thanks for riding — you can now rate your driver.`
-        : `Your ride "${ride.startLabel} → ${ride.endLabel}" is completed. You were marked as a no-show, so your fare was not refunded.`,
+        ? isCash
+          ? `Your ride "${ride.startLabel} → ${ride.endLabel}" is completed. Please pay ${booking.totalPrice.toLocaleString()} MMK in cash to the driver. Thanks for riding — you can now rate your driver.`
+          : `Your ride "${ride.startLabel} → ${ride.endLabel}" is completed. Thanks for riding — you can now rate your driver.`
+        : isCash
+          ? `Your ride "${ride.startLabel} → ${ride.endLabel}" is completed. You were marked as a no-show — no payment was taken (cash booking), so there is nothing to refund.`
+          : `Your ride "${ride.startLabel} → ${ride.endLabel}" is completed. You were marked as a no-show, so your fare was not refunded.`,
       "completed",
     );
   }

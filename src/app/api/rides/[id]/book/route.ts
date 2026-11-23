@@ -382,6 +382,9 @@ async function doBook(
 
       // Only e-wallet riders get money back; cash riders keep the new
       // (lower) amount on record with no ledger move, as in the old app.
+      // Feature B: the `refunds` response lists REAL money moves only —
+      // a cash rider's repriced amount is not a refund (nothing was
+      // ever paid), so it must not appear here.
       if (oldBooking.paymentMethod !== "cash") {
         for (const delta of fairSplitRefundDeltas(
           oldBooking.passengerId,
@@ -405,8 +408,8 @@ async function doBook(
           `${passengerName} joined your ride! Your cost ${oldBooking.totalPrice.toLocaleString()} → ${newAmounts.totalPrice.toLocaleString()} MMK, ${split.refundTotal.toLocaleString()} MMK refunded.`,
           "refund",
         );
+        refunds.push({ passengerId: oldBooking.passengerId, refund: split.refundTotal });
       }
-      refunds.push({ passengerId: oldBooking.passengerId, refund: split.refundTotal });
     }
   }
 
