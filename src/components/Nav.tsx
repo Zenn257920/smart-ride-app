@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationsBell from "@/components/NotificationsBell";
@@ -38,6 +38,7 @@ const DRIVER_LINKS = [
 ];
 
 export default function Nav() {
+  const pathname = usePathname();
   const { data: session } = useSession();
   const user = session?.user as { name?: string; user_type?: string } | undefined;
   const router = useRouter();
@@ -70,6 +71,10 @@ export default function Nav() {
     router.push("/login");
     router.refresh();
   }
+
+  // Admin pages have their own shell (AdminShell) — no user nav there.
+  // usePathname works during SSR, so the server HTML already omits it.
+  if (pathname?.startsWith("/admin")) return null;
 
   return (
     <header className="sticky top-0 z-40 bg-forest">

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/Nav";
+import AdminShell from "@/components/AdminShell";
 import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
 
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${inter.variable} antialiased min-h-screen flex flex-col`}>
         <Nav />
+        <AdminShell />
         <main className="flex-1 min-w-0">{children}</main>
         <Footer />
         <BottomNav />

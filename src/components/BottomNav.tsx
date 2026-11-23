@@ -64,6 +64,10 @@ export default function BottomNav() {
 
   if (pathname === "/login" || pathname === "/register") return null;
   if (!pathname) return null;
+  // Admin pages have their own shell (AdminShell) — no bottom tab bar
+  // there, including /admin/login when logged out (the isAdmin check
+  // below only covers signed-in admins).
+  if (pathname.startsWith("/admin")) return null;
   if (isAdmin) return null;
   const items = !user
     ? PUBLIC_ITEMS
