@@ -39,6 +39,44 @@ export const YANGON_PLACES: YangonPlace[] = [
   { en: "Pabedan", my: "ပန်းဘဲတန်း", lat: 16.7759583, lng: 96.1561493 },
   { en: "Ahlone", my: "အလုံ", lat: 16.786798, lng: 96.1287706 },
   { en: "Thanlyin", my: "သန်လျင်", lat: 16.7648126, lng: 96.2509473 },
+  // Townships + landmarks added 2026-11-23 — coordinates from live
+  // Nominatim lookups (English queries, countrycodes=mm, first
+  // boundary/administrative hit). Nominatim's Burmese handling is
+  // inconsistent (e.g. "သင်္ဃန်းကျွန်း" returns nothing live), so the
+  // gazetteer is the bilingual guarantee for these names.
+  { en: "Mingaladon", my: "မင်္ဂလာဒုံ", lat: 16.9338331, lng: 96.1312105 },
+  { en: "Shwepyitha", my: "ရွှေပြည်သာ", lat: 16.9532724, lng: 96.0795114 },
+  { en: "Mayangone", my: "မရမ်းကုန်း", lat: 16.8660884, lng: 96.1171103 },
+  { en: "Hlaing", my: "လှိုင်", lat: 16.8430511, lng: 96.1234366 },
+  { en: "Thingangyun", my: "သင်္ဃန်းကျွန်း", lat: 16.8319649, lng: 96.1973169 },
+  { en: "Thaketa", my: "သာကေတ", lat: 16.7980403, lng: 96.2072005 },
+  { en: "Dawbon", my: "ဒေါပုံ", lat: 16.7826249, lng: 96.1877755 },
+  { en: "Pazundaung", my: "ပုဇွန်တောင်", lat: 16.7778706, lng: 96.1756085 },
+  // Botataung + Mingalar Taung Nyunt: Nominatim returns no township
+  // boundary for these (even with a "Township" suffix) — the only
+  // result is a feature inside the township (Botataung Pagoda /
+  // a courthouse in Mingalar Taung Nyunt), so its coordinates stand
+  // in as the township's representative point.
+  { en: "Botataung", my: "ဗိုလ်တစ်ထောင်", lat: 16.7678308, lng: 96.1718413 },
+  { en: "Dagon", my: "ဒဂုံ", lat: 16.7923726, lng: 96.1443386 },
+  { en: "Lanmadaw", my: "လမ်းမတော်", lat: 16.7789664, lng: 96.1417274 },
+  { en: "Latha", my: "လသာ", lat: 16.7763082, lng: 96.1504591 },
+  { en: "Seikkan", my: "ဆိပ်ကမ်း", lat: 16.7711884, lng: 96.1501676 },
+  { en: "Mingalar Taung Nyunt", my: "မင်္ဂလာတောင်ညွန့်", lat: 16.7905944, lng: 96.1656183 },
+  { en: "Kyimyindaing", my: "ကြည့်မြင်တိုင်", lat: 16.8129125, lng: 96.121305 },
+  { en: "Dagon Seikkan", my: "ဒဂုံဆိပ်ကမ်း", lat: 16.8457159, lng: 96.275932 },
+  { en: "North Dagon", my: "မြောက်ဒဂုံ", lat: 16.8719395, lng: 96.1921582 },
+  { en: "South Dagon", my: "တောင်ဒဂုံ", lat: 16.851808, lng: 96.2367562 },
+  { en: "East Dagon", my: "အရှေ့ဒဂုံ", lat: 16.9011301, lng: 96.2118353 },
+  // Yangon University: the 5th Nominatim hit is the real main campus
+  // (Kamayut); the first hits are other universities (Medicine 1, YTU).
+  { en: "Yangon University", my: "ရန်ကုန်တက္ကသိုလ်", lat: 16.830365, lng: 96.1355512 },
+  // Aung Mingalar: the 3rd hit is the station node itself; the first
+  // two are express-company offices inside the station.
+  { en: "Aung Mingalar Highway Bus Station", my: "အောင်မင်္ဂလာ အဝေးပြေးကားဝင်း", lat: 16.9305179, lng: 96.1558296 },
+  // Seikkyi Kanaungto is deliberately absent: Nominatim returns zero
+  // results for it in every spelling tried ("Seikkyi Kanaungto",
+  // "Seikkyi Kanaung To", + "Township") — never invent coordinates.
 ];
 
 /** Local gazetteer hits for a query (Burmese substring or English substring). */
