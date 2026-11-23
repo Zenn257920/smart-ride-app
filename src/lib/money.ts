@@ -685,6 +685,30 @@ export function joinRepriceForMember(
   return { appliedPrice: previousPaid, refund: 0 };
 }
 
+/**
+ * Ledger deltas for LAZY EXPIRY of an open ride request whose
+ * departure has passed with no accepted driver (see
+ * src/lib/request-expiry.ts): every joined member is refunded their
+ * full prepaid amount ('refund'). No driver was ever credited for an
+ * unaccepted request, so there is no driver debit — unlike cancel of
+ * an accepted ride. Zero/negative amounts are skipped. The refund is
+ * exactly-once because expiry itself is gated on a guarded
+ * open -> expired status update: only the read that flips the status
+ * refunds, and a second read finds status 'expired' and refunds
+ * nothing.
+ */
+export function expiryRefundDeltas(
+  members: Array<{ passengerId: string; paidAmount?: number | null; totalPrice: number }>,
+): LedgerDelta[] {
+  return members
+    .map((m) => ({
+      userId: m.passengerId,
+      type: "refund" as const,
+      amount: m.paidAmount ?? m.totalPrice,
+    }))
+    .filter((d) => d.amount > 0);
+}
+
 // ---------------------------------------------------------------------------
 // D8a — held prepayments (2026-11-23).
 //

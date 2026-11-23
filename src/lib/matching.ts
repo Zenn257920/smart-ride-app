@@ -60,7 +60,7 @@ export interface RideCoords {
   endLng?: number | null;
   departureTime?: string | Date | null;
   /** Driver route polyline as [lat, lng] pairs (OSRM / Leaflet order). */
-  routeCoordinates?: Array<[number, number]>;
+  routeCoordinates?: Array<[number, number]> | null;
 }
 
 /** A passenger (or ride request) taking part in a shared ride. */

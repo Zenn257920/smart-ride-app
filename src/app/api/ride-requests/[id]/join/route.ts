@@ -26,6 +26,7 @@ import { requestPassengers, rideRequests, user } from "@/db/schema";
 import { getSessionUser, jsonError, requireRole } from "@/lib/api-helpers";
 import { routeMatcher, PICKUP_THRESHOLD_KM, DROPOFF_THRESHOLD_KM } from "@/lib/matching";
 import { joinRepriceForMember } from "@/lib/money";
+import { MAX_REQUEST_MEMBERS } from "@/lib/request-matching";
 import { recalcRequestBreakdown } from "@/lib/ride-requests";
 import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { addTransaction, getBalance } from "@/lib/wallet";
@@ -91,6 +92,18 @@ export async function POST(
     );
   if (existingMembers.some((m) => m.passengerId === sessionUser.id)) {
     return jsonError("Already in this Request", 409);
+  }
+
+  // Capacity: the accept-created ride has seats_total 4, so a request
+  // can hold at most 4 joined members (creator + up to 3 joiners).
+  // NOTE: this is a check-then-insert, not a guarded update — two
+  // joins racing past the check could both insert; the accept path
+  // still caps the created ride at 4 seats, so the overflow can only
+  // ever strand an extra prepaid member on a full request, never
+  // overbook a ride. A count-based DB guard would need a transaction,
+  // which the Neon HTTP driver does not support.
+  if (existingMembers.length >= MAX_REQUEST_MEMBERS) {
+    return jsonError("This request is already full (4 riders).", 409);
   }
 
   // GPS compatibility checks (only when both sides have coords).

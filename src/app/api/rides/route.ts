@@ -9,10 +9,12 @@ import { NextResponse } from "next/server";
 import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { bookings, drivers, ratings, rides, user } from "@/db/schema";
+import { bookings, drivers, ratings, requestPassengers, rideRequests, rides, user } from "@/db/schema";
 import { getSessionUser, jsonError, parseDate, requireRole } from "@/lib/api-helpers";
 import { routeMatcher } from "@/lib/matching";
 import { isFutureDeparture } from "@/lib/money";
+import { notifyUser } from "@/lib/notify";
+import { scoreRequestsAgainstTrip } from "@/lib/request-matching";
 
 const offerRideSchema = z.object({
   startLabel: z.string().min(1),
@@ -208,5 +210,82 @@ export async function POST(request: Request) {
     })
     .returning();
 
+  // Unified matching: tell the creators (+ joiners) of open future
+  // requests on this route that a ride now exists. Scored the same
+  // way as search (RouteMatcher > 30, ±60 min). Best-effort — a
+  // notification failure never fails the offer.
+  await notifyMatchingRequests(ride);
+
   return NextResponse.json({ ride }, { status: 201 });
+}
+
+/**
+ * Find open, future ride requests matching a newly published offer
+ * and notify every joined member (creator + joiners, deduped) once:
+ * "မင်းလမ်းကြောင်းမှာ ride အသစ်ရှိပြီ". The driver who just
+ * published is never notified about their own offer, and a request
+ * the driver themselves created/joined as a passenger is skipped
+ * (they already know — they published it).
+ */
+async function notifyMatchingRequests(ride: {
+  startLat: number;
+  startLng: number;
+  endLat: number;
+  endLng: number;
+  departureTime: Date;
+  startLabel: string;
+  endLabel: string;
+  driverId: string;
+  routeCoordinates: Array<[number, number]> | null;
+}) {
+  try {
+    const open = await db
+      .select()
+      .from(rideRequests)
+      .where(
+        and(
+          eq(rideRequests.status, "open"),
+          gt(rideRequests.departureTime, new Date()),
+        ),
+      );
+    if (open.length === 0) return;
+    const scored = scoreRequestsAgainstTrip(open, {
+      startLat: ride.startLat,
+      startLng: ride.startLng,
+      endLat: ride.endLat,
+      endLng: ride.endLng,
+      departureTime: ride.departureTime.toISOString(),
+      routeCoordinates: ride.routeCoordinates ?? undefined,
+    });
+    if (scored.length === 0) return;
+    const ids = scored.map((s) => s.request.id);
+    const members = await db
+      .select()
+      .from(requestPassengers)
+      .where(
+        and(
+          inArray(requestPassengers.requestId, ids),
+          eq(requestPassengers.status, "joined"),
+        ),
+      );
+    const memberIdsByRequest = new Map<string, Set<string>>();
+    for (const m of members) {
+      const set = memberIdsByRequest.get(m.requestId) ?? new Set<string>();
+      set.add(m.passengerId);
+      memberIdsByRequest.set(m.requestId, set);
+    }
+    for (const { request } of scored) {
+      const recipients = memberIdsByRequest.get(request.id) ?? new Set([request.passengerId]);
+      for (const userId of recipients) {
+        if (userId === ride.driverId) continue;
+        await notifyUser(
+          userId,
+          `မင်းလမ်းကြောင်းမှာ ride အသစ်ရှိပြီ — ${ride.startLabel} → ${ride.endLabel}၊ ${ride.departureTime.toLocaleString("en-GB", { timeZone: "Asia/Yangon", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} ထွက်မည်။`,
+          "new_ride",
+        );
+      }
+    }
+  } catch {
+    // Notifications must never break the offer that was just created.
+  }
 }

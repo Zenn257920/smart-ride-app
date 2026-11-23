@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import AuthGuard from "@/components/AuthGuard";
 import RoleGuard from "@/components/RoleGuard";
+import BookingModal from "@/components/BookingModal";
 import LocationField from "@/components/LocationField";
 import PricePreview from "@/components/PricePreview";
 import {
@@ -17,6 +19,7 @@ import {
   YANGON,
   type GeocodeHit,
   type LatLng,
+  type RideLike,
   type RideRequestLike,
 } from "@/lib/api";
 import { resolveTypedLocation } from "@/lib/geocode-fallback";
@@ -40,6 +43,7 @@ export default function RideRequestsPage() {
 }
 
 function RideRequestsInner() {
+  const router = useRouter();
   const { data: session } = useSession();
   const [tab, setTab] = useState<Tab>("all");
   const [requests, setRequests] = useState<RideRequestLike[]>([]);
@@ -57,6 +61,13 @@ function RideRequestsInner() {
   const [balance, setBalance] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
+  // Unified matching: before creating, check whether an offered ride
+  // already covers this route/time (GET /api/rides/search — no new
+  // endpoint). If so, show the rides inline with Book buttons and
+  // let the user book one OR create the request anyway (never blocked).
+  const [existingOffers, setExistingOffers] = useState<RideLike[]>([]);
+  const [checkingOffers, setCheckingOffers] = useState(false);
+  const [bookingOffer, setBookingOffer] = useState<RideLike | null>(null);
 
   // Join modal
   const [joining, setJoining] = useState<RideRequestLike | null>(null);
@@ -98,8 +109,8 @@ function RideRequestsInner() {
   const mine = requests.filter((r) => (r.passengerId ?? r.passenger_id) === myId);
   const shown = tab === "mine" ? mine : requests;
 
-  async function createRequest(e: React.FormEvent) {
-    e.preventDefault();
+  async function createRequest(e?: React.FormEvent | React.MouseEvent, force = false) {
+    e?.preventDefault();
     setCreateError("");
     setNotice("");
     // Typed-only labels have no coords (LocationField sets them only
@@ -139,6 +150,52 @@ function RideRequestsInner() {
       setCreateError("Departure time must be in the future.");
       return;
     }
+    // Unified matching: check for an already-offered ride first.
+    // force=true is the "create the request anyway" button — the
+    // check never blocks creation.
+    if (!force) {
+      setCheckingOffers(true);
+      try {
+        const q = new URLSearchParams({
+          startLat: String(s.lat),
+          startLng: String(s.lng),
+          endLat: String(en.lat),
+          endLng: String(en.lng),
+          departureTime: new Date(departureTime).toISOString(),
+        });
+        const data = await apiFetch<unknown>(`/api/rides/search?${q.toString()}`);
+        const raw = asArray<Record<string, unknown>>(data);
+        const offers = raw.map((m) => {
+          const ride = (m.ride as Record<string, unknown> | undefined) ?? m;
+          return {
+            ...ride,
+            driverName: m.driverName ?? ride.driverName,
+            carModel: m.carModel ?? ride.carModel,
+            carPlate: m.carPlate ?? ride.carPlate,
+            seatsAvailable: m.seatsAvailable ?? ride.seatsAvailable,
+            departureTime: m.departureTime ?? ride.departureTime,
+            matchScore: m.matchScore,
+            matchPercentage: m.matchPercentage,
+            fareShare: m.fareShare,
+            appFee: m.appCommissionPerPassenger,
+            totalPrice: m.discountedPrice,
+            savings: m.savings,
+            distanceKm: m.passengerDistanceKm ?? ride.distanceKm,
+          } as RideLike;
+        });
+        if (offers.length > 0) {
+          setExistingOffers(offers);
+          setCheckingOffers(false);
+          return;
+        }
+      } catch {
+        // Search failing must not block creating the request.
+        setExistingOffers([]);
+      } finally {
+        setCheckingOffers(false);
+      }
+    }
+    setExistingOffers([]);
     setCreating(true);
     try {
       await apiFetch("/api/ride-requests", {
@@ -294,7 +351,27 @@ function RideRequestsInner() {
               Creating a request takes a prepayment from your wallet. Balance: {balance != null ? fmtMMK(balance) : "—"}
             </p>
             {createError ? <p role="alert" className="rounded-[12px] bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{createError}</p> : null}
-            <button type="submit" disabled={creating} className="btn-primary w-full">{creating ? "Creating…" : "Create ride request"}</button>
+            <button type="submit" disabled={creating || checkingOffers} className="btn-primary w-full">{checkingOffers ? "ရှိပြီးသား ride ရှာနေသည်…" : creating ? "Creating…" : "Create ride request"}</button>
+            {existingOffers.length > 0 ? (
+              <div className="rounded-[12px] border-2 border-forest/20 p-3 dark:border-mint/25">
+                <p className="text-sm font-medium">ဒီ ride ရှိနေပြီ — Book လုပ်မလား?</p>
+                <p className="mt-1 text-xs text-forest/60 dark:text-mint/60">ဒီလမ်းကြောင်းနဲ့ အချိန်အတွက် ယာဉ်မောင်း ကမ်းလှမ်းထားတဲ့ ride ရှိပါတယ်။ Book လုပ်ရင် တောင်းဆိုမှု ဖန်တီးစရာ မလိုတော့ပါ။</p>
+                <div className="mt-3 space-y-3">
+                  {existingOffers.map((offer) => (
+                    <div key={offer.id} className="rounded-[12px] bg-mint-soft p-3 dark:bg-forest-soft">
+                      <p className="text-sm font-medium">{offer.startLabel ?? offer.start_label} → {offer.endLabel ?? offer.end_label}</p>
+                      <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">
+                        {fmtTime(offer.departureTime ?? offer.departure_time)} · {offer.driverName ?? offer.driver_name ?? "Driver"}{offer.carModel ?? offer.car_model ? ` · ${offer.carModel ?? offer.car_model}` : ""} · {fmtMMK(offer.totalPrice ?? offer.total_price ?? offer.discountedPrice ?? offer.discounted_price)}
+                      </p>
+                      <button type="button" className="btn-primary mt-2 w-full" onClick={() => setBookingOffer(offer)}>Book လုပ်မယ်</button>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" className="btn-outline mt-3 w-full" disabled={creating} onClick={(e) => createRequest(e, true)}>
+                  တောင်းဆိုမှုကိုပဲ ဆက်ဖန်တီးမယ်
+                </button>
+              </div>
+            ) : null}
           </div>
           <div className="min-w-0">
             <RideMap center={start ?? YANGON} markers={markers} onPick={(lat, lng) => {
@@ -368,6 +445,20 @@ function RideRequestsInner() {
             </div>
           </div>
         </div>
+      ) : null}
+      {bookingOffer ? (
+        <BookingModal
+          ride={bookingOffer}
+          balance={balance}
+          pickup={start}
+          dropoff={end}
+          onClose={() => setBookingOffer(null)}
+          onBooked={() => {
+            setBookingOffer(null);
+            setExistingOffers([]);
+            router.push("/my-rides");
+          }}
+        />
       ) : null}
     </div>
   );

@@ -13,12 +13,15 @@ import {
   apiFetch,
   asArray,
   fetchRoute,
+  fmtMMK,
+  fmtTime,
   geocode,
   localInputValue,
   YANGON,
   type GeocodeHit,
   type LatLng,
   type RideLike,
+  type RideRequestLike,
 } from "@/lib/api";
 import { resolveTypedLocation } from "@/lib/geocode-fallback";
 
@@ -55,6 +58,56 @@ function OfferRideInner() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  // Unified matching: open requests that fit the route/time being
+  // offered (GET /api/ride-requests scored variant, driver-only).
+  // Fetched debounced once the route + time are complete; Accept uses
+  // the existing accept endpoint, which creates the ride + bookings +
+  // driver credit + member notifications — nothing is duplicated here.
+  const [matchingRequests, setMatchingRequests] = useState<RideRequestLike[]>([]);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  const [acceptMsg, setAcceptMsg] = useState("");
+
+  useEffect(() => {
+    if (!isDriver || !start || !end) {
+      setMatchingRequests([]);
+      return;
+    }
+    const dep = new Date(departureTime);
+    if (Number.isNaN(dep.getTime()) || dep <= new Date()) {
+      setMatchingRequests([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      try {
+        const q = new URLSearchParams({
+          startLat: String(start.lat),
+          startLng: String(start.lng),
+          endLat: String(end.lat),
+          endLng: String(end.lng),
+          departureTime: dep.toISOString(),
+        });
+        const data = await apiFetch<unknown>(`/api/ride-requests?${q.toString()}`);
+        setMatchingRequests(asArray<RideRequestLike>(data));
+      } catch {
+        setMatchingRequests([]);
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [isDriver, start, end, departureTime]);
+
+  async function acceptMatchingRequest(req: RideRequestLike) {
+    setAcceptMsg("");
+    setAcceptingId(req.id);
+    try {
+      await apiFetch(`/api/ride-requests/${req.id}/accept`, { method: "POST", body: JSON.stringify({}) });
+      setAcceptMsg(`"${req.startLabel ?? req.start_label} → ${req.endLabel ?? req.end_label}" တောင်းဆိုမှုကို လက်ခံပြီးပါပြီ — ခရီးစဉ် ဖြစ်လာပါပြီ။`);
+      setMatchingRequests((prev) => prev.filter((r) => r.id !== req.id));
+    } catch (e) {
+      setAcceptMsg(e instanceof Error ? e.message : "တောင်းဆိုမှုကို လက်ခံ၍ မရပါ။");
+    } finally {
+      setAcceptingId(null);
+    }
+  }
 
   useEffect(() => {
     apiFetch("/api/driver/dashboard")
@@ -254,6 +307,41 @@ function OfferRideInner() {
           </div>
         </div>
       ) : null}
+
+      {/* Unified matching: open requests on this route — accept one
+          instead of publishing a separate offer for the same trip. */}
+      {matchingRequests.length > 0 ? (
+        <div className="mt-10">
+          <h2 className="text-lg font-medium text-forest dark:text-mint">ဒီလမ်းကြောင်းနဲ့ ကိုက်တဲ့ တောင်းဆိုမှုများ ({matchingRequests.length} ခု)</h2>
+          <p className="section-sub">တောင်းဆိုမှုတစ်ခုကို လက်ခံရင် အဲဒီ့ခရီးသည်တွေနဲ့ ခရီးစဉ် ချက်ချင်း ဖြစ်လာပါမည် — သပ်သပ် ကမ်းလှမ်းစရာ မလိုတော့ပါ။</p>
+          {acceptMsg ? <p className="mt-3 rounded-[12px] bg-mint-soft px-3 py-2 text-sm dark:bg-forest-soft">{acceptMsg}</p> : null}
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {matchingRequests.map((req) => (
+              <article key={req.id} className="card">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 font-medium">{req.startLabel ?? req.start_label} → {req.endLabel ?? req.end_label}</p>
+                  <span className="badge shrink-0">{req.matchScore ?? req.matchPercentage ?? ""}{req.matchScore != null ? "% ကိုက်" : ""}</span>
+                </div>
+                <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">
+                  {fmtTime(req.departureTime ?? req.departure_time)} · {req.passengerName ?? req.passenger_name ?? "Passenger"} · {(req.passengers ?? []).length || 1} rider(s)
+                </p>
+                <p className="mt-2 text-sm">Estimated: <span className="font-medium">{fmtMMK(req.estimatedPrice ?? req.estimated_price)}</span></p>
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    disabled={acceptingId === req.id}
+                    onClick={() => acceptMatchingRequest(req)}
+                  >
+                    {acceptingId === req.id ? "လက်ခံနေသည်…" : "Accept"}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {acceptMsg && matchingRequests.length === 0 ? <p className="mt-6 rounded-[12px] bg-mint-soft px-3 py-2 text-sm dark:bg-forest-soft">{acceptMsg}</p> : null}
 
       <div className="mt-10">
         <h2 className="text-lg font-medium text-forest dark:text-mint">ကျွန်တော် ကမ်းလှမ်းထားသော ခရီးစဉ်များ</h2>

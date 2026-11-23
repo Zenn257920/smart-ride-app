@@ -23,6 +23,8 @@ import {
 } from "@/db/schema";
 import { getSessionUser, jsonError, requireDriver } from "@/lib/api-helpers";
 import { driverNetEarnings, cashToCollectByRide, cashToCollectTotal } from "@/lib/money";
+import { expireOverdueRequests } from "@/lib/request-expiry";
+import { scorePendingRequests, sortPendingByMatch } from "@/lib/request-matching";
 import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { getBalance } from "@/lib/wallet";
 
@@ -32,6 +34,10 @@ export async function GET() {
 
   const driver = await requireDriver(sessionUser.id);
   if (!driver) return jsonError("driver registration required", 404);
+
+  // Lazy expiry (no cron): overdue open requests are expired +
+  // refunded before the pending list is read.
+  await expireOverdueRequests();
 
   const now = new Date();
 
@@ -129,7 +135,21 @@ export async function GET() {
     (r) => !rejectedIds.has(r.id),
   );
 
-  const pendingRequestIds = pendingRequests.map((r) => r.id);
+  // Unified matching: score each pending request against this
+  // driver's offered rides that can still take riders (open, future,
+  // seats left) and sort best-first, so the requests that fit the
+  // driver's existing routes surface first. With no such rides the
+  // chronological order is kept (all scores null).
+  const scorableRides = offeredRides.filter(
+    (r) =>
+      r.status === "open" &&
+      r.seatsAvailable > 0 &&
+      r.departureTime.getTime() > now.getTime(),
+  );
+  const pendingMatchMap = scorePendingRequests(pendingRequests, scorableRides);
+  const sortedPendingRequests = sortPendingByMatch(pendingRequests, pendingMatchMap);
+
+  const pendingRequestIds = sortedPendingRequests.map((r) => r.id);
   const pendingMembers =
     pendingRequestIds.length > 0
       ? await db
@@ -192,8 +212,9 @@ export async function GET() {
     // who accepted the request (these are open requests), so the
     // creator's phone is stripped — unless this driver created or joined
     // the request as a passenger, in which case they may see it.
-    pendingRequests: pendingRequests.map((r) => {
+    pendingRequests: sortedPendingRequests.map((r) => {
       const members = membersByRequest.get(r.id) ?? [];
+      const match = pendingMatchMap.get(r);
       return {
         ...serializeRideRequest(r, {
           isCreator: r.passengerId === sessionUser.id,
@@ -201,6 +222,8 @@ export async function GET() {
           isAcceptedDriver: false,
         }),
         passengers: members,
+        matchScore: match?.matchScore ?? null,
+        matchedRide: match?.matchedRide ?? null,
       };
     }),
     balance,

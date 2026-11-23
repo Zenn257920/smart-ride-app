@@ -492,6 +492,13 @@ function DriverDashboardInner() {
                 <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">
                   {req.passengerName ?? req.passenger_name ?? "Passenger"} · Estimated {fmtMMK(req.estimatedPrice ?? req.estimated_price)}
                 </p>
+                {/* Unified matching: why this request is on top — the
+                    driver's own offered ride it fits best. */}
+                {req.matchScore != null && req.matchedRide ? (
+                  <p className="mt-2 rounded-[12px] bg-mint-soft px-3 py-2 text-sm dark:bg-forest-soft">
+                    မင်းရဲ့ {req.matchedRide.startLabel} → {req.matchedRide.endLabel} ride နဲ့ {req.matchScore}% ကိုက်တယ်
+                  </p>
+                ) : null}
                 <div className="mt-3 flex gap-2">
                   <button type="button" className="btn-primary flex-1" onClick={() => setAccepting(req)}>Accept</button>
                   <button type="button" className="btn-outline flex-1" onClick={() => skipRequest(req)}>Skip</button>

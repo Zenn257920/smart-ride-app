@@ -13,6 +13,8 @@ import {
   apiFetch,
   asArray,
   fetchRoute,
+  fmtMMK,
+  fmtTime,
   geocode,
   localInputValue,
   rideEndLat,
@@ -24,6 +26,7 @@ import {
   type GeocodeHit,
   type LatLng,
   type RideLike,
+  type RideRequestLike,
 } from "@/lib/api";
 
 const RideMap = dynamic(() => import("@/components/RideMap"), { ssr: false, loading: () => <div className="flex h-80 items-center justify-center rounded-[20px] bg-mint-soft text-sm text-forest/60">မြေပုံကို ဖွင့်နေသည်…</div> });
@@ -65,6 +68,13 @@ function FindRideInner() {
   const [selected, setSelected] = useState<RideLike | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<Array<[number, number]> | undefined>(undefined);
   const [bookingRide, setBookingRide] = useState<RideLike | null>(null);
+  // Unified matching: open ride requests on the searched route/time
+  // that the passenger can join (from /api/rides/search's
+  // requestMatches). Joining uses the searched route coords, e-wallet
+  // prepay only — the same join endpoint as the ride-requests page.
+  const [requestMatches, setRequestMatches] = useState<RideRequestLike[]>([]);
+  const [joiningReqId, setJoiningReqId] = useState<string | null>(null);
+  const [joinNotice, setJoinNotice] = useState("");
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -167,6 +177,12 @@ function FindRideInner() {
         departureTime: new Date(departureTime).toISOString(),
       });
       const data = await apiFetch<unknown>(`/api/rides/search?${q.toString()}`);
+      const o = data as { requestMatches?: unknown };
+      // requestMatches is a top-level array on the search response
+      // (asArray would pick `matches` first, so read it directly).
+      setRequestMatches(
+        Array.isArray(o.requestMatches) ? (o.requestMatches as RideRequestLike[]) : [],
+      );
       // Search returns { matches: [{ ride, driverName, carModel, carPlate,
       // seatsAvailable, departureTime, matchScore, fareShare,
       // appCommissionPerPassenger, discountedPrice, savings, ... }] } —
@@ -195,8 +211,38 @@ function FindRideInner() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "ရှာဖွေ၍ မရပါ။ ထပ်ကြိုးစားကြည့်ပါ။");
       setResults([]);
+      setRequestMatches([]);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function joinRequestMatch(req: RideRequestLike) {
+    // Join with the searched route coords — the join endpoint checks
+    // direction / pickup / dropoff distance against the request, so
+    // the searched route is the right input (it is what matched).
+    if (!start || !end) return;
+    setJoinNotice("");
+    setError("");
+    setJoiningReqId(req.id);
+    try {
+      await apiFetch(`/api/ride-requests/${req.id}/join`, {
+        method: "POST",
+        body: JSON.stringify({
+          startLabel,
+          startLat: start.lat,
+          startLng: start.lng,
+          endLabel,
+          endLat: end.lat,
+          endLng: end.lng,
+        }),
+      });
+      setJoinNotice(`"${req.startLabel ?? req.start_label} → ${req.endLabel ?? req.end_label}" တောင်းဆိုမှုမှာ ပါဝင်ပြီးပါပြီ — ဈေးကို မျှဝေတွက်ချက်ပေးလိုက်ပါပြီ။`);
+      setRequestMatches((prev) => prev.filter((r) => r.id !== req.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "တောင်းဆိုမှုမှာ ပါဝင်၍ မရပါ။");
+    } finally {
+      setJoiningReqId(null);
     }
   }
 
@@ -277,6 +323,7 @@ function FindRideInner() {
       </form>
 
       {error ? <p role="alert" className="mt-4 rounded-[12px] bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</p> : null}
+      {joinNotice ? <p className="mt-4 rounded-[12px] bg-mint-soft px-3 py-2 text-sm dark:bg-forest-soft">{joinNotice}</p> : null}
 
       <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
         <div className="min-w-0">
@@ -302,6 +349,41 @@ function FindRideInner() {
               ))}
             </div>
           )}
+
+          {/* Unified matching: open ride requests on the same route —
+              join one instead of waiting for a driver to offer. */}
+          {searched && !loading && requestMatches.length > 0 ? (
+            <div className="mt-8">
+              <h2 className="mb-3 text-lg font-medium text-forest dark:text-mint">
+                လမ်းကြောင်းတူ တောင်းဆိုမှုများ ({requestMatches.length} ခု)
+              </h2>
+              <p className="mb-3 text-sm text-forest/60 dark:text-mint/60">ယာဉ်မောင်း မရှိသေးပေမယ့် ဒီတောင်းဆိုမှုတွေမှာ ပါဝင်ပြီး ဈေးမျှဝေနိုင်ပါတယ် — ယာဉ်မောင်း လက်ခံတာနဲ့ ခရီးစဉ် ဖြစ်လာပါမည်။</p>
+              <div className="grid grid-cols-1 gap-4">
+                {requestMatches.map((req) => (
+                  <article key={req.id} className="card">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="min-w-0 font-medium">{req.startLabel ?? req.start_label} → {req.endLabel ?? req.end_label}</p>
+                      <span className="badge shrink-0">{(req.matchScore ?? req.matchPercentage) != null ? `${req.matchScore ?? req.matchPercentage}% ကိုက်` : ""}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-forest/70 dark:text-mint/70">
+                      {fmtTime(req.departureTime ?? req.departure_time)} · {req.passengerName ?? req.passenger_name ?? "Passenger"} · {(req.passengers ?? []).length || req.memberCount || 1} rider(s){req.seatsLeft != null ? ` · ${req.seatsLeft} ခုံကျန်` : ""}
+                    </p>
+                    <p className="mt-2 text-sm">Estimated: <span className="font-medium">{fmtMMK(req.estimatedPrice ?? req.estimated_price)}</span></p>
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        disabled={joiningReqId === req.id}
+                        onClick={() => joinRequestMatch(req)}
+                      >
+                        {joiningReqId === req.id ? "ပါဝင်နေသည်…" : "Join"}
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 

@@ -1,6 +1,9 @@
 /**
  * GET  /api/ride-requests — ?mine=1 (created or joined by me),
  *      ?pending=1 (open + future + not rejected by me, for drivers),
+ *      ?startLat&startLng&endLat&endLng&departureTime (driver only:
+ *      open future requests scored against that trip, best-first —
+ *      the offer-ride form's "matching requests" list),
  *      default: all open future requests.
  * POST /api/ride-requests — mirrors the old app's createRideRequest
  *      (database.js 1498-1577). estimatedPrice via
@@ -18,11 +21,18 @@ import {
   requestPassengers,
   requestRejections,
   rideRequests,
+  rides,
   user,
 } from "@/db/schema";
 import { getSessionUser, jsonError, parseDate, requireRole } from "@/lib/api-helpers";
 import { routeMatcher } from "@/lib/matching";
 import { isFutureDeparture } from "@/lib/money";
+import { expireOverdueRequests } from "@/lib/request-expiry";
+import {
+  scorePendingRequests,
+  scoreRequestsAgainstTrip,
+  sortPendingByMatch,
+} from "@/lib/request-matching";
 import { serializeRideRequest } from "@/lib/ride-request-privacy";
 import { addTransaction, getBalance } from "@/lib/wallet";
 
@@ -40,13 +50,63 @@ export async function GET(request: Request) {
   const sessionUser = await getSessionUser();
   if (!sessionUser) return jsonError("Unauthorized", 401);
 
+  // Lazy expiry (no cron): overdue open requests are expired + refunded
+  // before any variant reads them, so no list ever shows a request
+  // whose departure has already passed.
+  await expireOverdueRequests();
+
   const url = new URL(request.url);
   const mine = url.searchParams.get("mine") === "1";
   const pending = url.searchParams.get("pending") === "1";
+  // Driver-scored variant (offer-ride form): all four coords present.
+  const scoredParams = parseScoredQuery(url.searchParams);
   const now = new Date();
 
+  // matchScore / matched ride per request id, filled by the
+  // pending and scored variants below; empty for mine/default.
+  const matchByRequestId = new Map<
+    string,
+    { matchScore: number | null; matchedRide: { id: string; startLabel: string; endLabel: string } | null }
+  >();
+
   let requests;
-  if (mine) {
+  if (scoredParams) {
+    // Driver only (role read from the DB row, never the session copy).
+    const roleRow = await requireRole(sessionUser.id, "driver");
+    if (!roleRow) {
+      return jsonError("ယာဉ်မောင်း အကောင့်ဖြင့်သာ ကိုက်ညီသော တောင်းဆိုမှုများ ကြည့်နိုင်ပါသည်။", 403);
+    }
+    const rejectedRows = await db
+      .select()
+      .from(requestRejections)
+      .where(eq(requestRejections.driverId, sessionUser.id));
+    const rejectedIds = new Set(rejectedRows.map((r) => r.requestId));
+    const open = await db
+      .select()
+      .from(rideRequests)
+      .where(
+        and(
+          eq(rideRequests.status, "open"),
+          gt(rideRequests.departureTime, now),
+        ),
+      )
+      .orderBy(asc(rideRequests.departureTime));
+    const candidates = open.filter((r) => !rejectedIds.has(r.id));
+    const scored = scoreRequestsAgainstTrip(candidates, {
+      startLat: scoredParams.startLat,
+      startLng: scoredParams.startLng,
+      endLat: scoredParams.endLat,
+      endLng: scoredParams.endLng,
+      departureTime: scoredParams.departureTime,
+    });
+    requests = scored.map((s) => s.request);
+    for (const s of scored) {
+      matchByRequestId.set(s.request.id, {
+        matchScore: s.matchScore,
+        matchedRide: null,
+      });
+    }
+  } else if (mine) {
     const myRows = await db
       .select()
       .from(requestPassengers)
@@ -96,7 +156,28 @@ export async function GET(request: Request) {
         ),
       )
       .orderBy(asc(rideRequests.departureTime));
-    requests = open.filter((r) => !rejectedIds.has(r.id));
+    const chronological = open.filter((r) => !rejectedIds.has(r.id));
+    // Unified matching: score each open request against the driver's
+    // own offered rides that can still take riders (open, future,
+    // seats left) and sort best-first. Drivers with no such rides
+    // keep the chronological order (all scores null).
+    const myRides = await db
+      .select()
+      .from(rides)
+      .where(
+        and(
+          eq(rides.driverId, sessionUser.id),
+          eq(rides.status, "open"),
+          gt(rides.seatsAvailable, 0),
+          gt(rides.departureTime, now),
+        ),
+      );
+    const scoredMap = scorePendingRequests(chronological, myRides);
+    requests = sortPendingByMatch(chronological, scoredMap);
+    for (const r of requests) {
+      const m = scoredMap.get(r);
+      if (m) matchByRequestId.set(r.id, m);
+    }
   } else {
     requests = await db
       .select()
@@ -144,6 +225,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     requests: requests.map((r) => {
       const members = membersByRequest.get(r.id) ?? [];
+      const match = matchByRequestId.get(r.id);
       return {
         ...serializeRideRequest(r, {
           isCreator: r.passengerId === sessionUser.id,
@@ -154,9 +236,54 @@ export async function GET(request: Request) {
           ...m,
           passengerName: userById.get(m.passengerId)?.name ?? "Passenger",
         })),
+        // Only the pending / scored variants set these; mine/default
+        // leave them null so the UI falls back to chronological display.
+        matchScore: match?.matchScore ?? null,
+        matchedRide: match?.matchedRide ?? null,
       };
     }),
   });
+}
+
+/**
+ * Parse the driver-scored variant's query (?startLat&startLng&endLat&
+ * endLng&departureTime). Returns null when the coords are absent (the
+ * plain list variants) or invalid (400-style: callers send all four
+ * coords or none; a half-filled set is treated as absent so the list
+ * still works, and the offer-ride form only fetches once it has a
+ * complete route).
+ */
+function parseScoredQuery(params: URLSearchParams): {
+  startLat: number;
+  startLng: number;
+  endLat: number;
+  endLng: number;
+  departureTime?: string;
+} | null {
+  const raw = {
+    startLat: params.get("startLat"),
+    startLng: params.get("startLng"),
+    endLat: params.get("endLat"),
+    endLng: params.get("endLng"),
+  };
+  if (Object.values(raw).every((v) => v == null)) return null;
+  const nums = {
+    startLat: Number(raw.startLat),
+    startLng: Number(raw.startLng),
+    endLat: Number(raw.endLat),
+    endLng: Number(raw.endLng),
+  };
+  if (Object.values(nums).some((n) => Number.isNaN(n))) return null;
+  if (
+    Math.abs(nums.startLat) > 90 ||
+    Math.abs(nums.endLat) > 90 ||
+    Math.abs(nums.startLng) > 180 ||
+    Math.abs(nums.endLng) > 180
+  ) {
+    return null;
+  }
+  const departureTime = params.get("departureTime") ?? undefined;
+  return { ...nums, departureTime };
 }
 
 export async function POST(request: Request) {

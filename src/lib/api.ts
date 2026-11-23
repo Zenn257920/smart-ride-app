@@ -227,6 +227,16 @@ export interface RideRequestLike {
   prepaid_amount?: number;
   passengers?: Array<{ id?: string; passengerId?: string; passenger_id?: string; name?: string; passengerName?: string; passenger_name?: string; fareShare?: number; totalPrice?: number; status?: string }>;
   passengerCount?: number;
+  // Unified matching: best score (0–100) against the searched trip /
+  // the driver's offered rides, or null when nothing matched.
+  matchScore?: number | null;
+  matchPercentage?: number | null;
+  // The driver's ride that produced matchScore (pending / scored
+  // variants only), or null.
+  matchedRide?: { id: string; startLabel: string; endLabel: string } | null;
+  // Search requestMatches only: joined members / seats left (4 max).
+  memberCount?: number;
+  seatsLeft?: number;
   [key: string]: unknown;
 }
 

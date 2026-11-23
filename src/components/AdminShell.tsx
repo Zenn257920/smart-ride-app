@@ -36,7 +36,7 @@ export default function AdminShell() {
     <header className="sticky top-0 z-40 bg-forest">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-2 px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-2.5">
-          <Link href="/" className="flex min-w-0 items-center gap-2.5">
+          <Link href="/admin" className="flex min-w-0 items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="SharedRide logo" className="h-9 w-9 shrink-0 rounded-lg object-contain" />
             <span className="min-w-0 leading-tight">

@@ -9,8 +9,11 @@ function src(rel: string): string {
 describe("admin shell (separate admin dashboard chrome)", () => {
   test("admin pages get their own shell with no user navigation", () => {
     const shell = src("components/AdminShell.tsx");
-    // Own chrome: logo (links home), Admin title, theme toggle, bell, logout.
-    expect(shell).toContain('href="/"');
+    // Own chrome: logo (links to the admin panel, NOT the main site —
+    // the logo must keep the admin inside the panel), Admin title,
+    // theme toggle, bell, logout.
+    expect(shell).toContain('href="/admin"');
+    expect(shell).not.toContain('href="/"');
     expect(shell).toContain("Admin");
     expect(shell).toContain("ThemeToggle");
     expect(shell).toContain("NotificationsBell");
@@ -23,6 +26,17 @@ describe("admin shell (separate admin dashboard chrome)", () => {
     }
     // No footer rendered in the admin shell.
     expect(shell).not.toContain("<Footer");
+  });
+
+  test("admin shell logo links to /admin, not the main site", () => {
+    const shell = src("components/AdminShell.tsx");
+    // The logo is the first link in the shell; it must keep the admin
+    // inside the panel. The "Admin" text link also points at /admin
+    // (kept as-is) — so the shell has two /admin links and no "/" link.
+    const logoMatch = shell.match(/<Link href="([^"]+)" className="flex min-w-0 items-center gap-2\.5">/);
+    expect(logoMatch?.[1]).toBe("/admin");
+    expect(shell).not.toContain('href="/"');
+    expect(shell).toContain('href="/admin"');
   });
 
   test("user Nav, Footer and BottomNav all hide on /admin*", () => {
